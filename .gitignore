@@ -280,3 +280,8 @@ packages/create-app/ccf-app
 # Nodejs version management
 .node-version
 
+### TRACE — local-only reference material (NEVER COMMIT) ###
+# Confidential / client / PII reference docs. Local reference only.
+# Must never reach git history or the public fork.
+/TRACE_Documents/
+
