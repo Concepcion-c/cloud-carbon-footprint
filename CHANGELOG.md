@@ -7,6 +7,51 @@ After any notable decision (scope, architecture, tooling, naming), add an entry 
 
 ## 2026-06-10
 
+### Session status & forward look
+
+**Where we are:** workspace, strategy, feasibility, PRDs, synthetic data, and demo script are
+complete and pushed to the private repo (`Concepcion-c/TRACE`, commit `04a6ad0c`). Ready to build
+the MVP for Round 1 (video + written form due **2026-06-12**).
+
+**Key decisions at a glance**
+- **Product = an independent, sellable CCF-lineage tool** (carbon beside cost + optimization +
+  CAST-like energy-debt Assess) the client buys and keeps — *not* an AI:works-embedded module.
+  AI:works = "client zero" + build accelerator only.
+- **Anchor on run-time carbon** (the delivered app's ongoing footprint), not build-time.
+- **Build stack = Streamlit + pandas (+ optional DuckDB) + a custom TRACE calculator + synthetic
+  CSVs.** Reuse OSS (CCF, Langfuse, LiteLLM, SCI-for-AI, OpenTelemetry GenAI, Semgrep) by *adopting
+  their data shapes and showing the integration path*, not hosting them live. Trivy cut.
+- **Methodology = SCI-for-AI / ISO 21031, open & auditable** (location-based grid intensity, no offsets).
+- **MVP scope frozen to M1–M5** (hero cost+carbon, AI breakdown, visible methodology, apply-a-
+  recommendation that drops both numbers); cloud tab / Assess / before/after / ledger are stretch.
+
+**Open questions (to confirm with stakeholders)**
+1. **Client data path [biggest]** — will clients share cloud-billing + LLM-usage exports, and at
+   what granularity (AI gateway logs vs org/model totals)?
+2. **Deployment model** — SaaS (client ships us exports) vs in-tenant (runs inside their cloud, à la
+   CCF self-host)?
+3. **Gain-share appetite** — put price at risk on measured carbon, or lead with the outcome narrative only?
+4. **Coefficient rigor** — is approximate-but-transparent acceptable, or are defensible per-model numbers required?
+5. **Scope ambition** — AI-inference carbon only vs unified cloud + AI GreenOps?
+6. Secondary (feasibility §7): coefficient-maintenance owner; Boavizta GPU-SKU coverage; Assess accuracy bar.
+
+**Next recommended steps**
+1. **Build the MVP** per `docs/prd/hackathon-mvp-prd-v2.md` — scaffold Streamlit `app.py` that loads
+   the synthetic CSVs and renders cost-beside-carbon + the Apply-recommendation interaction (M1–M5).
+   Use the Stitch mockups in `docs/design/stitch-dashboard/` for layout + design tokens.
+2. Wire the **Assess** view from `semgrep_findings.json` (stretch S2) if time allows.
+3. **Record the ≤5-min demo** per `docs/demo/demo-script.md`; draft the written Round-1 submission.
+4. Optional credibility artifacts: one real **Langfuse** trace export; a **CCF demo-mode** screenshot
+   for the cloud tab.
+5. **Get stakeholder answers** to the open questions (especially #1 client data path and #2 deployment).
+
+---
+
+- **Committed & pushed the batch to the private repo** (commit `04a6ad0c` on `trunk`) — strategy v2,
+  both PRDs, feasibility one-pager, synthetic data package, demo script. Extracted the Stitch UI export
+  to `docs/design/stitch-dashboard/` (screen mockups + `DESIGN.md` tokens) and git-ignored the original
+  `.zip`. Verified no `TRACE_Documents/` leak and that the CCF `.gitignore` `*.csv` rule did not drop
+  the sample data. _Why: keep the private workspace current and design assets browsable._
 - **Generated the synthetic data package + demo script** — `docs/sample-data/` now has a deterministic
   `generate.py` (seed 42) producing Langfuse-shaped `llm_usage.csv`, CCF-shaped `cloud_usage.csv`,
   plus `model_coefficients.csv` / `grid_intensity.csv`, hand-authored `recommendations.json` (with
