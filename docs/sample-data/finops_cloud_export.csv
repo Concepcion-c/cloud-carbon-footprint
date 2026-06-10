@@ -1,0 +1,31 @@
+account,service,region,usage_type,cost_usd,usage_kwh,timestamp,tags_project,tags_workspace,business_unit,environment
+northstar-prod-001,EC2,us-east-1,BoxUsage:m5.2xlarge,284.50,312.4,2026-06-01,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,RDS,us-east-1,InstanceUsage:db.r5.large,198.20,187.6,2026-06-01,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,S3,,StorageObjectCount,44.10,0.0,2026-06-01,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,CloudFront,us-east-1,DataTransfer-Out-Bytes,62.80,41.2,2026-06-01,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,Lambda,us-east-1,Lambda-GB-Second,18.40,22.1,2026-06-01,payment-processor,,Technology,production
+northstar-prod-002,EC2,us-west-2,BoxUsage:m5.xlarge,142.30,148.9,2026-06-01,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-prod-002,RDS,us-west-2,InstanceUsage:db.r5.large,188.90,178.4,2026-06-01,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-prod-002,EKS,us-west-2,NodeUsage:m5.2xlarge,312.40,298.6,2026-06-01,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-dev-001,EC2,,BoxUsage:t3.large,38.20,44.8,2026-06-01,digital-banking,Digital Banking Modernization,Technology,development
+northstar-dev-001,RDS,us-east-1,InstanceUsage:db.t3.medium,24.60,28.1,2026-06-01,digital-banking,Digital Banking Modernization,Technology,development
+northstar-dev-001,S3,us-east-1,StorageObjectCount,8.40,0.0,2026-06-01,digital-banking,,Technology,development
+northstar-analytics-001,Redshift,us-east-1,Node:dc2.large,480.00,512.8,2026-06-01,analytics-platform,Analytics,Finance,production
+northstar-analytics-001,Glue,us-east-1,JobRun,92.30,88.4,2026-06-01,analytics-platform,Analytics,Finance,production
+northstar-analytics-001,Athena,us-east-1,DataScannedInMB,28.70,18.2,2026-06-01,analytics-platform,Analytics,Finance,production
+northstar-prod-001,EC2,us-east-1,BoxUsage:m5.2xlarge,291.80,318.6,2026-06-02,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,RDS,us-east-1,InstanceUsage:db.r5.large,198.20,187.6,2026-06-02,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,S3,us-east-1,StorageObjectCount,45.20,0.0,2026-06-02,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,Lambda,us-east-1,Lambda-GB-Second,19.10,22.8,2026-06-02,payment-processor,Digital Banking Modernization,Technology,production
+northstar-prod-002,EC2,us-west-2,BoxUsage:m5.xlarge,144.10,150.7,2026-06-02,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-prod-002,EKS,us-west-2,NodeUsage:m5.2xlarge,318.20,304.1,2026-06-02,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-dev-001,EC2,us-east-1,BoxUsage:t3.large,39.40,46.2,2026-06-02,digital-banking,Digital Banking Modernization,Technology,development
+northstar-dev-001,RDS,,InstanceUsage:db.t3.medium,24.60,28.1,2026-06-02,digital-banking,Digital Banking Modernization,Technology,development
+northstar-analytics-001,Redshift,us-east-1,Node:dc2.large,480.00,512.8,2026-06-02,analytics-platform,Analytics,Finance,production
+northstar-analytics-001,Glue,us-east-1,JobRun,88.10,84.3,2026-06-02,analytics-platform,,Finance,production
+northstar-prod-001,EC2,us-east-1,BoxUsage:m5.2xlarge,278.60,304.8,2026-06-03,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-001,RDS,us-east-1,InstanceUsage:db.r5.large,198.20,187.6,2026-06-03,digital-banking,Digital Banking Modernization,Technology,production
+northstar-prod-002,EC2,,BoxUsage:m5.xlarge,141.90,148.4,2026-06-03,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-prod-002,EKS,us-west-2,NodeUsage:m5.2xlarge,309.80,296.4,2026-06-03,legacy-modernization,Digital Banking Modernization,Technology,staging
+northstar-dev-001,EC2,us-east-1,BoxUsage:t3.large,37.80,44.4,2026-06-03,digital-banking,Digital Banking Modernization,Technology,development
+northstar-analytics-001,Redshift,us-east-1,Node:dc2.large,480.00,512.8,2026-06-03,analytics-platform,Analytics,Finance,production

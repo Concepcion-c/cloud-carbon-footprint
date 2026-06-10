@@ -1,5 +1,5 @@
-region,g_co2e_per_kwh
-us-west,210
-eu-west,290
-us-east,380
-ap-south,630
+region,g_co2e_per_kwh,wue_liters_per_kwh
+us-west,210,0.8
+eu-west,290,0.5
+us-east,380,1.2
+ap-south,630,1.8

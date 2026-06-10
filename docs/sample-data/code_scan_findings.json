@@ -1,0 +1,93 @@
+{
+  "scan_source": "Semgrep + TRACE Energy Rules",
+  "scanned_at": "2026-06-10T07:30:00Z",
+  "repo": "northstar-digital-banking",
+  "total_findings": 36,
+  "findings": [
+    {
+      "finding_id": "ef_001",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/account/AccountRepository.java",
+      "rule_id": "trace.energy.full-table-scan",
+      "severity": "HIGH",
+      "finding": "Full table scan on accounts table with no index. Pattern: SELECT * FROM accounts WHERE status = ?",
+      "recommendation": "Add index on status column. Use SELECT id, name FROM accounts WHERE status = ? LIMIT 100 with cursor pagination.",
+      "estimated_runtime_impact": "High — full scan on 2.4M row table adds ~340ms per call at current load. At AI delivery scale, this compounds across every generated service test.",
+      "confidence_level": "High",
+      "workflow_id": "wf_acct_001",
+      "agent_name": "BuildAgent",
+      "component": "SpectaCode"
+    },
+    {
+      "finding_id": "ef_002",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/payment/PaymentService.java",
+      "rule_id": "trace.energy.n-plus-one-query",
+      "severity": "HIGH",
+      "finding": "N+1 query pattern in payment loop. getPaymentById() called inside loop over transaction list.",
+      "recommendation": "Replace with batch query: getPaymentsByIds(transactionIds). Reduces DB round trips from N to 1.",
+      "estimated_runtime_impact": "High — 47 DB calls per payment batch instead of 1. Projected 12x energy overhead under load.",
+      "confidence_level": "High",
+      "workflow_id": "wf_payment_001",
+      "agent_name": "BuildAgent",
+      "component": "SpectaCode"
+    },
+    {
+      "finding_id": "ef_003",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/account/AccountService.java",
+      "rule_id": "trace.energy.uncached-repeated-call",
+      "severity": "MEDIUM",
+      "finding": "getAccountPolicy() called on every request with no cache. Policy data changes at most daily.",
+      "recommendation": "Cache policy result with TTL of 1 hour using @Cacheable. Eliminates ~95% of policy DB calls.",
+      "estimated_runtime_impact": "Medium — policy retrieval adds 18ms per call. With caching, reduces to ~0.2ms average.",
+      "confidence_level": "High",
+      "workflow_id": "wf_acct_001",
+      "agent_name": "FixAgent",
+      "component": "SpectaCode"
+    },
+    {
+      "finding_id": "ef_004",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/reporting/ReportGenerator.java",
+      "rule_id": "trace.energy.synchronous-batch",
+      "severity": "MEDIUM",
+      "finding": "Batch report generation runs synchronously in request thread. Processing 500+ records per request.",
+      "recommendation": "Move batch processing to async job queue. Return job ID immediately; poll for completion.",
+      "estimated_runtime_impact": "Medium — blocks request thread for 2-8s per report. Reduces peak compute by ~40% under async.",
+      "confidence_level": "Medium",
+      "workflow_id": "wf_legacy_001",
+      "agent_name": "BuildAgent",
+      "component": "SpectaCode"
+    },
+    {
+      "finding_id": "ef_005",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/account/NotificationService.java",
+      "rule_id": "trace.energy.redundant-serialization",
+      "severity": "LOW",
+      "finding": "Account object serialized to JSON and immediately deserialized in same method call. Round-trip with no transformation.",
+      "recommendation": "Pass the object directly. Remove unnecessary serialize/deserialize cycle.",
+      "estimated_runtime_impact": "Low — ~3ms overhead per notification. High call frequency (1,200/day) makes this worth fixing.",
+      "confidence_level": "High",
+      "workflow_id": "wf_acct_001",
+      "agent_name": "TestAgent",
+      "component": "Evaluation"
+    },
+    {
+      "finding_id": "ef_006",
+      "repo": "northstar-digital-banking",
+      "file_path": "services/legacy/LegacyAdapterService.java",
+      "rule_id": "trace.energy.large-context-window-prompt",
+      "severity": "MEDIUM",
+      "finding": "Full legacy codebase context (89K tokens) sent on every BuildAgent retry. Context does not change between retries.",
+      "recommendation": "Cache architecture context hash. Only re-send context if hash changes. Estimated 60K token saving per retry.",
+      "estimated_runtime_impact": "High — 3 retries × 89K tokens = 267K tokens of repeated context. Prompt compression saves ~$8 and 0.21 kg CO₂e per workflow run.",
+      "confidence_level": "High",
+      "workflow_id": "wf_legacy_001",
+      "agent_name": "BuildAgent",
+      "component": "DynamicSpec"
+    }
+  ],
+  "_note": "Synthetic data — shaped like Semgrep JSON output extended with TRACE energy attribution fields. 30 additional findings omitted."
+}

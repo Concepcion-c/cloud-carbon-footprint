@@ -1,0 +1,17 @@
+cloud_provider,region,region_name,carbon_intensity_kg_per_kwh,wue_liters_per_kwh,source,methodology_version,confidence_level
+aws,us-west-2,US West (Oregon),0.210,0.8,Electricity Maps / EPA eGRID,CCF-v2.1,High
+aws,us-west-1,US West (N. California),0.228,0.9,Electricity Maps / EPA eGRID,CCF-v2.1,High
+aws,us-east-1,US East (N. Virginia),0.380,1.2,Electricity Maps / EPA eGRID,CCF-v2.1,High
+aws,us-east-2,US East (Ohio),0.355,1.1,Electricity Maps / EPA eGRID,CCF-v2.1,High
+aws,eu-west-1,Europe (Ireland),0.290,0.5,Electricity Maps / ENTSO-E,CCF-v2.1,High
+aws,eu-central-1,Europe (Frankfurt),0.338,0.7,Electricity Maps / ENTSO-E,CCF-v2.1,High
+aws,ap-south-1,Asia Pacific (Mumbai),0.630,1.8,Electricity Maps / CEA India,CCF-v2.1,Medium
+aws,ap-southeast-1,Asia Pacific (Singapore),0.408,1.0,Electricity Maps / EMA Singapore,CCF-v2.1,Medium
+aws,ap-northeast-1,Asia Pacific (Tokyo),0.506,0.8,Electricity Maps / OCCTO Japan,CCF-v2.1,Medium
+gcp,us-west1,US West (Oregon),0.210,0.8,Google Environmental Report 2024,CCF-v2.1,High
+gcp,us-central1,US Central (Iowa),0.355,1.0,Google Environmental Report 2024,CCF-v2.1,High
+gcp,europe-west1,Europe (Belgium),0.290,0.5,Google Environmental Report 2024,CCF-v2.1,High
+gcp,asia-south1,Asia South (Mumbai),0.630,1.8,Google Environmental Report 2024,CCF-v2.1,Medium
+azure,westus,US West,0.218,0.8,Microsoft Azure Sustainability Calculator,CCF-v2.1,Medium
+azure,eastus,US East,0.380,1.2,Microsoft Azure Sustainability Calculator,CCF-v2.1,Medium
+azure,westeurope,West Europe,0.295,0.6,Microsoft Azure Sustainability Calculator,CCF-v2.1,Medium

@@ -1,0 +1,7 @@
+{
+  "model": "claude-sonnet-4-6",
+  "availableModels": ["claude-sonnet-4-6", "claude-haiku-4-5"],
+  "env": {
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5"
+  }
+}

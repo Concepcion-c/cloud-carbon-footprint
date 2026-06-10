@@ -288,3 +288,9 @@ packages/create-app/ccf-app
 
 # Stitch/design exports — keep originals local, commit the extracted folder
 docs/**/*.zip
+
+# direnv (contains secret API key)
+.envrc
+
+# Claude Code local settings (machine-specific paths and permission overrides)
+.claude/settings.local.json
