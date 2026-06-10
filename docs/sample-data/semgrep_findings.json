@@ -1,0 +1,13 @@
+{
+  "_comment": "SYNTHETIC sample shaped like a real `semgrep --json` export, for the TRACE Assess layer (stretch S2). Feeds a per-app 'code-risk' signal that blends with carbon for the energy-debt ranking. Not a real scan.",
+  "version": "1.96.0",
+  "results": [
+    {"check_id": "python.lang.performance.list-modification-in-loop", "path": "services/support-bot/handler.py", "start": {"line": 88}, "extra": {"severity": "WARNING", "message": "Repeated full re-summarization per turn (no cache) — high token/energy waste.", "metadata": {"category": "performance", "impact": "energy-debt"}}},
+    {"check_id": "python.lang.correctness.n-plus-one-query", "path": "services/support-bot/retriever.py", "start": {"line": 142}, "extra": {"severity": "WARNING", "message": "N+1 retrieval pattern inflates context tokens per request.", "metadata": {"category": "performance", "impact": "energy-debt"}}},
+    {"check_id": "generic.secrets.hardcoded-api-key", "path": "services/support-bot/config.py", "start": {"line": 7}, "extra": {"severity": "ERROR", "message": "Hardcoded model API key.", "metadata": {"category": "security"}}},
+    {"check_id": "python.django.security.sql-injection", "path": "services/code-assistant/db.py", "start": {"line": 51}, "extra": {"severity": "ERROR", "message": "Possible SQL injection via string-formatted query.", "metadata": {"category": "security"}}},
+    {"check_id": "python.lang.performance.unbounded-recursion", "path": "services/code-assistant/parser.py", "start": {"line": 30}, "extra": {"severity": "WARNING", "message": "Unbounded recursion on large files.", "metadata": {"category": "performance", "impact": "energy-debt"}}},
+    {"check_id": "python.lang.performance.full-table-load", "path": "services/analytics-agent/aggregate.py", "start": {"line": 64}, "extra": {"severity": "WARNING", "message": "Loads full dataset into memory before aggregation.", "metadata": {"category": "performance", "impact": "energy-debt"}}},
+    {"check_id": "python.lang.maintainability.blocking-call-async", "path": "services/doc-summarizer/worker.py", "start": {"line": 19}, "extra": {"severity": "INFO", "message": "Synchronous blocking call in async worker.", "metadata": {"category": "performance"}}}
+  ]
+}

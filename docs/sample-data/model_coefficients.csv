@@ -1,0 +1,4 @@
+model,provider,usd_per_1m_tokens,kwh_per_1m_tokens
+large,anthropic,30.0,1.2
+mid,anthropic,6.0,0.6
+small,anthropic,1.0,0.3

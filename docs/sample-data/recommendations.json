@@ -1,0 +1,36 @@
+{
+  "_comment": "Synthetic optimization recommendations for the TRACE MVP demo. Expected values are precomputed from the synthetic CSVs + model_coefficients.csv + grid_intensity.csv so the dashboard can validate its own math. All illustrative.",
+  "recommendations": [
+    {
+      "id": "rec-support-bot-rightsizing",
+      "title": "Right-size Support-Bot summarization + shift region",
+      "app": "Support-Bot",
+      "rationale": "Support-Bot is ~76% of AI carbon and ~77% of AI cost. ~70% of its traffic is routine summarization that runs fine on a small model; the rest stays on the large model for complex tickets. Also shift ap-south (630 gCO2e/kWh) -> us-west (210).",
+      "actions": [
+        {"type": "model_swap",  "fraction": 0.7, "from": "large",    "to": "small"},
+        {"type": "region_shift", "fraction": 0.7, "from": "ap-south", "to": "us-west"}
+      ],
+      "quality_note": "30% of traffic kept on the large model in-region to protect answer quality on complex tickets (honest trade-off, not a blanket downgrade).",
+      "expected": {
+        "app_carbon_kg_before": 604.8, "app_carbon_kg_after": 216.7, "app_carbon_pct": -64.2,
+        "app_cost_usd_before": 24000, "app_cost_usd_after": 7760,    "app_cost_pct": -67.7,
+        "total_ai_carbon_kg_before": 793.9, "total_ai_carbon_kg_after": 405.8, "total_ai_carbon_pct": -48.9,
+        "total_ai_cost_usd_before": 31300,  "total_ai_cost_usd_after": 15060,  "total_ai_cost_pct": -51.9
+      }
+    },
+    {
+      "id": "rec-analytics-region",
+      "title": "Carbon-aware region shift for Analytics-Agent",
+      "app": "Analytics-Agent",
+      "rationale": "Same workload, cleaner grid: move Analytics-Agent us-east (380) -> us-west (210). Cost unchanged (token price is region-independent) — a pure carbon win that shows carbon-aware decisions, not just cost-driven ones.",
+      "actions": [
+        {"type": "region_shift", "fraction": 1.0, "from": "us-east", "to": "us-west"}
+      ],
+      "quality_note": "No model change; no quality impact.",
+      "expected": {
+        "app_carbon_kg_before": 54.7, "app_carbon_kg_after": 30.2, "app_carbon_pct": -44.7,
+        "app_cost_usd_before": 3600,  "app_cost_usd_after": 3600,  "app_cost_pct": 0.0
+      }
+    }
+  ]
+}

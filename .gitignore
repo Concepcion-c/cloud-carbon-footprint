@@ -285,3 +285,6 @@ packages/create-app/ccf-app
 # Must never reach git history or the public fork.
 /TRACE_Documents/
 
+
+# Stitch/design exports — keep originals local, commit the extracted folder
+docs/**/*.zip
