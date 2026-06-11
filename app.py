@@ -45,6 +45,11 @@ h1, h2, h3, h4, h5, h6, p, label { font-family: Inter, sans-serif !important; }
   font-family: Inter, sans-serif !important;
 }
 #MainMenu, footer, header { visibility: hidden; }
+.stApp {
+  background:
+    linear-gradient(to bottom, transparent 0%, #F1F8FF 100%),
+    linear-gradient(to right, #F0F0FB 0%, #F9F9FB 100%) !important;
+}
 .block-container { padding-top: 1.25rem; padding-bottom: 2rem; max-width: 1440px !important; margin-left: auto !important; margin-right: auto !important; }
 
 /* ── Sidebar nav ─────────────────────────────────────────────────────────── */
@@ -661,7 +666,7 @@ with st.sidebar:
         "📋  Prove":    "Prove",
     }
     _page_raw = st.radio(
-        "nav",
+        "",
         list(_NAV.keys()),
         label_visibility="collapsed",
     )
