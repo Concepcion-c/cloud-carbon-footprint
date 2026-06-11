@@ -19,105 +19,342 @@ st.set_page_config(
 DATA_DIR = Path(__file__).parent / "docs" / "sample-data"
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
+st.markdown(
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">',
+    unsafe_allow_html=True,
+)
+
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
-
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+html, body { font-family: Inter, sans-serif !important; }
+button, input, select, textarea { font-family: inherit !important; }
+h1, h2, h3, h4, h5, h6, p, label { font-family: Inter, sans-serif !important; }
+/* Streamlit text containers — exclude icon/svg wrappers */
+[data-testid="stMarkdownContainer"],
+[data-testid="stText"],
+[data-testid="stCaptionContainer"],
+[data-testid="stMetricLabel"],
+[data-testid="stMetricValue"],
+[data-testid="stMetricDelta"],
+[data-testid="stRadio"] label,
+[data-testid="stSelectbox"] label,
+[data-testid="stMultiSelect"] label,
+[data-testid="stSidebar"] label {
+  font-family: Inter, sans-serif !important;
+}
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1.25rem; padding-bottom: 2rem; }
+.block-container { padding-top: 1.25rem; padding-bottom: 2rem; max-width: 1440px !important; margin-left: auto !important; margin-right: auto !important; }
 
-section[data-testid="stSidebar"] > div:first-child { background: #0f172a !important; }
-section[data-testid="stSidebar"] label { color: #cbd5e1 !important; }
-section[data-testid="stSidebar"] .stRadio > div { gap: 2px; }
+/* ── Sidebar nav ─────────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] > div:first-child { background: #0F0A37 !important; }
 
-.kpi { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:18px 22px; height:100%; }
-.kpi-label { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500;
-             color:#64748b; text-transform:uppercase; letter-spacing:.09em; margin-bottom:4px; }
-.kpi-value { font-size:26px; font-weight:700; color:#0f172a; line-height:1.2; }
-.kpi-sub   { font-size:12px; color:#64748b; margin-top:2px; }
-.kpi-delta-good { font-size:12px; font-weight:600; color:#006c49; margin-top:4px; }
-.kpi-delta-bad  { font-size:12px; font-weight:600; color:#ba1a1a; margin-top:4px; }
+/* Nav group — 4px horizontal padding matches the logo wrapper's 4px inset */
+section[data-testid="stSidebar"] div[data-testid="stRadio"],
+section[data-testid="stSidebar"] div[role="radiogroup"] {
+  width: 100% !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] > div,
+section[data-testid="stSidebar"] div[role="radiogroup"] > div {
+  width: 100% !important;
+  gap: 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
 
-.sh { font-size:16px; font-weight:600; color:#0f172a;
-      border-bottom:2px solid #4edea3; padding-bottom:5px; margin:18px 0 12px; }
+/* Nav item — hide the input AND the BaseWeb visual circle (first div child of label) */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] input[type="radio"],
+section[data-testid="stSidebar"] div[role="radiogroup"] input[type="radio"] {
+  display: none !important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-of-type {
+  display: none !important;
+}
 
-.rec { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:18px 22px; margin-bottom:10px; }
-.rec.applied { border-color:#4edea3; background:#f0fdf8; }
-.rec-title   { font-size:15px; font-weight:600; color:#0f172a; margin-bottom:5px; }
-.rec-body    { font-size:13px; color:#475569; line-height:1.55; margin-bottom:8px; }
-.rec-quality { font-size:11px; color:#94a3b8; font-style:italic; }
-.pill-green { display:inline-block; background:#dcfce7; color:#166534; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
-.pill-gray  { display:inline-block; background:#f1f5f9; color:#475569; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
-.pill-navy  { display:inline-block; background:#1e293b; color:#e2e8f0; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
+/* Nav item — default */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label,
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  color: #CECCE8 !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 9px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease, color 0.12s ease !important;
+  margin: 0 !important;
+  min-height: 36px !important;
+  letter-spacing: 0.01em !important;
+}
 
-.formula { background:#0f172a; color:#4edea3; font-family:'JetBrains Mono',monospace;
+/* Nav item — text/span */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
+section[data-testid="stSidebar"] div[role="radiogroup"] label p,
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label span,
+section[data-testid="stSidebar"] div[role="radiogroup"] label span {
+  color: inherit !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: inherit !important;
+  margin: 0 !important;
+}
+
+/* Nav item — active */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked),
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
+  background: #2E2261 !important;
+  color: #CECCE8 !important;
+  font-weight: 600 !important;
+}
+
+/* Nav item — hover (skip if already active) */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label:not(:has(input:checked)):hover,
+section[data-testid="stSidebar"] div[role="radiogroup"] label:not(:has(input:checked)):hover {
+  background: rgba(206,204,232,0.08) !important;
+  color: #CECCE8 !important;
+}
+
+/* Sweep: all text inside the sidebar uses #CECCE8 */
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] button {
+  color: #CECCE8 !important;
+}
+
+/* Full-width element containers inside the sidebar */
+section[data-testid="stSidebar"] [data-testid="stElementContainer"],
+section[data-testid="stSidebar"] .element-container {
+  width: 100% !important;
+}
+
+/* Close button inside sidebar — 36×36 rounded square, matches open button shape */
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  color: #CECCE8 !important;
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+/* Open button (stExpandSidebarButton) — inverted: light bg + dark icon, 36×36 rounded square */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stExpandSidebarButton"] * {
+  visibility: visible !important;
+  display: block !important;
+}
+[data-testid="stExpandSidebarButton"] {
+  width: 36px !important;
+  height: 36px !important;
+  background: #CECCE8 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+[data-testid="stExpandSidebarButton"]:hover {
+  background: #B5B2D4 !important;
+}
+[data-testid="stExpandSidebarButton"] svg,
+[data-testid="stExpandSidebarButton"] span {
+  fill: #0F0A37 !important;
+  color: #0F0A37 !important;
+}
+
+/* Mobile (≤ 768px): same button, fixed top-left, ☰ replaces arrow icon */
+@media (max-width: 768px) {
+  [data-testid="stExpandSidebarButton"] {
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 9999 !important;
+  }
+  [data-testid="stExpandSidebarButton"] svg,
+  [data-testid="stExpandSidebarButton"] span[data-testid="stIconMaterial"] {
+    display: none !important;
+  }
+  [data-testid="stExpandSidebarButton"]::before {
+    content: "☰" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    color: #0F0A37 !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+  }
+}
+
+/* ── Metric card ─────────────────────────────────────────────────────────── */
+.kpi { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; height:100%; }
+.kpi-label { font-size:11px; font-weight:400; color:#9ca3af;
+             text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.kpi-value { font-size:28px; font-weight:700; color:#111827; line-height:1.2; }
+.kpi-sub   { font-size:12px; color:#9ca3af; margin-top:4px; }
+.kpi-delta-good { font-size:12px; font-weight:600; color:#059669; margin-top:4px; }
+.kpi-delta-bad  { font-size:12px; font-weight:600; color:#ef4444; margin-top:4px; }
+
+/* ── Section heading ─────────────────────────────────────────────────────── */
+.sh { font-size:18px; font-weight:600; color:#111827; margin:18px 0 12px; }
+
+/* ── Rec cards ───────────────────────────────────────────────────────────── */
+.rec { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:18px 22px; margin-bottom:10px; }
+.rec.applied { border-color:#10b981; background:#f0fdf8; }
+.rec-title   { font-size:15px; font-weight:600; color:#111827; margin-bottom:5px; }
+.rec-body    { font-size:13px; color:#374151; line-height:1.55; margin-bottom:8px; }
+.rec-quality { font-size:11px; color:#9ca3af; font-style:italic; }
+
+/* ── Pills ───────────────────────────────────────────────────────────────── */
+.pill-green { display:inline-block; background:#10b981; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+.pill-gray  { display:inline-block; background:#9ca3af; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+.pill-navy  { display:inline-block; background:#0b082d; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+
+/* ── Formula block ───────────────────────────────────────────────────────── */
+.formula { background:#111827; color:#10b981; font-family:'Inter',monospace;
            font-size:12px; border-radius:8px; padding:14px 18px; line-height:2.0; }
 
-.badge-hi  { background:#fee2e2; color:#b91c1c; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; margin-right:4px; }
-.badge-med { background:#fef3c7; color:#92400e; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; margin-right:4px; }
-.badge-lo  { background:#f1f5f9; color:#64748b; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; }
+/* ── Severity badges ─────────────────────────────────────────────────────── */
+.badge-hi  { background:#ef4444; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; }
+.badge-med { background:#f59e0b; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; }
+.badge-lo  { background:#9ca3af; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; }
 
+/* ── Synthetic data banner ───────────────────────────────────────────────── */
 .synth { background:#fef9c3; border:1px solid #fde047; border-radius:6px;
          padding:8px 14px; font-size:12px; color:#713f12; margin-bottom:14px; }
 
-.conn-summary { background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+/* ── Connect summary tiles ───────────────────────────────────────────────── */
+.conn-summary { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
                 padding:14px 18px; text-align:center; }
-.conn-summary-num { font-size:28px; font-weight:700; color:#0f172a; line-height:1.1; }
-.conn-summary-lbl { font-size:11px; color:#64748b; font-family:'JetBrains Mono',monospace;
+.conn-summary-num { font-size:28px; font-weight:700; color:#111827; line-height:1.1; }
+.conn-summary-lbl { font-size:11px; color:#9ca3af; font-family:Inter,sans-serif;
                     text-transform:uppercase; letter-spacing:.06em; }
 
-.status-connected  { background:#dcfce7; color:#166534; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-uploaded   { background:#dbeafe; color:#1e40af; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-active     { background:#dcfce7; color:#166534; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-warning    { background:#fef3c7; color:#92400e; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-failed     { background:#fee2e2; color:#b91c1c; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-coming_soon { background:#f1f5f9; color:#475569; border-radius:99px;
-                      padding:2px 10px; font-size:11px; font-weight:600; }
-.status-paused     { background:#f1f5f9; color:#475569; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
+/* ── Status badges — solid color + white text (Figma Badge component) ─────── */
+.status-connected  { background:#10b981; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-uploaded   { background:#3b82f6; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-active     { background:#10b981; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-warning    { background:#f59e0b; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-failed     { background:#ef4444; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-coming_soon { background:#9ca3af; color:#ffffff; border-radius:99px;
+                      padding:4px 8px; font-size:11px; font-weight:600; }
+.status-paused     { background:#9ca3af; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
 
-.drawer { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+.drawer { background:#f8fafb; border:1px solid #e5e7eb; border-radius:10px;
           padding:20px 24px; margin-top:12px; }
-.drawer-title { font-size:17px; font-weight:700; color:#0f172a; margin-bottom:14px; }
+.drawer-title { font-size:17px; font-weight:700; color:#111827; margin-bottom:14px; }
 
 .trace-wrap { display:flex; align-items:stretch; overflow-x:auto;
-              padding:16px; background:#f8fafc; border-radius:12px; gap:0; }
+              padding:16px; background:#f8fafb; border-radius:12px; gap:0; }
 .trace-node { min-width:148px; max-width:168px; border-radius:10px; padding:12px 10px;
               flex:0 0 auto; }
-.trace-node-ok   { background:#f0fdf8; border:2px solid #4edea3; }
+.trace-node-ok   { background:#f0fdf8; border:2px solid #10b981; }
 .trace-node-warn { background:#fffbeb; border:2px solid #f59e0b; }
-.trace-node-err  { background:#fff5f5; border:2px solid #ba1a1a; }
+.trace-node-err  { background:#fff5f5; border:2px solid #ef4444; }
 .trace-arrow { display:flex; align-items:center; padding:0 6px;
-               color:#94a3b8; font-size:22px; flex:0 0 auto; }
+               color:#9ca3af; font-size:22px; flex:0 0 auto; }
 
 .whatif-table { width:100%; border-collapse:collapse; font-size:13px; }
-.whatif-table th { background:#0f172a; color:#f8fafc; padding:10px 14px;
-                   font-weight:600; text-align:left; }
-.whatif-table td { padding:9px 14px; border-bottom:1px solid #e2e8f0; }
+.whatif-table th { background:#f9fafb; color:#9ca3af; padding:10px 14px;
+                   font-weight:600; font-size:11px; text-transform:uppercase;
+                   letter-spacing:.04em; text-align:left; }
+.whatif-table td { padding:9px 14px; border-bottom:1px solid #e5e7eb; }
 .whatif-table tr.current td { background:#fff; }
 .whatif-table tr.balanced td { background:#f0fdf8; font-weight:500; }
 .whatif-table tr.aggressive td { background:#fff7ed; }
 .rec-tag { background:#dbeafe; color:#1e40af; border-radius:4px;
            padding:1px 7px; font-size:10px; font-weight:600; }
 
-.evidence-block { background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+.evidence-block { background:#fff; border:1px solid #e5e7eb; border-radius:8px;
                   padding:16px 20px; margin-bottom:12px; }
-.evidence-label { font-size:10px; font-weight:700; color:#64748b;
+.evidence-label { font-size:10px; font-weight:700; color:#6b7280;
                   text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;
-                  font-family:'JetBrains Mono',monospace; }
-.evidence-value { font-size:13px; color:#0f172a; line-height:1.6; }
+                  font-family:Inter,sans-serif; }
+.evidence-value { font-size:13px; color:#111827; line-height:1.6; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+div.stButton > button[kind="primary"],
+div.stDownloadButton > button[kind="primary"],
+div.stFormSubmitButton > button[kind="primaryFormSubmit"] {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease !important;
+}
+div.stButton > button[kind="primary"]:hover,
+div.stDownloadButton > button[kind="primary"]:hover,
+div.stFormSubmitButton > button[kind="primaryFormSubmit"]:hover {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+div.stButton > button[kind="primary"]:active,
+div.stDownloadButton > button[kind="primary"]:active {
+  background: #4338ca !important;
+}
+
+div.stButton > button[kind="secondary"],
+div.stDownloadButton > button[kind="secondary"] {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+div.stButton > button[kind="secondary"]:hover,
+div.stDownloadButton > button[kind="secondary"]:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+div.stButton > button[kind="secondary"]:active,
+div.stDownloadButton > button[kind="secondary"]:active {
+  background: #f3f4f6 !important;
+}
+
+div.stButton > button:disabled,
+div.stButton > button[disabled] {
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -369,25 +606,25 @@ def render_trace_graph(spans):
         retries = span.get("retry_count", 0)
         if retries >= 3:
             node_cls = "trace-node-err"
-            retry_html = f'<div style="background:#fee2e2;color:#b91c1c;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">⚠ {retries} retries</div>'
+            retry_html = f'<div style="background:#fee2e2;color:#ef4444;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">⚠ {retries} retries</div>'
         elif retries >= 1:
             node_cls = "trace-node-warn"
             retry_html = f'<div style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">↺ {retries} retr{"y" if retries == 1 else "ies"}</div>'
         else:
             node_cls = "trace-node-ok"
-            retry_html = '<div style="color:#4edea3;font-size:10px;margin-top:5px;font-weight:600;">✓ Clean</div>'
+            retry_html = '<div style="color:#10b981;font-size:10px;margin-top:5px;font-weight:600;">✓ Clean</div>'
 
         accepted = span.get("accepted_output", True)
-        acc_color = "#006c49" if accepted else "#b91c1c"
+        acc_color = "#059669" if accepted else "#ef4444"
         acc_label = "✓ Accepted" if accepted else "✗ Rejected"
 
         co2e = span.get("co2e_kg", 0.0)
         model_short = span["model_name"].replace("claude-sonnet-4-6", "Sonnet 4.6").replace("claude-opus-4-8", "Opus 4.8").replace("gpt-4.1", "GPT-4.1")
 
         box = f'''<div class="trace-node {node_cls}">
-  <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;">{span["agent_name"]}</div>
-  <div style="font-size:10px;color:#64748b;font-family:monospace;margin-bottom:7px;">{model_short}</div>
-  <div style="font-size:11px;color:#475569;line-height:1.75;">
+  <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:3px;">{span["agent_name"]}</div>
+  <div style="font-size:10px;color:#6b7280;font-family:Inter,sans-serif;margin-bottom:7px;">{model_short}</div>
+  <div style="font-size:11px;color:#374151;line-height:1.75;">
     <div>🔡 {span["input_tokens"]:,}→{span["output_tokens"]:,}</div>
     <div>⏱ {span["latency_ms"]/1000:.1f}s</div>
     <div>💵 ${span["cost_usd"]:.2f}</div>
@@ -408,26 +645,33 @@ def render_trace_graph(spans):
 with st.sidebar:
     st.markdown(
         '<div style="padding:16px 4px 6px;">'
-        '<div style="font-size:22px;font-weight:700;color:#f8fafc;letter-spacing:-.02em;">🌿 TRACE</div>'
-        '<div style="font-size:10px;color:#64748b;margin-top:2px;font-family:monospace;">'
+        '<div style="font-size:22px;font-weight:700;color:#CECCE8;letter-spacing:-.02em;">🌿 TRACE</div>'
+        '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'AI GREENOPS DASHBOARD</div>'
-        '<div style="font-size:11px;color:#475569;margin-top:8px;padding:6px 8px;background:#1e293b;border-radius:6px;">'
+        '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;">'
         '📁 Northstar Bank<br>'
-        '<span style="color:#64748b;font-size:10px;">Digital Banking Modernization</span></div>'
+        '<span style="color:#CECCE8;font-size:10px;">Digital Banking Modernization</span></div>'
         '</div>',
         unsafe_allow_html=True,
     )
-    page = st.radio(
+    _NAV = {
+        "🔌  Connect":  "Connect",
+        "📊  Observe":  "Observe",
+        "⚡  Optimize": "Optimize",
+        "📋  Prove":    "Prove",
+    }
+    _page_raw = st.radio(
         "nav",
-        ["Connect", "Observe", "Optimize", "Prove"],
+        list(_NAV.keys()),
         label_visibility="collapsed",
     )
-    st.markdown("<hr style='border-color:#1e293b;margin:10px 0;'>", unsafe_allow_html=True)
+    page = _NAV[_page_raw]
+    st.markdown("<hr style='border-color:rgba(206,204,232,0.15);margin:10px 0;'>", unsafe_allow_html=True)
 
     n_applied = len(st.session_state.applied_recs)
     if n_applied:
         st.markdown(
-            f'<div style="font-size:12px;color:#4edea3;margin-bottom:8px;">'
+            f'<div style="font-size:12px;color:#CECCE8;margin-bottom:8px;">'
             f'✓ {n_applied} rec{"s" if n_applied > 1 else ""} applied</div>',
             unsafe_allow_html=True,
         )
@@ -436,7 +680,7 @@ with st.sidebar:
             st.rerun()
 
     st.markdown(
-        '<div style="margin-top:24px;font-size:10px;color:#334155;line-height:1.6;">'
+        '<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;">'
         '⚠️ Synthetic client data<br>SCI-for-AI methodology<br>'
         'AI:Works Global Hackathon 2026</div>',
         unsafe_allow_html=True,
@@ -450,8 +694,8 @@ if page == "Connect":
     st.markdown("## TRACE Connect: Data Sources")
     st.caption("Every connected system, its status, data freshness, and normalization health")
     st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        '<b style="color:#4edea3;">Connect</b>'
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
+        '<b style="color:#10b981;">Connect</b>'
         '<span style="color:#334155;"> → Observe → Optimize → Prove</span></div>',
         unsafe_allow_html=True,
     )
@@ -481,7 +725,7 @@ if page == "Connect":
             )
 
     st.markdown(
-        '<div style="font-size:12px;color:#64748b;margin:8px 0 4px;">'
+        '<div style="font-size:12px;color:#6b7280;margin:8px 0 4px;">'
         'Last normalization run: <b>12 minutes ago</b> &nbsp;·&nbsp; '
         f'Total records ingested: <b>{total_records:,}</b></div>',
         unsafe_allow_html=True,
@@ -512,7 +756,7 @@ if page == "Connect":
 
     header = (
         '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        '<thead><tr style="background:#0f172a;color:#f8fafc;">'
+        '<thead><tr style="background:#f9fafb;color:#9ca3af;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">'
         '<th style="padding:10px 12px;text-align:left;">System</th>'
         '<th style="padding:10px 12px;text-align:left;">Category</th>'
         '<th style="padding:10px 12px;text-align:left;">Type</th>'
@@ -527,19 +771,19 @@ if page == "Connect":
 
     rows = ""
     for i, c in enumerate(CONNECTOR_STATE):
-        bg = "#fff" if i % 2 == 0 else "#f8fafc"
+        bg = "#fff" if i % 2 == 0 else "#f8fafb"
         badge = status_badge(c["status"])
         norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
         rows += (
-            f'<tr style="background:{bg};border-bottom:1px solid #e2e8f0;">'
-            f'<td style="padding:10px 12px;font-weight:600;color:#0f172a;">{c["system"]}</td>'
-            f'<td style="padding:10px 12px;color:#475569;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
-            f'<td style="padding:10px 12px;font-family:monospace;font-size:12px;color:#475569;">{c["type"]}</td>'
+            f'<tr style="background:{bg};border-bottom:1px solid #e5e7eb;">'
+            f'<td style="padding:10px 12px;font-weight:600;color:#111827;">{c["system"]}</td>'
+            f'<td style="padding:10px 12px;color:#374151;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
+            f'<td style="padding:10px 12px;font-family:Inter,sans-serif;font-size:12px;color:#374151;">{c["type"]}</td>'
             f'<td style="padding:10px 12px;">{badge}</td>'
-            f'<td style="padding:10px 12px;color:#64748b;font-size:12px;">{c["last_sync"]}</td>'
-            f'<td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:12px;">{c["records"]}</td>'
+            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["last_sync"]}</td>'
+            f'<td style="padding:10px 12px;text-align:right;font-family:Inter,sans-serif;font-size:12px;">{c["records"]}</td>'
             f'<td style="padding:10px 12px;color:{norm_color};font-weight:600;font-size:12px;cursor:help;" title="Normalization: the % of ingested records successfully mapped to TRACE\'s schema (app name, model, region, token counts all present and matched). Unmapped records appear in the Norm Log.">{c["norm_pct"]}</td>'
-            f'<td style="padding:10px 12px;color:#64748b;font-size:12px;">{c["owner"]}</td>'
+            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["owner"]}</td>'
             f'<td style="padding:10px 12px;color:#3b82f6;font-size:12px;cursor:pointer;">{c["action"]}</td>'
             '</tr>'
         )
@@ -552,8 +796,8 @@ if page == "Connect":
         for i, name in enumerate(AVAILABLE_CONNECTORS):
             with cols[i % 3]:
                 st.markdown(
-                    f'<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;'
-                    f'padding:10px 14px;margin-bottom:8px;font-size:13px;color:#475569;">'
+                    f'<div style="background:#f8fafb;border:1px dashed #d1d5db;border-radius:6px;'
+                    f'padding:10px 14px;margin-bottom:8px;font-size:13px;color:#374151;">'
                     f'<span class="status-coming_soon">Coming Soon</span>'
                     f'&nbsp;&nbsp;<b>{name}</b></div>',
                     unsafe_allow_html=True,
@@ -603,7 +847,7 @@ if page == "Connect":
                 if src == "FinOps / Cloud Cost":
                     st.markdown("**System:** Cloudability Export")
                     st.markdown(
-                        '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">'
+                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
                         'Expected fields: account · service · region · cost_usd · usage_kwh · '
                         'timestamp · tags_project · tags_workspace · business_unit · environment'
                         '</div>',
@@ -664,7 +908,7 @@ if page == "Connect":
                              ["Store full prompt/response", "Store metadata only", "Store redacted prompt/response"],
                              index=1)
                     st.markdown("""
-<div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.7;">
+<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.7;">
 <b>Store full prompt / response</b> — saves the complete text of every request and response.
 ⚠️ Only use if content is non-sensitive and your data governance policy permits it.<br>
 <b>Store metadata only</b> (default — recommended) — saves token counts, model, latency, cost, and eval scores. No actual text stored.
@@ -688,7 +932,7 @@ Requires a redaction filter to be configured.
 
                 mapping_html = (
                     '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-                    '<thead><tr style="background:#f1f5f9;">'
+                    '<thead><tr style="background:#f3f4f6;">'
                     '<th style="padding:7px 10px;text-align:left;">Source field</th>'
                     '<th style="padding:7px 10px;text-align:left;">TRACE field</th>'
                     '<th style="padding:7px 10px;text-align:left;">Status</th>'
@@ -698,9 +942,9 @@ Requires a redaction filter to be configured.
                     color = "#166534" if status == "Mapped" else "#92400e"
                     icon  = "✓" if status == "Mapped" else "↺"
                     mapping_html += (
-                        f'<tr style="border-bottom:1px solid #e2e8f0;">'
-                        f'<td style="padding:6px 10px;font-family:monospace;color:#475569;">{src_f}</td>'
-                        f'<td style="padding:6px 10px;font-family:monospace;color:#0f172a;">{trace_f}</td>'
+                        f'<tr style="border-bottom:1px solid #e5e7eb;">'
+                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
+                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
                         f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
                         '</tr>'
                     )
@@ -732,13 +976,13 @@ Requires a redaction filter to be configured.
     # ── Status legend ──
     with st.expander("Status reference", expanded=False):
         legend = [
-            ("Connected",    "#dcfce7", "#166534", "API connection is healthy and syncing"),
-            ("Uploaded",     "#dbeafe", "#1e40af", "Static file was uploaded successfully"),
-            ("Active",       "#dcfce7", "#166534", "Reference dataset is active"),
-            ("Warning",      "#fef3c7", "#92400e", "Data ingested but incomplete, stale, or partially mapped"),
-            ("Failed",       "#fee2e2", "#b91c1c", "Connection or ingestion failed"),
-            ("Paused",       "#f1f5f9", "#475569", "Connector configured but not syncing"),
-            ("Coming Soon",  "#f1f5f9", "#475569", "Connector tile exists but not enabled"),
+            ("Connected",    "#10b981", "#ffffff", "API connection is healthy and syncing"),
+            ("Uploaded",     "#3b82f6", "#ffffff", "Static file was uploaded successfully"),
+            ("Active",       "#10b981", "#ffffff", "Reference dataset is active"),
+            ("Warning",      "#f59e0b", "#ffffff", "Data ingested but incomplete, stale, or partially mapped"),
+            ("Failed",       "#ef4444", "#ffffff", "Connection or ingestion failed"),
+            ("Paused",       "#9ca3af", "#ffffff", "Connector configured but not syncing"),
+            ("Coming Soon",  "#9ca3af", "#ffffff", "Connector tile exists but not enabled"),
         ]
         cols = st.columns(4)
         for i, (name, bg, fg, desc) in enumerate(legend):
@@ -747,7 +991,7 @@ Requires a redaction filter to be configured.
                     f'<div style="margin-bottom:8px;">'
                     f'<span style="background:{bg};color:{fg};border-radius:99px;padding:2px 10px;'
                     f'font-size:11px;font-weight:600;">{name}</span>'
-                    f'<div style="font-size:11px;color:#64748b;margin-top:3px;">{desc}</div></div>',
+                    f'<div style="font-size:11px;color:#6b7280;margin-top:3px;">{desc}</div></div>',
                     unsafe_allow_html=True,
                 )
 
@@ -763,8 +1007,8 @@ elif page == "Observe":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">'
-        'Connect → <b style="color:#4edea3;">Observe</b>'
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">'
+        'Connect → <b style="color:#10b981;">Observe</b>'
         '<span style="color:#334155;"> → Optimize → Prove</span></div>',
         unsafe_allow_html=True,
     )
@@ -879,7 +1123,7 @@ They are tracked separately because they have **different optimization levers**.
 
         fig = px.area(
             daily_long, x="date", y="kg CO₂e", color="Source",
-            color_discrete_map={"AI Inference": "#006c49", "Cloud Infra": "#94a3b8"},
+            color_discrete_map={"AI Inference": "#059669", "Cloud Infra": "#9ca3af"},
             template="simple_white",
         )
         fig.update_layout(
@@ -912,7 +1156,7 @@ They are tracked separately because they have **different optimization levers**.
             f"→ Fix one app, cut ~half the AI footprint."
         )
 
-        PALETTE = ["#0f172a", "#006c49", "#4edea3", "#94a3b8", "#e2e8f0"]
+        PALETTE = ["#111827", "#059669", "#10b981", "#9ca3af", "#e5e7eb"]
         col1, col2 = st.columns(2)
         with col1:
             st.markdown('<div class="sh">Carbon by App (kg CO₂e / month)</div>', unsafe_allow_html=True)
@@ -998,7 +1242,7 @@ They are tracked separately because they have **different optimization levers**.
         with col1:
             fig = px.bar(by_region, x="label", y="ai_carbon_kg",
                          color="g_co2e_per_kwh",
-                         color_continuous_scale=["#4edea3", "#f59e0b", "#b91c1c"],
+                         color_continuous_scale=["#10b981", "#f59e0b", "#ef4444"],
                          range_color=[100, 700], template="simple_white",
                          labels={"label": "Region", "ai_carbon_kg": "kg CO₂e", "g_co2e_per_kwh": "gCO₂e/kWh"},
                          title="Carbon by Region (kg CO₂e)")
@@ -1134,7 +1378,7 @@ They are tracked separately because they have **different optimization levers**.
         st.dataframe(pd.DataFrame(span_rows), use_container_width=True, hide_index=True)
 
         st.markdown(
-            '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">'
+            '<div style="font-size:12px;color:#9ca3af;margin-top:6px;">'
             'CO₂e estimated from token count × kWh/1M tokens × regional grid intensity (kg CO₂e/kWh). '
             'Confidence: Medium (region and model-class factors available; provider-specific hardware not measured).</div>',
             unsafe_allow_html=True,
@@ -1203,7 +1447,7 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
             f"{worst_app['ai_carbon_kg']:.1f} kg CO₂e/mo · {int(worst_app['semgrep_total'])} findings"
         )
 
-        RANK_COLORS = ["#b91c1c", "#d97706", "#6b7280", "#6b7280", "#9ca3af"]
+        RANK_COLORS = ["#ef4444", "#d97706", "#6b7280", "#6b7280", "#9ca3af"]
         for i, row in assess.iterrows():
             rc = RANK_COLORS[min(i, len(RANK_COLORS) - 1)]
             score_bar = f"{row['score'] * 100:.0f}%"
@@ -1221,16 +1465,16 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
     <div style="font-size:24px;font-weight:800;color:{rc};min-width:30px;line-height:1;">#{i+1}</div>
     <div style="flex:1;">
       <div class="rec-title">{row['app']}</div>
-      <div style="font-size:12px;color:#64748b;">{row['ai_carbon_kg']:.1f} kg CO₂e/mo &nbsp;·&nbsp; ${row['ai_cost_usd']:,.0f}/mo</div>
+      <div style="font-size:12px;color:#6b7280;">{row['ai_carbon_kg']:.1f} kg CO₂e/mo &nbsp;·&nbsp; ${row['ai_cost_usd']:,.0f}/mo</div>
     </div>
     <div style="text-align:right;">
       <div style="font-size:24px;font-weight:800;color:{rc};line-height:1;">{row['score']:.2f} / 1.00</div>
-      <div style="font-size:9px;color:#94a3b8;font-family:monospace;">ENERGY DEBT SCORE</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px;">Higher = more urgent</div>
+      <div style="font-size:9px;color:#9ca3af;font-family:Inter,sans-serif;">ENERGY DEBT SCORE</div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:2px;">Higher = more urgent</div>
     </div>
   </div>
-  <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">Score = 60% carbon rank + 40% code risk rank &nbsp;·&nbsp; {score_bar} of maximum debt</div>
-  <div style="background:#f1f5f9;border-radius:3px;height:5px;margin-bottom:8px;">
+  <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">Score = 60% carbon rank + 40% code risk rank &nbsp;·&nbsp; {score_bar} of maximum debt</div>
+  <div style="background:#f3f4f6;border-radius:3px;height:5px;margin-bottom:8px;">
     <div style="background:{rc};height:5px;border-radius:3px;width:{score_bar};"></div>
   </div>
   {badges}
@@ -1240,8 +1484,8 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
             st.markdown('<div class="sh">Code Inefficiency Findings — What to Fix</div>', unsafe_allow_html=True)
             st.caption("From a Semgrep static analysis scan of the apps' source code. Each finding is a pattern that wastes energy at runtime. 🔴 energy-debt = direct compute waste · 🟡 other findings = broader code issues.")
             for f in code_findings[:4]:
-                sev_color = {"HIGH": "#b91c1c", "MEDIUM": "#92400e", "LOW": "#64748b"}.get(f["severity"], "#64748b")
-                sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7", "LOW": "#f1f5f9"}.get(f["severity"], "#f1f5f9")
+                sev_color = {"HIGH": "#ef4444", "MEDIUM": "#92400e", "LOW": "#6b7280"}.get(f["severity"], "#6b7280")
+                sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7", "LOW": "#f3f4f6"}.get(f["severity"], "#f3f4f6")
                 st.markdown(
                     f'<div class="rec" style="margin-bottom:8px;">'
                     f'<div class="rec-title">'
@@ -1250,7 +1494,7 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
                     f'{f["finding"][:80]}{"…" if len(f["finding"])>80 else ""}</div>'
                     f'<div class="rec-body" style="margin-top:4px;">'
                     f'<b>Fix:</b> {f["recommendation"]}</div>'
-                    f'<div style="font-size:11px;color:#94a3b8;">'
+                    f'<div style="font-size:11px;color:#9ca3af;">'
                     f'📁 {f["file_path"]} &nbsp;·&nbsp; 🤖 {f["agent_name"]} · {f["component"]}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -1264,8 +1508,8 @@ elif page == "Optimize":
     st.markdown("## TRACE Optimize: Recommendations")
     st.caption("Apply a recommendation — watch AI cost and carbon drop live")
     st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        'Connect → Observe → <b style="color:#4edea3;">Optimize</b>'
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
+        'Connect → Observe → <b style="color:#10b981;">Optimize</b>'
         '<span style="color:#334155;"> → Prove</span></div>',
         unsafe_allow_html=True,
     )
@@ -1353,8 +1597,8 @@ elif page == "Optimize":
     st.markdown('<div class="sh">Code Inefficiency Fixes</div>', unsafe_allow_html=True)
     st.caption("These findings come from a Semgrep static analysis scan of the apps' source code. Fixing them reduces wasted compute at the code level, complementing the model and region optimizations above.")
     for f in code_findings[:2]:
-        sev_color = {"HIGH": "#b91c1c", "MEDIUM": "#92400e"}.get(f["severity"], "#64748b")
-        sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7"}.get(f["severity"], "#f1f5f9")
+        sev_color = {"HIGH": "#ef4444", "MEDIUM": "#92400e"}.get(f["severity"], "#6b7280")
+        sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7"}.get(f["severity"], "#f3f4f6")
         st.markdown(
             f'<div class="rec">'
             f'<div class="rec-title">'
@@ -1362,7 +1606,7 @@ elif page == "Optimize":
             f'font-size:11px;font-weight:600;margin-right:8px;">{f["severity"]}</span>'
             f'Energy debt: {f["finding"][:70]}{"…" if len(f["finding"])>70 else ""}</div>'
             f'<div class="rec-body">{f["recommendation"]}</div>'
-            f'<div style="font-size:11px;color:#94a3b8;">'
+            f'<div style="font-size:11px;color:#9ca3af;">'
             f'📁 {f["file_path"]} &nbsp;·&nbsp; Impact: {f["estimated_runtime_impact"][:60]}…</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -1405,7 +1649,7 @@ elif page == "Optimize":
       <td>{base_ai_water:,.0f} L</td>
       <td>12.8s</td>
       <td>Low</td>
-      <td><span style="color:#64748b;font-size:12px;">Baseline</span></td>
+      <td><span style="color:#6b7280;font-size:12px;">Baseline</span></td>
     </tr>
     <tr class="balanced">
       <td><b>⭐ Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
@@ -1427,7 +1671,7 @@ elif page == "Optimize":
     </tr>
   </tbody>
 </table>
-<div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+<div style="font-size:11px;color:#9ca3af;margin-top:8px;">
   Projections apply all recommendations in the chosen scenario to the current AI workload. Cloud cost and carbon unchanged.
   Water = AI energy × regional WUE. Latency estimates are illustrative. Quality risk is subjective — review each recommendation before applying.
 </div>
@@ -1442,8 +1686,8 @@ elif page == "Prove":
     st.markdown("## TRACE Prove: Evidence Pack")
     st.caption("Open, auditable · SCI-for-AI methodology · No offsets · Transparent assumptions")
     st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        'Connect → Observe → Optimize → <b style="color:#4edea3;">Prove</b></div>',
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
+        'Connect → Observe → Optimize → <b style="color:#10b981;">Prove</b></div>',
         unsafe_allow_html=True,
     )
 
@@ -1467,7 +1711,7 @@ elif page == "Prove":
         with col_left:
             st.markdown(
                 '<div class="sh">Connected Data Sources '
-                '<span style="font-size:11px;color:#94a3b8;font-weight:400;cursor:help;" '
+                '<span style="font-size:11px;color:#9ca3af;font-weight:400;cursor:help;" '
                 'title="Each source below contributed records to this evidence pack. '
                 'Records = total rows ingested this period. '
                 'Mapped = records successfully matched to TRACE\'s schema (app name, model, region, token counts all present). '
@@ -1486,9 +1730,9 @@ elif page == "Prove":
                 )
                 sources_html += (
                     f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
-                    f'border-bottom:1px solid #f1f5f9;font-size:13px;">'
+                    f'border-bottom:1px solid #f3f4f6;font-size:13px;">'
                     f'<span>{icon} <b>{c["system"]}</b> — {c["type"]}</span>'
-                    f'<span style="color:#64748b;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
+                    f'<span style="color:#6b7280;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
                     f'</div>'
                 )
             st.markdown(f'<div class="evidence-block"><div class="evidence-label">Connected Sources</div>{sources_html}</div>',
@@ -1538,7 +1782,7 @@ elif page == "Prove":
             ]
             ba_html = (
                 '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-                '<thead><tr style="background:#f1f5f9;">'
+                '<thead><tr style="background:#f3f4f6;">'
                 '<th style="padding:8px 10px;text-align:left;">Metric</th>'
                 '<th style="padding:8px 10px;text-align:right;">Before</th>'
                 '<th style="padding:8px 10px;text-align:right;">After</th>'
@@ -1546,11 +1790,11 @@ elif page == "Prove":
                 '</tr></thead><tbody>'
             )
             for metric, before, after, delta in ba_rows:
-                delta_color = "#166534" if delta.startswith("-") else ("#64748b" if delta == "—" else "#b91c1c")
+                delta_color = "#166534" if delta.startswith("-") else ("#6b7280" if delta == "—" else "#ef4444")
                 ba_html += (
-                    f'<tr style="border-bottom:1px solid #e2e8f0;">'
+                    f'<tr style="border-bottom:1px solid #e5e7eb;">'
                     f'<td style="padding:8px 10px;font-weight:500;">{metric}</td>'
-                    f'<td style="padding:8px 10px;text-align:right;color:#64748b;">{before}</td>'
+                    f'<td style="padding:8px 10px;text-align:right;color:#6b7280;">{before}</td>'
                     f'<td style="padding:8px 10px;text-align:right;font-weight:600;">{after}</td>'
                     f'<td style="padding:8px 10px;text-align:right;color:{delta_color};font-weight:600;">{delta}</td>'
                     '</tr>'
@@ -1560,11 +1804,11 @@ elif page == "Prove":
 
             st.markdown('<div class="sh">Applied Optimizations</div>', unsafe_allow_html=True)
             if applied_titles:
-                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;">✅ {t}</div>' for t in applied_titles)
+                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">✅ {t}</div>' for t in applied_titles)
                 st.markdown(f'<div class="evidence-block">{recs_html}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div class="evidence-block" style="color:#94a3b8;font-size:13px;">'
+                    '<div class="evidence-block" style="color:#9ca3af;font-size:13px;">'
                     'No optimizations applied yet. Go to Optimize to apply recommendations.</div>',
                     unsafe_allow_html=True,
                 )
@@ -1652,51 +1896,51 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
             st.markdown('<div class="sh">Standards Alignment</div>', unsafe_allow_html=True)
             st.markdown("""
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
-<thead><tr style="background:#f1f5f9;">
+<thead><tr style="background:#f3f4f6;">
 <th style="padding:8px 10px;text-align:left;">Standard</th>
 <th style="padding:8px 10px;text-align:left;">How TRACE uses it</th>
 </tr></thead>
 <tbody>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://sci.greensoftware.foundation/" target="_blank" style="color:#3b82f6;text-decoration:none;">SCI-for-AI</a>
-    <span style="font-weight:400;color:#64748b;"> (Green Software Foundation)</span>
+    <span style="font-weight:400;color:#6b7280;"> (Green Software Foundation)</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Primary formula: tokens → energy → carbon</td>
+  <td style="padding:8px 10px;color:#374151;">Primary formula: tokens → energy → carbon</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://ghgprotocol.org/corporate-standard" target="_blank" style="color:#3b82f6;text-decoration:none;">GHG Protocol</a>
-    <span style="font-weight:400;color:#64748b;"> / ISO 14064</span>
+    <span style="font-weight:400;color:#6b7280;"> / ISO 14064</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">GHG accounting: operational boundary, location-based, no offsets</td>
+  <td style="padding:8px 10px;color:#374151;">GHG accounting: operational boundary, location-based, no offsets</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/" target="_blank" style="color:#3b82f6;text-decoration:none;">OpenTelemetry GenAI</a>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Token field names (<code>llm.usage.input_tokens</code>)</td>
+  <td style="padding:8px 10px;color:#374151;">Token field names (<code>llm.usage.input_tokens</code>)</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://langfuse.com/docs/tracing" target="_blank" style="color:#3b82f6;text-decoration:none;">Langfuse</a>
-    <span style="font-weight:400;color:#64748b;"> trace schema</span>
+    <span style="font-weight:400;color:#6b7280;"> trace schema</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">LLM usage log shape (app, model, tokens, region, cost)</td>
+  <td style="padding:8px 10px;color:#374151;">LLM usage log shape (app, model, tokens, region, cost)</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://www.cloudcarbonfootprint.org/" target="_blank" style="color:#3b82f6;text-decoration:none;">Cloud Carbon Footprint</a>
-    <span style="font-weight:400;color:#64748b;"> output schema</span>
+    <span style="font-weight:400;color:#6b7280;"> output schema</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Cloud usage log shape (service, region, kWh, cost)</td>
+  <td style="padding:8px 10px;color:#374151;">Cloud usage log shape (service, region, kWh, cost)</td>
 </tr>
 <tr>
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://semgrep.dev/docs/cli-reference/" target="_blank" style="color:#3b82f6;text-decoration:none;">Semgrep</a>
-    <span style="font-weight:400;color:#64748b;"> JSON output</span>
+    <span style="font-weight:400;color:#6b7280;"> JSON output</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;"><code>semgrep --json</code> output for Energy Debt layer</td>
+  <td style="padding:8px 10px;color:#374151;"><code>semgrep --json</code> output for Energy Debt layer</td>
 </tr>
 </tbody></table>
 """, unsafe_allow_html=True)
@@ -1725,7 +1969,7 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
             grid_d.columns = ["Region", "gCO₂e / kWh", "WUE (L/kWh)"]
             fig = px.bar(grid_d, x="gCO₂e / kWh", y="Region", orientation="h",
                          color="gCO₂e / kWh",
-                         color_continuous_scale=["#4edea3", "#f59e0b", "#b91c1c"],
+                         color_continuous_scale=["#10b981", "#f59e0b", "#ef4444"],
                          range_color=[0, 700], template="simple_white")
             fig.update_layout(coloraxis_showscale=False, showlegend=False,
                                margin=dict(l=0, r=0, t=5, b=0), height=175,
