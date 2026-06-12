@@ -53,11 +53,11 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label {
 
 
 def _nav_icon_js() -> str:
-    """JS that directly applies Lucide background icons to sidebar nav labels.
+    """JS that stamps data-trace-nav attributes on sidebar nav labels and injects
+    a <style> block into the parent document covering all interaction states.
 
-    Uses window.parent.document so it works from inside a components.v1.html
-    iframe. Queries by role attribute rather than a fixed CSS path so it is
-    robust to Streamlit's ever-changing wrapper div structure.
+    Using a stylesheet (rather than inline styles) lets us target :hover/:focus/
+    :active with !important, which beats Streamlit's own hover overrides.
     """
     def _uri(paths: str) -> str:
         svg = (
@@ -94,14 +94,23 @@ def _nav_icon_js() -> str:
     var ls=p.document.querySelectorAll(
       'section[data-testid="stSidebar"] [role="radiogroup"] label'
     );
-    ls.forEach(function(l,i){{
-      if(i>=icons.length)return;
-      l.style.paddingLeft='36px';
-      l.style.backgroundImage='url("'+icons[i]+'")';
-      l.style.backgroundRepeat='no-repeat';
-      l.style.backgroundPosition='12px center';
-      l.style.backgroundSize='16px 16px';
+    if(!ls.length)return;
+    // Stamp each label with an index attribute
+    ls.forEach(function(l,i){{if(i<icons.length)l.setAttribute('data-trace-nav',i);}});
+    // Build and inject a stylesheet covering all interaction states
+    var sid='trace-nav-icons';
+    var el=p.document.getElementById(sid);
+    if(!el){{el=p.document.createElement('style');el.id=sid;p.document.head.appendChild(el);}}
+    var base='section[data-testid="stSidebar"] [data-trace-nav]';
+    var css=base+'{{padding-left:36px!important;background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;}}';
+    icons.forEach(function(u,i){{
+      var s=base+'="'+i+'"';
+      var img='background-image:url("'+u+'")!important;';
+      var pos='background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;padding-left:36px!important;';
+      css+=s+'{{'+img+pos+'}}';
+      css+=s+':hover,'+s+':focus,'+s+':active,'+s+'[class*="selected"],'+s+'[aria-checked]{{'+img+pos+'}}';
     }});
+    el.textContent=css;
   }}
   applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
 }})();"""
@@ -1313,7 +1322,7 @@ They are tracked separately because they have **different optimization levers**.
         st.markdown('<div class="sh">Agent Traces</div>', unsafe_allow_html=True)
         st.caption("Each row is one step in an AI agent workflow — showing the exact cost, carbon, and quality of every model call.")
 
-        with st.expander("How to read this graph", expanded=True):
+        with st.expander("How to read this graph", expanded=False):
             st.markdown("""
 **Each box = one step in an AI agent workflow** (one call to a model).
 
