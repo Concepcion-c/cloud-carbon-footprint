@@ -104,7 +104,7 @@ def _nav_icon_js() -> str:
     var base='section[data-testid="stSidebar"] [data-trace-nav]';
     var css=base+'{{padding-left:36px!important;background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;}}';
     icons.forEach(function(u,i){{
-      var s=base+'="'+i+'"';
+      var s='section[data-testid="stSidebar"] [data-trace-nav="'+i+'"]';
       var img='background-image:url("'+u+'")!important;';
       var pos='background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;padding-left:36px!important;';
       css+=s+'{{'+img+pos+'}}';
