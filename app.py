@@ -153,6 +153,7 @@ h1, h2, h3, h4, h5, h6, p, label { font-family: Inter, sans-serif !important; }
   font-family: Inter, sans-serif !important;
 }
 #MainMenu, footer, header { visibility: hidden; }
+[data-testid="stElementToolbar"] { display: none !important; }
 .stApp {
   background:
     linear-gradient(to bottom, transparent 0%, #F1F8FF 100%),
@@ -766,12 +767,12 @@ def render_trace_graph(spans):
 st.markdown(_nav_icon_css(), unsafe_allow_html=True)
 with st.sidebar:
     st.markdown(
-        '<div style="padding:16px 4px 6px;">'
+        '<div style="padding:16px 4px 40px;">'
         f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
         f'{_svg("leaf", 20, "#4ade80")} COOP</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'CONNECT · OBSERVE · OPTIMIZE · PROVE</div>'
-        '<div style="margin-top:8px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
+        '<div style="margin-top:40px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
         f'{_svg("landmark", 18, "#CECCE8")}'
         '<div style="display:flex;flex-direction:column;gap:2px;">'
         '<span style="color:#FFFFFF;font-size:13px;font-weight:700;line-height:1.2;">Northstar Bank</span>'
