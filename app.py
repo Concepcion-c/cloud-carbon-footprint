@@ -1135,11 +1135,6 @@ Requires a redaction filter to be configured.
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Observe":
     st.markdown("## AI Workload Dashboard")
-    st.markdown(
-        f'<div class="synth">{_svg("alert-triangle", 14, "#92400e")} <b>Synthetic client data</b> — shaped like real AI/Works + Langfuse + CCF exports. '
-        'All numbers illustrative. Coefficients from public benchmarks.</div>',
-        unsafe_allow_html=True,
-    )
 
     tab_overview, tab_breakdown, tab_deepdive = st.tabs(
         ["Overview", "Breakdown", "Deep Dive"]
