@@ -7,6 +7,87 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as _components
+
+
+# ── Lucide icon helpers ────────────────────────────────────────────────────────
+def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
+    """Return an inline Lucide SVG for use in HTML markdown blocks."""
+    _PATHS = {
+        "leaf":           '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+        "folder":         '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
+        "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+        "info":           '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        "check":          '<path d="M20 6 9 17l-5-5"/>',
+        "check-circle":   '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+        "x":              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        "hash":           '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="14" y1="3" y2="21"/>',
+        "clock":          '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        "dollar-sign":    '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        "star":           '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        "zap":            '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+        "paperclip":      '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+        "download":       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        "file-text":      '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>',
+    }
+    inner = _PATHS.get(name, "")
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
+        f'viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" '
+        f'stroke-linecap="round" stroke-linejoin="round" '
+        f'style="display:inline-block;vertical-align:middle;flex-shrink:0;">'
+        f'{inner}</svg>'
+    )
+
+
+def _nav_icon_css() -> str:
+    """Generate CSS that injects Lucide background icons onto each sidebar nav label."""
+    def _uri(paths: str) -> str:
+        svg = (
+            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' "
+            "viewBox='0 0 24 24' fill='none' stroke='%23CECCE8' stroke-width='2' "
+            "stroke-linecap='round' stroke-linejoin='round'>"
+            + paths + "</svg>"
+        )
+        return f'url("data:image/svg+xml,{svg.replace(chr(60), "%3C").replace(chr(62), "%3E")}")'
+
+    plug = _uri(
+        "<path d='M12 22v-5'/><path d='M9 8V2'/><path d='M15 8V2'/>"
+        "<path d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/>"
+    )
+    dash = _uri(
+        "<rect width='7' height='9' x='3' y='3' rx='1'/>"
+        "<rect width='7' height='5' x='14' y='3' rx='1'/>"
+        "<rect width='7' height='9' x='14' y='12' rx='1'/>"
+        "<rect width='7' height='5' x='3' y='16' rx='1'/>"
+    )
+    zap = _uri("<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>")
+    clipboard = _uri(
+        "<rect width='8' height='4' x='8' y='2' rx='1' ry='1'/>"
+        "<path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/>"
+        "<path d='M12 11h4'/><path d='M12 16h4'/><path d='M8 11h.01'/><path d='M8 16h.01'/>"
+    )
+    return f"""<style>
+section[data-testid="stSidebar"] div[role="radiogroup"] label {{
+  padding-left: 36px !important;
+  background-repeat: no-repeat !important;
+  background-position: 12px center !important;
+  background-size: 16px 16px !important;
+}}
+section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(1) {{
+  background-image: {plug} !important;
+}}
+section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(2) {{
+  background-image: {dash} !important;
+}}
+section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(3) {{
+  background-image: {zap} !important;
+}}
+section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(4) {{
+  background-image: {clipboard} !important;
+}}
+</style>"""
+
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -611,7 +692,7 @@ def render_trace_graph(spans):
         retries = span.get("retry_count", 0)
         if retries >= 3:
             node_cls = "trace-node-err"
-            retry_html = f'<div style="background:#fee2e2;color:#ef4444;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">⚠ {retries} retries</div>'
+            retry_html = f'<div style="background:#fee2e2;color:#ef4444;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-top:5px;">{_svg("alert-triangle", 10, "#ef4444")} {retries} retries</div>'
         elif retries >= 1:
             node_cls = "trace-node-warn"
             retry_html = f'<div style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">↺ {retries} retr{"y" if retries == 1 else "ies"}</div>'
@@ -626,15 +707,20 @@ def render_trace_graph(spans):
         co2e = span.get("co2e_kg", 0.0)
         model_short = span["model_name"].replace("claude-sonnet-4-6", "Sonnet 4.6").replace("claude-opus-4-8", "Opus 4.8").replace("gpt-4.1", "GPT-4.1")
 
+        t_icon   = _svg("hash",        11, "#6b7280")
+        l_icon   = _svg("clock",       11, "#6b7280")
+        c_icon   = _svg("dollar-sign", 11, "#6b7280")
+        co2_icon = _svg("leaf",        11, "#10b981")
+        ev_icon  = _svg("star",        11, "#f59e0b")
         box = f'''<div class="trace-node {node_cls}">
   <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:3px;">{span["agent_name"]}</div>
   <div style="font-size:10px;color:#6b7280;font-family:Inter,sans-serif;margin-bottom:7px;">{model_short}</div>
   <div style="font-size:11px;color:#374151;line-height:1.75;">
-    <div>🔡 {span["input_tokens"]:,}→{span["output_tokens"]:,}</div>
-    <div>⏱ {span["latency_ms"]/1000:.1f}s</div>
-    <div>💵 ${span["cost_usd"]:.2f}</div>
-    <div>🌿 {co2e:.3f} kg</div>
-    <div>★ {span["eval_score"]:.2f}</div>
+    <div style="display:flex;align-items:center;gap:4px;">{t_icon} {span["input_tokens"]:,}→{span["output_tokens"]:,}</div>
+    <div style="display:flex;align-items:center;gap:4px;">{l_icon} {span["latency_ms"]/1000:.1f}s</div>
+    <div style="display:flex;align-items:center;gap:4px;">{c_icon} ${span["cost_usd"]:.2f}</div>
+    <div style="display:flex;align-items:center;gap:4px;">{co2_icon} {co2e:.3f} kg</div>
+    <div style="display:flex;align-items:center;gap:4px;">{ev_icon} {span["eval_score"]:.2f}</div>
     <div style="color:{acc_color};font-size:10px;font-weight:600;">{acc_label}</div>
   </div>
   {retry_html}
@@ -647,27 +733,37 @@ def render_trace_graph(spans):
 
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
+st.markdown(_nav_icon_css(), unsafe_allow_html=True)
 with st.sidebar:
     st.markdown(
         '<div style="padding:16px 4px 6px;">'
-        '<div style="font-size:22px;font-weight:700;color:#CECCE8;letter-spacing:-.02em;">🌿 TRACE</div>'
+        f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
+        f'{_svg("leaf", 20, "#4ade80")} TRACE</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'AI GREENOPS DASHBOARD</div>'
-        '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;">'
-        '📁 Northstar Bank<br>'
+        '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:6px;">'
+        f'{_svg("folder", 14, "#CECCE8")} Northstar Bank<br>'
         '<span style="color:#CECCE8;font-size:10px;">Digital Banking Modernization</span></div>'
         '</div>',
         unsafe_allow_html=True,
     )
     _NAV = {
-        "🔌  Connect":  "Connect",
-        "📊  Observe":  "Observe",
-        "⚡  Optimize": "Optimize",
-        "📋  Prove":    "Prove",
+        "Connect":  "Connect",
+        "Observe":  "Observe",
+        "Optimize": "Optimize",
+        "Prove":    "Prove",
     }
+    _nav_keys = list(_NAV.keys())
+    # Read URL param only on first session load to set the initial radio position
+    if "_nav_idx" not in st.session_state:
+        _saved = st.query_params.get("page", "Connect")
+        _NAV_INV = {v: k for k, v in _NAV.items()}
+        _init_label = _NAV_INV.get(_saved, "Connect")
+        st.session_state._nav_idx = _nav_keys.index(_init_label) if _init_label in _nav_keys else 0
     _page_raw = st.radio(
         "",
-        list(_NAV.keys()),
+        _nav_keys,
+        index=st.session_state._nav_idx,
         label_visibility="collapsed",
     )
     page = _NAV[_page_raw]
@@ -685,12 +781,21 @@ with st.sidebar:
             st.rerun()
 
     st.markdown(
-        '<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;">'
-        '⚠️ Synthetic client data<br>SCI-for-AI methodology<br>'
-        'AI:Works Global Hackathon 2026</div>',
+        f'<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;display:flex;align-items:flex-start;gap:5px;">'
+        f'{_svg("alert-triangle", 12, "#CECCE8")}'
+        '<span>Synthetic client data<br>SCI-for-AI methodology<br>AI:Works Global Hackathon 2026</span></div>',
         unsafe_allow_html=True,
     )
 
+
+# Silently update the browser URL to persist the current page across refreshes.
+# Uses replaceState so the back button is unaffected. Unique timestamp forces
+# React to re-execute the script on every rerun.
+_components.html(
+    f"<script>window.parent.history.replaceState(null,'','?page={page}');"
+    f"// {time.time()}</script>",
+    height=0,
+)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE: CONNECT
@@ -698,12 +803,6 @@ with st.sidebar:
 if page == "Connect":
     st.markdown("## TRACE Connect: Data Sources")
     st.caption("Every connected system, its status, data freshness, and normalization health")
-    st.markdown(
-        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
-        '<b style="color:#10b981;">Connect</b>'
-        '<span style="color:#334155;"> → Observe → Optimize → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
 
     # ── Summary stats ──
     healthy  = sum(1 for c in CONNECTOR_STATE if c["status"] in ("Connected", "Uploaded", "Active"))
@@ -747,13 +846,13 @@ if page == "Connect":
             st.session_state.mapping_saved    = False
             st.session_state.norm_done        = False
     with col_btn2:
-        st.button("⟳ Run Sync", use_container_width=True, disabled=True,
+        st.button("Run Sync", use_container_width=True, disabled=True,
                   help="In production TRACE: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
     with col_btn3:
         st.button("↑ Upload File", use_container_width=True, disabled=True,
                   help="Use '＋ Connect New System' to upload a new data source file.")
     with col_btn4:
-        st.button("📋 Norm Log", use_container_width=True, disabled=True,
+        st.button("Norm Log", use_container_width=True, disabled=True,
                   help="In production TRACE: shows the normalization history — which records mapped successfully and which were flagged. Simulated in this demo.")
 
     # ── Systems table ──
@@ -862,7 +961,7 @@ if page == "Connect":
                     if sample_path.exists():
                         with open(sample_path, "rb") as f_sample:
                             st.download_button(
-                                "📎 Download sample file",
+                                "Download sample file",
                                 data=f_sample,
                                 file_name="finops_cloud_export_sample.csv",
                                 mime="text/csv",
@@ -882,8 +981,8 @@ if page == "Connect":
 
                         st.success(
                             f"**File validated.** {n_total:,} records found.\n\n"
-                            f"⚠️ {n_no_region} records missing `region`.\n\n"
-                            f"⚠️ {n_no_workspace} records missing `tags_workspace`.\n\n"
+                            f"{n_no_region} records missing `region`.\n\n"
+                            f"{n_no_workspace} records missing `tags_workspace`.\n\n"
                             f"Proceed to field mapping?"
                         )
 
@@ -915,7 +1014,7 @@ if page == "Connect":
                     st.markdown("""
 <div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.7;">
 <b>Store full prompt / response</b> — saves the complete text of every request and response.
-⚠️ Only use if content is non-sensitive and your data governance policy permits it.<br>
+Note: Only use if content is non-sensitive and your data governance policy permits it.<br>
 <b>Store metadata only</b> (default — recommended) — saves token counts, model, latency, cost, and eval scores. No actual text stored.
 All carbon and cost calculations work with metadata only.<br>
 <b>Store redacted prompt / response</b> — saves the text with PII automatically removed (names, account numbers, etc.).
@@ -1007,19 +1106,13 @@ Requires a redaction filter to be configured.
 elif page == "Observe":
     st.markdown("## TRACE Observe: AI Workload Dashboard")
     st.markdown(
-        '<div class="synth">⚠️ <b>Synthetic client data</b> — shaped like real AI/Works + Langfuse + CCF exports. '
+        f'<div class="synth">{_svg("alert-triangle", 14, "#92400e")} <b>Synthetic client data</b> — shaped like real AI/Works + Langfuse + CCF exports. '
         'All numbers illustrative. Coefficients from public benchmarks.</div>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        '<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">'
-        'Connect → <b style="color:#10b981;">Observe</b>'
-        '<span style="color:#334155;"> → Optimize → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
 
-    tab_dash, tab_detail, tab_traces, tab_debt = st.tabs(
-        ["📊 Dashboard", "🔍 AI Detail", "🔗 Agent Traces", "⚡ Energy Debt"]
+    tab_overview, tab_breakdown, tab_deepdive = st.tabs(
+        ["Overview", "Breakdown", "Deep Dive"]
     )
 
     any_applied = bool(st.session_state.applied_recs)
@@ -1030,11 +1123,11 @@ elif page == "Observe":
     base_tokens       = llm_raw["total_tokens"].sum()
     base_traces       = int(llm_raw["trace_count"].sum()) if "trace_count" in llm_raw.columns else 0
 
-    # ── Dashboard tab ──
-    with tab_dash:
-        st.caption("📅 May 2026 (30 days) · Cloud infrastructure + AI inference combined · Synthetic Northstar Bank data · SCI-for-AI methodology")
+    # ── Overview tab ──
+    with tab_overview:
+        st.caption("May 2026 (30 days) · Cloud infrastructure + AI inference combined · Synthetic Northstar Bank data · SCI-for-AI methodology")
 
-        with st.expander("ℹ️ What's the difference between AI inference and cloud infrastructure?", expanded=False):
+        with st.expander("What's the difference between AI inference and cloud infrastructure?", expanded=False):
             st.markdown("""
 **AI inference** = the energy and carbon of *calling* an AI model — every prompt sent to Claude, GPT-4, or similar.
 Measured in tokens; tracked via Langfuse or an AI gateway. Optimized by changing model, routing, or prompt design.
@@ -1045,78 +1138,44 @@ Measured in kWh from cloud billing exports; tracked via CCF methodology. Optimiz
 They are tracked separately because they have **different optimization levers**. TRACE surfaces both so you can act on either.
 """)
 
-        st.markdown('<div class="sh">Total Footprint</div>', unsafe_allow_html=True)
-        c1, c2, c3, c4, c5 = st.columns(5)
+        # Row 1: activity metrics
+        st.markdown('<div class="sh">Activity</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
         with c1:
-            if any_applied:
-                d = total_cost_curr - total_cost_base
-                kpi("Total Cost", f"${total_cost_curr:,.0f}",
-                    delta=f"{d/total_cost_base*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
-            else:
-                kpi("Total Cost", f"${total_cost_base:,.0f}", sub="AI + cloud combined")
-        with c2:
-            if any_applied:
-                d = total_carbon_curr - total_carbon_base
-                kpi("Total Carbon", f"{total_carbon_curr:,.1f} kg",
-                    delta=f"{d/total_carbon_base*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
-            else:
-                kpi("Total Carbon", f"{total_carbon_base:,.1f} kg CO₂e", sub="AI + cloud combined")
-        with c3:
-            ai_energy = ai_curr["ai_energy_kwh"].sum()
-            cloud_energy = cloud_raw["usage_kwh"].sum()
-            kpi("Total Energy", f"{ai_energy + cloud_energy:,.0f} kWh",
-                sub=f"{ai_energy/(ai_energy+cloud_energy)*100:.0f}% from AI inference")
-        with c4:
-            total_water = curr_ai_water + base_cloud_water
-            kpi("Total Water", f"{total_water:,.0f} L",
-                sub=f"{curr_ai_water/total_water*100:.0f}% from AI inference")
-        with c5:
             kpi("Total Tokens", f"{base_tokens/1e6:.1f}M",
                 sub=f"across {llm_raw['app'].nunique()} apps · {llm_raw['model'].nunique()} models")
-
-        st.markdown('<div class="sh">AI Inference</div>', unsafe_allow_html=True)
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            if any_applied:
-                d = curr_ai_cost - base_ai_cost
-                kpi("AI Cost", f"${curr_ai_cost:,.0f}",
-                    delta=f"{d/base_ai_cost*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
-            else:
-                kpi("AI Cost", f"${base_ai_cost:,.0f}", sub=f"across {llm_raw['app'].nunique()} apps")
         with c2:
-            if any_applied:
-                d = curr_ai_carbon - base_ai_carbon
-                kpi("AI Carbon", f"{curr_ai_carbon:,.1f} kg",
-                    delta=f"{d/base_ai_carbon*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
-            else:
-                kpi("AI Carbon", f"{base_ai_carbon:,.1f} kg CO₂e",
-                    sub=f"{base_ai_carbon/total_carbon_base*100:.0f}% of total")
-        with c3:
-            ai_energy_only = ai_curr["ai_energy_kwh"].sum()
-            kpi("AI Energy", f"{ai_energy_only:,.0f} kWh",
-                sub=f"{llm_raw['model'].nunique()} models tracked")
-        with c4:
-            if any_applied:
-                d = curr_ai_water - base_ai_water
-                kpi("AI Water", f"{curr_ai_water:,.0f} L",
-                    delta=f"{d/base_ai_water*100:+.1f}%  ({d:+,.0f} L)", good=(d <= 0))
-            else:
-                kpi("AI Water", f"{base_ai_water:,.0f} L", sub="energy × WUE per region")
-        with c5:
             total_runs = len(trace_data["traces"])
             kpi("Traced Workflows", str(total_runs), sub=f"from {trace_data['total_traces']:,} total in ledger")
 
-        st.markdown('<div class="sh">Cloud Infrastructure</div>', unsafe_allow_html=True)
+        # Row 2: impact metrics — total big number + AI/Cloud breakdown inline
+        st.markdown('<div class="sh">Footprint</div>', unsafe_allow_html=True)
+        ai_energy = ai_curr["ai_energy_kwh"].sum()
+        cloud_energy = cloud_raw["usage_kwh"].sum()
+        total_water = curr_ai_water + base_cloud_water
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            kpi("Cloud Cost", f"${base_cloud_cost:,.0f}")
+            if any_applied:
+                d = total_cost_curr - total_cost_base
+                kpi("Cost", f"${total_cost_curr:,.0f}",
+                    delta=f"{d/total_cost_base*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
+            else:
+                kpi("Cost", f"${total_cost_base:,.0f}",
+                    sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;${base_ai_cost:,.0f}<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;${base_cloud_cost:,.0f}')
         with c2:
-            kpi("Cloud Carbon", f"{base_cloud_carbon:,.1f} kg CO₂e",
-                sub=f"{base_cloud_carbon/total_carbon_base*100:.0f}% of total")
+            if any_applied:
+                d = total_carbon_curr - total_carbon_base
+                kpi("Carbon", f"{total_carbon_curr:,.1f} kg",
+                    delta=f"{d/total_carbon_base*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
+            else:
+                kpi("Carbon", f"{total_carbon_base:,.1f} kg CO₂e",
+                    sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{base_ai_carbon:,.1f} kg<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{base_cloud_carbon:,.1f} kg')
         with c3:
-            kpi("Cloud Energy", f"{cloud_raw['usage_kwh'].sum():,.0f} kWh")
+            kpi("Energy", f"{ai_energy + cloud_energy:,.0f} kWh",
+                sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{ai_energy:,.0f} kWh<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{cloud_energy:,.0f} kWh')
         with c4:
-            kpi("Cloud Water", f"{base_cloud_water:,.0f} L", sub="usage_kWh × WUE per region")
+            kpi("Water", f"{total_water:,.0f} L",
+                sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{curr_ai_water:,.0f} L<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{base_cloud_water:,.0f} L')
 
         st.markdown('<div class="sh">Daily Carbon Trend</div>', unsafe_allow_html=True)
         daily_ai    = ai_curr.groupby("date")["ai_carbon_kg"].sum().reset_index()
@@ -1128,7 +1187,7 @@ They are tracked separately because they have **different optimization levers**.
 
         fig = px.area(
             daily_long, x="date", y="kg CO₂e", color="Source",
-            color_discrete_map={"AI Inference": "#059669", "Cloud Infra": "#9ca3af"},
+            color_discrete_map={"AI Inference": "#7C3AED", "Cloud Infra": "#2563EB"},
             template="simple_white",
         )
         fig.update_layout(
@@ -1140,8 +1199,8 @@ They are tracked separately because they have **different optimization levers**.
         st.plotly_chart(fig, use_container_width=True)
 
     # ── AI Detail tab ──
-    with tab_detail:
-        st.caption("Carbon, energy, water, and cost by app, model, and region · `tokens ÷ 1M × kWh/1M × gCO₂e/kWh`")
+    with tab_breakdown:
+        st.caption("AI usage cross-referenced with carbon, energy, water, and cost · `tokens ÷ 1M × kWh/1M × gCO₂e/kWh`")
 
         by_app = (ai_curr
                   .groupby("app")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "total_tokens"]]
@@ -1153,7 +1212,7 @@ They are tracked separately because they have **different optimization levers**.
         top_c_pct    = top["ai_carbon_kg"] / by_app["ai_carbon_kg"].sum() * 100
         top_cost_pct = top["ai_cost_usd"]  / by_app["ai_cost_usd"].sum()  * 100
         st.warning(
-            f"⚡ **{top['app']}** — **{top_c_pct:.0f}% of AI carbon** and "
+            f"**{top['app']}** — **{top_c_pct:.0f}% of AI carbon** and "
             f"**{top_cost_pct:.0f}% of AI cost**. "
             f"Why? It runs a **large model** (1.2 kWh/1M tokens — the most energy-intensive class) "
             f"in **ap-south / Mumbai** (630 gCO₂e/kWh — India's grid is 3× dirtier than Oregon's). "
@@ -1161,131 +1220,57 @@ They are tracked separately because they have **different optimization levers**.
             f"→ Fix one app, cut ~half the AI footprint."
         )
 
-        PALETTE = ["#111827", "#059669", "#10b981", "#9ca3af", "#e5e7eb"]
+        group_by = st.radio("Group by", ["App", "Model", "Region"], horizontal=True, key="obs_groupby")
+
+        if group_by == "App":
+            grouped = (ai_curr
+                       .groupby("app")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index())
+            grouped.columns = ["App", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)"]
+            label_col = "App"
+        elif group_by == "Model":
+            grouped = (ai_curr
+                       .groupby("model")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index())
+            grouped.columns = ["Model", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)"]
+            label_col = "Model"
+        else:
+            grouped = (ai_curr
+                       .groupby("region")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index()
+                       .merge(grid[["region", "g_co2e_per_kwh", "wue_liters_per_kwh"]], on="region", how="left"))
+            grouped.columns = ["Region", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)", "gCO₂e/kWh", "WUE (L/kWh)"]
+            label_col = "Region"
+
+        st.markdown('<div class="sh">AI Usage × Impact — All Metrics</div>', unsafe_allow_html=True)
+        st.dataframe(grouped, use_container_width=True, hide_index=True)
+
+        PALETTE = ["#7C3AED", "#9333EA", "#A855F7", "#C4B5FD", "#6D28D9"]
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown('<div class="sh">Carbon by App (kg CO₂e / month)</div>', unsafe_allow_html=True)
-            fig = px.bar(by_app, x="ai_carbon_kg", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_carbon_kg": "kg CO₂e", "app": ""})
+            st.markdown(f'<div class="sh">Carbon by {group_by} (kg CO₂e / month)</div>', unsafe_allow_html=True)
+            fig = px.bar(grouped, x="Carbon (kg CO₂e)", y=label_col, orientation="h",
+                         color=label_col, color_discrete_sequence=PALETTE, template="simple_white",
+                         labels={"Carbon (kg CO₂e)": "kg CO₂e", label_col: ""})
             fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
                                height=260, font=dict(family="Inter", size=12))
             st.plotly_chart(fig, use_container_width=True)
         with col2:
-            st.markdown('<div class="sh">Cost by App (USD / month)</div>', unsafe_allow_html=True)
-            fig = px.bar(by_app, x="ai_cost_usd", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_cost_usd": "USD", "app": ""})
+            st.markdown(f'<div class="sh">Cost by {group_by} (USD / month)</div>', unsafe_allow_html=True)
+            fig = px.bar(grouped, x="Cost (USD)", y=label_col, orientation="h",
+                         color=label_col, color_discrete_sequence=PALETTE, template="simple_white",
+                         labels={"Cost (USD)": "USD", label_col: ""})
             fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
                                height=260, font=dict(family="Inter", size=12))
             st.plotly_chart(fig, use_container_width=True)
 
-        st.markdown('<div class="sh">Energy & Water by App</div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            fig = px.bar(by_app, x="ai_energy_kwh", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_energy_kwh": "kWh", "app": ""})
-            fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
-                               height=260, font=dict(family="Inter", size=12),
-                               title=dict(text="Energy by App (kWh / month)", font=dict(size=12)))
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.bar(by_app, x="ai_water_liters", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_water_liters": "Liters", "app": ""})
-            fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
-                               height=260, font=dict(family="Inter", size=12),
-                               title=dict(text="Water by App (L / month · energy × WUE)", font=dict(size=12)))
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown('<div class="sh">By Model</div>', unsafe_allow_html=True)
-        by_model = (ai_curr.groupby("model")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-                    .sum().reset_index().sort_values("ai_carbon_kg", ascending=False))
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            fig = px.pie(by_model, values="ai_carbon_kg", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Carbon by Model")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.pie(by_model, values="ai_cost_usd", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Cost by Model")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col3:
-            fig = px.pie(by_model, values="ai_energy_kwh", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Energy by Model (kWh)")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col4:
-            fig = px.pie(by_model, values="ai_water_liters", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Water by Model (L)")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown('<div class="sh">By Region (carbon · energy · water)</div>', unsafe_allow_html=True)
-        by_region = (ai_curr.groupby("region")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-                     .sum().reset_index()
-                     .merge(grid, on="region"))
-        by_region["label"] = by_region["region"] + "  (" + by_region["g_co2e_per_kwh"].astype(str) + " g/kWh)"
-        by_region = by_region.sort_values("ai_carbon_kg", ascending=False)
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            fig = px.bar(by_region, x="label", y="ai_carbon_kg",
-                         color="g_co2e_per_kwh",
-                         color_continuous_scale=["#10b981", "#f59e0b", "#ef4444"],
-                         range_color=[100, 700], template="simple_white",
-                         labels={"label": "Region", "ai_carbon_kg": "kg CO₂e", "g_co2e_per_kwh": "gCO₂e/kWh"},
-                         title="Carbon by Region (kg CO₂e)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.bar(by_region, x="label", y="ai_energy_kwh",
-                         color="ai_energy_kwh",
-                         color_continuous_scale=["#bfdbfe", "#3b82f6", "#1e3a8a"],
-                         template="simple_white",
-                         labels={"label": "Region", "ai_energy_kwh": "kWh"},
-                         title="Energy by Region (kWh)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        with col3:
-            fig = px.bar(by_region, x="label", y="ai_water_liters",
-                         color="wue_liters_per_kwh",
-                         color_continuous_scale=["#bae6fd", "#0284c7", "#075985"],
-                         template="simple_white",
-                         labels={"label": "Region", "ai_water_liters": "Liters", "wue_liters_per_kwh": "WUE"},
-                         title="Water by Region (L · energy × WUE)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        st.caption(
-            "Dirtiest grids drive carbon; wettest / hottest climates drive water. Region shift addresses both. "
-            "ap-south (Mumbai) scores worst on both: 630 gCO₂e/kWh grid + WUE 1.8 L/kWh — "
-            "3× dirtier and 2× more water-intensive than us-west (Oregon). "
-            "Shifting Support-Bot to Oregon cuts carbon AND water in the same move."
-        )
-        st.dataframe(
-            by_region[["region", "g_co2e_per_kwh", "wue_liters_per_kwh", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-            .rename(columns={"region": "Region", "g_co2e_per_kwh": "gCO₂e/kWh", "wue_liters_per_kwh": "WUE (L/kWh)",
-                              "ai_carbon_kg": "Carbon (kg)", "ai_energy_kwh": "Energy (kWh)", "ai_water_liters": "Water (L)"}),
-            use_container_width=True, hide_index=True,
-        )
+        if group_by == "Region":
+            st.caption(
+                "Dirtiest grids drive carbon; wettest / hottest climates drive water. Region shift addresses both. "
+                "ap-south (Mumbai) scores worst on both: 630 gCO₂e/kWh grid + WUE 1.8 L/kWh — "
+                "3× dirtier and 2× more water-intensive than us-west (Oregon). "
+                "Shifting Support-Bot to Oregon cuts carbon AND water in the same move."
+            )
 
         st.markdown('<div class="sh">Full Detail — App × Model × Region</div>', unsafe_allow_html=True)
         detail = (ai_curr
@@ -1301,31 +1286,32 @@ They are tracked separately because they have **different optimization levers**.
         detail["Tokens"]       = detail["Tokens"].map("{:,.0f}".format)
         st.dataframe(detail, use_container_width=True, hide_index=True)
 
-    # ── Agent Traces tab ──
-    with tab_traces:
+    # ── Deep Dive tab (Agent Traces + Energy Debt) ──
+    with tab_deepdive:
+        st.markdown('<div class="sh">Agent Traces</div>', unsafe_allow_html=True)
         st.caption("Each row is one step in an AI agent workflow — showing the exact cost, carbon, and quality of every model call.")
 
-        with st.expander("🗺️ How to read this graph", expanded=True):
+        with st.expander("How to read this graph", expanded=True):
             st.markdown("""
 **Each box = one step in an AI agent workflow** (one call to a model).
 
 **Border color shows health:**
-- 🟢 **Green** = Clean run (0 retries)
-- 🟡 **Amber** = Some retries (1–2 retries)
-- 🔴 **Red** = High retries (3+ retries)
+- **Green border** = Clean run (0 retries)
+- **Amber border** = Some retries (1–2 retries)
+- **Red border** = High retries (3+ retries)
 
 **Inside each box:**
-| Icon | Meaning |
+| Label | Meaning |
 |---|---|
-| 🔡 | Tokens **in → out** (input tokens → output tokens) |
-| ⏱ | **Latency** — how long the step took |
-| 💵 | **Cost** in USD for this step |
-| 🌿 | **Carbon** in kg CO₂e for this step |
-| ★ | **Eval score** — output quality (0 = poor · 1 = perfect) |
-| ✓ Accepted | Output was **used** by the next step |
-| ✗ Rejected | Output was **discarded** — quality too low or agent retried |
+| Tokens | Tokens **in → out** (input tokens → output tokens) |
+| Latency | How long the step took |
+| Cost | Cost in USD for this step |
+| Carbon | Carbon in kg CO₂e for this step |
+| Eval | Output quality score (0 = poor · 1 = perfect) |
+| Accepted | Output was **used** by the next step |
+| Rejected | Output was **discarded** — quality too low or agent retried |
 
-> ⚠️ **Retries = wasted compute.** A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon.
+> **Retries = wasted compute.** A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon.
 > Retries are invisible in billing dashboards — TRACE surfaces them so you can fix the prompt.
 """)
 
@@ -1355,7 +1341,7 @@ They are tracked separately because they have **different optimization levers**.
         worst = max(t_spans, key=lambda s: s.get("retry_count", 0))
         if worst["retry_count"] > 0:
             st.error(
-                f"⚠️ **{worst['agent_name']}** has the highest retry count "
+                f"**{worst['agent_name']}** has the highest retry count "
                 f"(**{worst['retry_count']} retries**). "
                 f"This step accounts for ${worst['cost_usd']:.2f} of the trace cost "
                 f"and {worst.get('co2e_kg', 0):.3f} kg CO₂e. "
@@ -1389,10 +1375,10 @@ They are tracked separately because they have **different optimization levers**.
             unsafe_allow_html=True,
         )
 
-    # ── Energy Debt tab ──
-    with tab_debt:
+        st.divider()
+        st.markdown('<div class="sh">Energy Debt</div>', unsafe_allow_html=True)
         st.caption("Apps ranked by blended score: 60% runtime carbon + 40% code-risk")
-        st.info("""**⚡ What is Energy Debt?**
+        st.info("""**What is Energy Debt?**
 
 Energy Debt measures two things at once for each AI application:
 
@@ -1448,7 +1434,7 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 
         worst_app = assess.iloc[0]
         st.error(
-            f"🔴 **{worst_app['app']}** — Energy Debt Score **{worst_app['score']:.2f} / 1.00** · "
+            f"**{worst_app['app']}** — Energy Debt Score **{worst_app['score']:.2f} / 1.00** · "
             f"{worst_app['ai_carbon_kg']:.1f} kg CO₂e/mo · {int(worst_app['semgrep_total'])} findings"
         )
 
@@ -1487,7 +1473,7 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 
         if code_findings:
             st.markdown('<div class="sh">Code Inefficiency Findings — What to Fix</div>', unsafe_allow_html=True)
-            st.caption("From a Semgrep static analysis scan of the apps' source code. Each finding is a pattern that wastes energy at runtime. 🔴 energy-debt = direct compute waste · 🟡 other findings = broader code issues.")
+            st.caption("From a Semgrep static analysis scan of the apps' source code. Each finding is a pattern that wastes energy at runtime. energy-debt findings = direct compute waste · other findings = broader code issues.")
             for f in code_findings[:4]:
                 sev_color = {"HIGH": "#ef4444", "MEDIUM": "#92400e", "LOW": "#6b7280"}.get(f["severity"], "#6b7280")
                 sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7", "LOW": "#f3f4f6"}.get(f["severity"], "#f3f4f6")
@@ -1499,8 +1485,8 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
                     f'{f["finding"][:80]}{"…" if len(f["finding"])>80 else ""}</div>'
                     f'<div class="rec-body" style="margin-top:4px;">'
                     f'<b>Fix:</b> {f["recommendation"]}</div>'
-                    f'<div style="font-size:11px;color:#9ca3af;">'
-                    f'📁 {f["file_path"]} &nbsp;·&nbsp; 🤖 {f["agent_name"]} · {f["component"]}</div>'
+                    f'<div style="font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:4px;">'
+                    f'{_svg("folder", 12, "#9ca3af")} {f["file_path"]} &nbsp;·&nbsp; {f["agent_name"]} · {f["component"]}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -1512,12 +1498,6 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 elif page == "Optimize":
     st.markdown("## TRACE Optimize: Recommendations")
     st.caption("Apply a recommendation — watch AI cost and carbon drop live")
-    st.markdown(
-        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
-        'Connect → Observe → <b style="color:#10b981;">Optimize</b>'
-        '<span style="color:#334155;"> → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
 
     any_applied = bool(st.session_state.applied_recs)
 
@@ -1545,7 +1525,7 @@ elif page == "Optimize":
     # ── Recommendation cards ──
     st.markdown('<div class="sh">AI Workload Recommendations</div>', unsafe_allow_html=True)
     st.caption(
-        "⚡ Apply runs a live what-if simulation — it recalculates all metrics as if this change "
+        "Apply runs a live what-if simulation — it recalculates all metrics as if this change "
         "were in production. Nothing in your real infrastructure changes. "
         "Use ↩ Reset all in the sidebar to restore the baseline."
     )
@@ -1572,10 +1552,10 @@ elif page == "Optimize":
             else '<span class="pill-gray">Cost unchanged (carbon-only win)</span>'
         )
         card_cls = "rec applied" if applied else "rec"
-        icon     = "✅" if applied else "⚡"
+        rec_icon = _svg("check-circle", 16, "#10b981") if applied else _svg("zap", 16, "#6366f1")
         st.markdown(f"""
 <div class="{card_cls}">
-  <div class="rec-title">{icon} {rec['title']}</div>
+  <div class="rec-title" style="display:flex;align-items:center;gap:6px;">{rec_icon} {rec['title']}</div>
   <div class="rec-body">{rec['rationale']}</div>
   <div style="margin-bottom:8px;">{actions_html}</div>
   <div style="margin-bottom:8px;">
@@ -1587,7 +1567,7 @@ elif page == "Optimize":
         col_btn, _ = st.columns([2, 4])
         with col_btn:
             if not applied:
-                if st.button("⚡ Apply", key=f"apply_{rec['id']}", type="primary", use_container_width=True):
+                if st.button("Apply", key=f"apply_{rec['id']}", type="primary", use_container_width=True):
                     with st.spinner("Computing optimized footprint…"):
                         time.sleep(0.6)
                     st.session_state.applied_recs.add(rec["id"])
@@ -1611,8 +1591,8 @@ elif page == "Optimize":
             f'font-size:11px;font-weight:600;margin-right:8px;">{f["severity"]}</span>'
             f'Energy debt: {f["finding"][:70]}{"…" if len(f["finding"])>70 else ""}</div>'
             f'<div class="rec-body">{f["recommendation"]}</div>'
-            f'<div style="font-size:11px;color:#9ca3af;">'
-            f'📁 {f["file_path"]} &nbsp;·&nbsp; Impact: {f["estimated_runtime_impact"][:60]}…</div>'
+            f'<div style="font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:4px;">'
+            f'{_svg("folder", 12, "#9ca3af")} {f["file_path"]} &nbsp;·&nbsp; Impact: {f["estimated_runtime_impact"][:60]}…</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -1657,7 +1637,7 @@ elif page == "Optimize":
       <td><span style="color:#6b7280;font-size:12px;">Baseline</span></td>
     </tr>
     <tr class="balanced">
-      <td><b>⭐ Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
+      <td><b>Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
       <td>${ai_cost_bal:,.0f} <span style="color:#166534;font-size:11px;">−20.5%</span></td>
       <td>{ai_co2_bal + base_cloud_carbon:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
       <td>{ai_water_bal:,.0f} L <span style="color:#166534;font-size:11px;">−16.1%</span></td>
@@ -1690,13 +1670,8 @@ elif page == "Optimize":
 elif page == "Prove":
     st.markdown("## TRACE Prove: Evidence Pack")
     st.caption("Open, auditable · SCI-for-AI methodology · No offsets · Transparent assumptions")
-    st.markdown(
-        '<div style="font-size:11px;color:#9ca3af;margin-bottom:12px;">'
-        'Connect → Observe → Optimize → <b style="color:#10b981;">Prove</b></div>',
-        unsafe_allow_html=True,
-    )
 
-    tab_evidence, tab_method = st.tabs(["📋 Evidence Pack", "📐 Methodology"])
+    tab_evidence, tab_method = st.tabs(["Evidence Pack", "Methodology"])
 
     with tab_evidence:
         any_applied = bool(st.session_state.applied_recs)
@@ -1716,17 +1691,18 @@ elif page == "Prove":
         with col_left:
             st.markdown(
                 '<div class="sh">Connected Data Sources '
-                '<span style="font-size:11px;color:#9ca3af;font-weight:400;cursor:help;" '
+                f'<span style="font-size:11px;color:#9ca3af;font-weight:400;cursor:help;" '
                 'title="Each source below contributed records to this evidence pack. '
                 'Records = total rows ingested this period. '
                 'Mapped = records successfully matched to TRACE\'s schema (app name, model, region, token counts all present). '
                 'Unmapped records are excluded from calculations and flagged in the Norm Log.">'
-                'ℹ️</span></div>',
+                f'{_svg("info", 14, "#9ca3af")}</span></div>',
                 unsafe_allow_html=True,
             )
             sources_html = ""
             for c in CONNECTOR_STATE:
-                icon = "🟢" if c["status"] in ("Connected", "Active") else ("🔵" if c["status"] == "Uploaded" else "🟡")
+                _dot_color = "#10b981" if c["status"] in ("Connected", "Active") else ("#3b82f6" if c["status"] == "Uploaded" else "#f59e0b")
+                icon = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{_dot_color};flex-shrink:0;margin-right:4px;"></span>'
                 norm_tip = (
                     f"{c['records']} rows ingested this period. "
                     f"{c['norm_pct']} successfully normalized to TRACE's schema — "
@@ -1734,9 +1710,9 @@ elif page == "Prove":
                     f"Unmapped records are flagged in the Norm Log."
                 )
                 sources_html += (
-                    f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;'
                     f'border-bottom:1px solid #f3f4f6;font-size:13px;">'
-                    f'<span>{icon} <b>{c["system"]}</b> — {c["type"]}</span>'
+                    f'<span style="display:flex;align-items:center;">{icon}<b>{c["system"]}</b>&nbsp;— {c["type"]}</span>'
                     f'<span style="color:#6b7280;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
                     f'</div>'
                 )
@@ -1809,7 +1785,7 @@ elif page == "Prove":
 
             st.markdown('<div class="sh">Applied Optimizations</div>', unsafe_allow_html=True)
             if applied_titles:
-                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">✅ {t}</div>' for t in applied_titles)
+                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:13px;display:flex;align-items:center;gap:6px;">{_svg("check-circle", 14, "#10b981")} {t}</div>' for t in applied_titles)
                 st.markdown(f'<div class="evidence-block">{recs_html}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
@@ -1844,8 +1820,8 @@ elif page == "Prove":
     ✓ Standards alignment (SCI-for-AI, ISO 21031, GHG Protocol)<br>
     <br>
     <b>What requires production TRACE (live data):</b><br>
-    ⚠️ This demo uses synthetic Northstar Bank data — not real usage logs.<br>
-    ⚠️ Production TRACE with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
+    Note: This demo uses synthetic Northstar Bank data — not real usage logs.<br>
+    Note: Production TRACE with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
     <br>
     A production audit pack carries the same methodology with real data, making it defensible to a GHG Protocol-aligned sustainability audit.
   </div>
@@ -1868,14 +1844,14 @@ elif page == "Prove":
 
         with c_dl1:
             csv_ai = ai_export.to_csv(index=False)
-            st.download_button("📥 Download AI Ledger CSV", csv_ai,
+            st.download_button("Download AI Ledger CSV", csv_ai,
                                "trace_ai_ledger.csv", "text/csv", use_container_width=True)
         with c_dl2:
             csv_cloud = cloud_export.to_csv(index=False)
-            st.download_button("📥 Download Cloud Ledger CSV", csv_cloud,
+            st.download_button("Download Cloud Ledger CSV", csv_cloud,
                                "trace_cloud_ledger.csv", "text/csv", use_container_width=True)
         with c_dl3:
-            st.button("📄 Evidence Pack PDF", disabled=True,
+            st.button("Evidence Pack PDF", disabled=True,
                       help="PDF export on roadmap", use_container_width=True)
 
     with tab_method:
