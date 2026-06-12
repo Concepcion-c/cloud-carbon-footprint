@@ -782,7 +782,7 @@ with st.sidebar:
         f'{_svg("leaf", 20, "#4ade80")} TRACE</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'Your footprint tracker</div>'
-        '<div style="margin-top:40px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
+        '<div style="margin-top:16px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
         f'{_svg("landmark", 18, "#CECCE8")}'
         '<div style="display:flex;flex-direction:column;gap:2px;">'
         '<span style="color:#FFFFFF;font-size:13px;font-weight:700;line-height:1.2;">Northstar Bank</span>'
