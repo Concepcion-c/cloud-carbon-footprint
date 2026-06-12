@@ -781,7 +781,7 @@ with st.sidebar:
         f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
         f'{_svg("leaf", 20, "#4ade80")} TRACE</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
-        'YOUR FOOTPRINT TRACKER</div>'
+        'AI GREENOPS DASHBOARD</div>'
         '<div style="margin-top:16px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
         f'{_svg("landmark", 18, "#CECCE8")}'
         '<div style="display:flex;flex-direction:column;gap:2px;">'
