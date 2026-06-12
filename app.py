@@ -154,7 +154,10 @@ h1, h2, h3, h4, h5, h6, p, label { font-family: Inter, sans-serif !important; }
 }
 #MainMenu, footer, header { visibility: hidden; }
 [data-testid="stElementToolbar"] { display: none !important; }
-section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:hover > div { border-color: transparent !important; box-shadow: none !important; }
+section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:hover,
+section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:hover > div { border-color: transparent !important; box-shadow: none !important; outline: none !important; }
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] { display: none !important; }
 .stApp {
   background:
     linear-gradient(to bottom, transparent 0%, #F1F8FF 100%),
