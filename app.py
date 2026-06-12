@@ -29,6 +29,7 @@ def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
         "paperclip":      '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
         "download":       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
         "file-text":      '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>',
+        "landmark":       '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
     }
     inner = _PATHS.get(name, "")
     return (
@@ -770,9 +771,12 @@ with st.sidebar:
         f'{_svg("leaf", 20, "#4ade80")} COOP</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'CONNECT · OBSERVE · OPTIMIZE · PROVE</div>'
-        '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:6px;">'
-        f'{_svg("folder", 14, "#CECCE8")} Northstar Bank<br>'
-        '<span style="color:#CECCE8;font-size:10px;">Digital Banking Modernization</span></div>'
+        '<div style="margin-top:8px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
+        f'{_svg("landmark", 18, "#CECCE8")}'
+        '<div style="display:flex;flex-direction:column;gap:2px;">'
+        '<span style="color:#FFFFFF;font-size:13px;font-weight:700;line-height:1.2;">Northstar Bank</span>'
+        '<span style="color:#CECCE8;font-size:10px;line-height:1.3;">Digital Banking Modernization</span>'
+        '</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
