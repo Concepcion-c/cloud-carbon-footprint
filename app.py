@@ -111,6 +111,12 @@ def _nav_icon_js() -> str:
       css+=s+'::before{{background-image:url("'+u+'")!important;}}';
     }});
     el.textContent=css;
+    // Force-hide elements that Streamlit's emotion CSS keeps overriding via stylesheet
+    var hide=['[data-testid="stWidgetLabel"]','[data-testid="stLogoSpacer"]'];
+    hide.forEach(function(sel){{
+      var n=p.document.querySelector(sel);
+      if(n)n.style.setProperty('display','none','important');
+    }});
   }}
   applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
 }})();"""
