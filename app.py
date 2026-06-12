@@ -41,7 +41,24 @@ def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
 
 
 def _nav_icon_css() -> str:
-    """Generate CSS that injects Lucide background icons onto each sidebar nav label."""
+    """CSS that reserves left-padding for the nav icons (applied by JS)."""
+    return """<style>
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  padding-left: 36px !important;
+  background-repeat: no-repeat !important;
+  background-position: 12px center !important;
+  background-size: 16px 16px !important;
+}
+</style>"""
+
+
+def _nav_icon_js() -> str:
+    """JS that directly applies Lucide background icons to sidebar nav labels.
+
+    Uses window.parent.document so it works from inside a components.v1.html
+    iframe. Queries by role attribute rather than a fixed CSS path so it is
+    robust to Streamlit's ever-changing wrapper div structure.
+    """
     def _uri(paths: str) -> str:
         svg = (
             "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' "
@@ -49,44 +66,45 @@ def _nav_icon_css() -> str:
             "stroke-linecap='round' stroke-linejoin='round'>"
             + paths + "</svg>"
         )
-        return f'url("data:image/svg+xml,{svg.replace(chr(60), "%3C").replace(chr(62), "%3E")}")'
+        return "data:image/svg+xml," + svg.replace("<", "%3C").replace(">", "%3E")
 
-    plug = _uri(
-        "<path d='M12 22v-5'/><path d='M9 8V2'/><path d='M15 8V2'/>"
-        "<path d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/>"
-    )
-    dash = _uri(
-        "<rect width='7' height='9' x='3' y='3' rx='1'/>"
-        "<rect width='7' height='5' x='14' y='3' rx='1'/>"
-        "<rect width='7' height='9' x='14' y='12' rx='1'/>"
-        "<rect width='7' height='5' x='3' y='16' rx='1'/>"
-    )
-    zap = _uri("<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>")
-    clipboard = _uri(
-        "<rect width='8' height='4' x='8' y='2' rx='1' ry='1'/>"
-        "<path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/>"
-        "<path d='M12 11h4'/><path d='M12 16h4'/><path d='M8 11h.01'/><path d='M8 16h.01'/>"
-    )
-    return f"""<style>
-section[data-testid="stSidebar"] div[role="radiogroup"] label {{
-  padding-left: 36px !important;
-  background-repeat: no-repeat !important;
-  background-position: 12px center !important;
-  background-size: 16px 16px !important;
-}}
-section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(1) {{
-  background-image: {plug} !important;
-}}
-section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(2) {{
-  background-image: {dash} !important;
-}}
-section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(3) {{
-  background-image: {zap} !important;
-}}
-section[data-testid="stSidebar"] div[role="radiogroup"] > div > label:nth-of-type(4) {{
-  background-image: {clipboard} !important;
-}}
-</style>"""
+    icons = [
+        _uri(
+            "<path d='M12 22v-5'/><path d='M9 8V2'/><path d='M15 8V2'/>"
+            "<path d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/>"
+        ),  # plug → Connect
+        _uri(
+            "<rect width='7' height='9' x='3' y='3' rx='1'/>"
+            "<rect width='7' height='5' x='14' y='3' rx='1'/>"
+            "<rect width='7' height='9' x='14' y='12' rx='1'/>"
+            "<rect width='7' height='5' x='3' y='16' rx='1'/>"
+        ),  # layout-dashboard → Observe
+        _uri("<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>"),  # zap → Optimize
+        _uri(
+            "<rect width='8' height='4' x='8' y='2' rx='1' ry='1'/>"
+            "<path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/>"
+            "<path d='M12 11h4'/><path d='M12 16h4'/><path d='M8 11h.01'/><path d='M8 16h.01'/>"
+        ),  # clipboard → Prove
+    ]
+    icons_json = "[" + ",".join(f'"{u}"' for u in icons) + "]"
+    return f"""(function(){{
+  var icons={icons_json};
+  function applyIcons(){{
+    var p=window.parent;if(!p)return;
+    var ls=p.document.querySelectorAll(
+      'section[data-testid="stSidebar"] [role="radiogroup"] label'
+    );
+    ls.forEach(function(l,i){{
+      if(i>=icons.length)return;
+      l.style.paddingLeft='36px';
+      l.style.backgroundImage='url("'+icons[i]+'")';
+      l.style.backgroundRepeat='no-repeat';
+      l.style.backgroundPosition='12px center';
+      l.style.backgroundSize='16px 16px';
+    }});
+  }}
+  applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
+}})();"""
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -793,8 +811,11 @@ with st.sidebar:
 # Uses replaceState so the back button is unaffected. Unique timestamp forces
 # React to re-execute the script on every rerun.
 _components.html(
-    f"<script>window.parent.history.replaceState(null,'','?page={page}');"
-    f"// {time.time()}</script>",
+    f"<script>"
+    f"window.parent.history.replaceState(null,'','?page={page}');"
+    f"{_nav_icon_js()}"
+    f"// {time.time()}"
+    f"</script>",
     height=0,
 )
 
