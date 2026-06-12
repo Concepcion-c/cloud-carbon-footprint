@@ -599,6 +599,14 @@ CONNECTOR_STATE = [
         "type": "API", "status": "Connected", "last_sync": "12 min ago",
         "records": "1,248", "norm_pct": "98%", "owner": "Platform Team",
         "action": "View / Sync",
+        "tagline": "Created by Thoughtworks",
+    },
+    {
+        "system": "CCF Factors", "category": "Carbon methodology",
+        "type": "Static CSV", "status": "Active", "last_sync": "Jun 10",
+        "records": "64", "norm_pct": "100%", "owner": "Sustainability",
+        "action": "View",
+        "tagline": "Funded by Thoughtworks",
     },
     {
         "system": "Langfuse", "category": "LLM observability",
@@ -623,12 +631,6 @@ CONNECTOR_STATE = [
         "type": "API", "status": "Connected", "last_sync": "20 min ago",
         "records": "1,876", "norm_pct": "92%", "owner": "Cloud Team",
         "action": "View / Sync",
-    },
-    {
-        "system": "CCF Factors", "category": "Carbon methodology",
-        "type": "Static CSV", "status": "Active", "last_sync": "Jun 10",
-        "records": "64", "norm_pct": "100%", "owner": "Sustainability",
-        "action": "View",
     },
     {
         "system": "Code Scan Findings", "category": "SDLC sustainability",
@@ -765,9 +767,9 @@ with st.sidebar:
     st.markdown(
         '<div style="padding:16px 4px 6px;">'
         f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
-        f'{_svg("leaf", 20, "#4ade80")} TRACE</div>'
+        f'{_svg("leaf", 20, "#4ade80")} COOP</div>'
         '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
-        'AI GREENOPS DASHBOARD</div>'
+        'CONNECT · OBSERVE · OPTIMIZE · PROVE</div>'
         '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:6px;">'
         f'{_svg("folder", 14, "#CECCE8")} Northstar Bank<br>'
         '<span style="color:#CECCE8;font-size:10px;">Digital Banking Modernization</span></div>'
@@ -908,9 +910,17 @@ if page == "Connect":
         bg = "#fff" if i % 2 == 0 else "#f8fafb"
         badge = status_badge(c["status"])
         norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
+        tagline_html = (
+            f'<div style="font-size:11px;color:#7c3aed;font-style:italic;margin-top:2px;">{c["tagline"]}</div>'
+            if c.get("tagline") else ""
+        )
+        highlight = "border-left:3px solid #7c3aed;" if c.get("tagline") else "border-left:3px solid transparent;"
         rows += (
-            f'<tr style="background:{bg};border-bottom:1px solid #e5e7eb;">'
-            f'<td style="padding:10px 12px;font-weight:600;color:#111827;">{c["system"]}</td>'
+            f'<tr style="background:{bg};border-bottom:1px solid #e5e7eb;{highlight}">'
+            f'<td style="padding:10px 12px;">'
+            f'<div style="font-weight:600;color:#111827;">{c["system"]}</div>'
+            f'{tagline_html}'
+            f'</td>'
             f'<td style="padding:10px 12px;color:#374151;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
             f'<td style="padding:10px 12px;font-family:Inter,sans-serif;font-size:12px;color:#374151;">{c["type"]}</td>'
             f'<td style="padding:10px 12px;">{badge}</td>'
