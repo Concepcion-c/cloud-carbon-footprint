@@ -393,24 +393,25 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 div.stButton > button[kind="primary"],
 div.stDownloadButton > button[kind="primary"],
 div.stFormSubmitButton > button[kind="primaryFormSubmit"] {
-  background: #6366f1 !important;
+  background: linear-gradient(135deg, #6A5DD4 0%, #365DE7 100%) !important;
   color: #ffffff !important;
   border: none !important;
   border-radius: 8px !important;
   font-family: Inter, sans-serif !important;
   font-size: 14px !important;
   font-weight: 600 !important;
-  transition: background 0.15s ease !important;
+  transition: filter 0.15s ease !important;
 }
 div.stButton > button[kind="primary"]:hover,
 div.stDownloadButton > button[kind="primary"]:hover,
 div.stFormSubmitButton > button[kind="primaryFormSubmit"]:hover {
-  background: #4f46e5 !important;
+  background: linear-gradient(135deg, #6A5DD4 0%, #365DE7 100%) !important;
+  filter: brightness(1.1) !important;
   color: #ffffff !important;
 }
 div.stButton > button[kind="primary"]:active,
 div.stDownloadButton > button[kind="primary"]:active {
-  background: #4338ca !important;
+  filter: brightness(0.92) !important;
 }
 
 div.stButton > button[kind="secondary"],
@@ -801,7 +802,7 @@ _components.html(
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
-    st.markdown("## TRACE Connect: Data Sources")
+    st.markdown("## Data Sources")
     st.caption("Every connected system, its status, data freshness, and normalization health")
 
     # ── Summary stats ──
@@ -1104,7 +1105,7 @@ Requires a redaction filter to be configured.
 # PAGE: OBSERVE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Observe":
-    st.markdown("## TRACE Observe: AI Workload Dashboard")
+    st.markdown("## AI Workload Dashboard")
     st.markdown(
         f'<div class="synth">{_svg("alert-triangle", 14, "#92400e")} <b>Synthetic client data</b> — shaped like real AI/Works + Langfuse + CCF exports. '
         'All numbers illustrative. Coefficients from public benchmarks.</div>',
@@ -1496,7 +1497,7 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 # PAGE: OPTIMIZE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Optimize":
-    st.markdown("## TRACE Optimize: Recommendations")
+    st.markdown("## Recommendations")
     st.caption("Apply a recommendation — watch AI cost and carbon drop live")
 
     any_applied = bool(st.session_state.applied_recs)
@@ -1668,7 +1669,7 @@ elif page == "Optimize":
 # PAGE: PROVE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Prove":
-    st.markdown("## TRACE Prove: Evidence Pack")
+    st.markdown("## Evidence Pack")
     st.caption("Open, auditable · SCI-for-AI methodology · No offsets · Transparent assumptions")
 
     tab_evidence, tab_method = st.tabs(["Evidence Pack", "Methodology"])
