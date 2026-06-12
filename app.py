@@ -41,23 +41,20 @@ def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
 
 
 def _nav_icon_css() -> str:
-    """CSS that reserves left-padding for the nav icons (applied by JS)."""
+    """Pre-JS fallback: reserves padding and positioning context before JS fires."""
     return """<style>
 section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  position: relative !important;
   padding-left: 36px !important;
-  background-repeat: no-repeat !important;
-  background-position: 12px center !important;
-  background-size: 16px 16px !important;
 }
 </style>"""
 
 
 def _nav_icon_js() -> str:
-    """JS that stamps data-trace-nav attributes on sidebar nav labels and injects
-    a <style> block into the parent document covering all interaction states.
+    """Inject nav icons via ::before pseudo-elements (position:absolute).
 
-    Using a stylesheet (rather than inline styles) lets us target :hover/:focus/
-    :active with !important, which beats Streamlit's own hover overrides.
+    Absolutely-positioned ::before elements are anchored by pixel coordinates,
+    not by the label's padding, so they never move on hover/focus/active/selected.
     """
     def _uri(paths: str) -> str:
         svg = (
@@ -74,11 +71,9 @@ def _nav_icon_js() -> str:
             "<path d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/>"
         ),  # plug → Connect
         _uri(
-            "<rect width='7' height='9' x='3' y='3' rx='1'/>"
-            "<rect width='7' height='5' x='14' y='3' rx='1'/>"
-            "<rect width='7' height='9' x='14' y='12' rx='1'/>"
-            "<rect width='7' height='5' x='3' y='16' rx='1'/>"
-        ),  # layout-dashboard → Observe
+            "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'/>"
+            "<circle cx='12' cy='12' r='3'/>"
+        ),  # eye → Observe
         _uri("<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>"),  # zap → Optimize
         _uri(
             "<rect width='8' height='4' x='8' y='2' rx='1' ry='1'/>"
@@ -95,20 +90,24 @@ def _nav_icon_js() -> str:
       'section[data-testid="stSidebar"] [role="radiogroup"] label'
     );
     if(!ls.length)return;
-    // Stamp each label with an index attribute
     ls.forEach(function(l,i){{if(i<icons.length)l.setAttribute('data-trace-nav',i);}});
-    // Build and inject a stylesheet covering all interaction states
     var sid='trace-nav-icons';
     var el=p.document.getElementById(sid);
     if(!el){{el=p.document.createElement('style');el.id=sid;p.document.head.appendChild(el);}}
-    var base='section[data-testid="stSidebar"] [data-trace-nav]';
-    var css=base+'{{padding-left:36px!important;background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;}}';
+    var b='section[data-testid="stSidebar"] [data-trace-nav]';
+    // Lock padding on every state so the text indent never shifts
+    var css=b+'{{position:relative!important;padding-left:36px!important;}}'+
+      b+':hover,'+b+':focus,'+b+':active{{padding-left:36px!important;}}'+
+      // Shared ::before rules — absolutely positioned so they never move
+      b+'::before{{content:""!important;display:block!important;position:absolute!important;'+
+        'left:8px!important;top:50%!important;transform:translateY(-50%)!important;'+
+        'width:16px!important;height:16px!important;'+
+        'background-size:16px 16px!important;background-repeat:no-repeat!important;'+
+        'background-position:center!important;pointer-events:none!important;}}';
+    // Per-icon ::before background-image
     icons.forEach(function(u,i){{
       var s='section[data-testid="stSidebar"] [data-trace-nav="'+i+'"]';
-      var img='background-image:url("'+u+'")!important;';
-      var pos='background-repeat:no-repeat!important;background-position:12px center!important;background-size:16px 16px!important;padding-left:36px!important;';
-      css+=s+'{{'+img+pos+'}}';
-      css+=s+':hover,'+s+':focus,'+s+':active,'+s+'[class*="selected"],'+s+'[aria-checked]{{'+img+pos+'}}';
+      css+=s+'::before{{background-image:url("'+u+'")!important;}}';
     }});
     el.textContent=css;
   }}
