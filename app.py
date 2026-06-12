@@ -7,6 +7,113 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as _components
+
+
+# ── Lucide icon helpers ────────────────────────────────────────────────────────
+def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
+    """Return an inline Lucide SVG for use in HTML markdown blocks."""
+    _PATHS = {
+        "leaf":           '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+        "folder":         '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
+        "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+        "info":           '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        "check":          '<path d="M20 6 9 17l-5-5"/>',
+        "check-circle":   '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+        "x":              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        "hash":           '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="14" y1="3" y2="21"/>',
+        "clock":          '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        "dollar-sign":    '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        "star":           '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        "zap":            '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+        "paperclip":      '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+        "download":       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        "file-text":      '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>',
+    }
+    inner = _PATHS.get(name, "")
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
+        f'viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" '
+        f'stroke-linecap="round" stroke-linejoin="round" '
+        f'style="display:inline-block;vertical-align:middle;flex-shrink:0;">'
+        f'{inner}</svg>'
+    )
+
+
+def _nav_icon_css() -> str:
+    """Pre-JS fallback: reserves padding and positioning context before JS fires."""
+    return """<style>
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  position: relative !important;
+  padding-left: 36px !important;
+}
+</style>"""
+
+
+def _nav_icon_js() -> str:
+    """Inject nav icons via ::before pseudo-elements (position:absolute).
+
+    Absolutely-positioned ::before elements are anchored by pixel coordinates,
+    not by the label's padding, so they never move on hover/focus/active/selected.
+    """
+    def _uri(paths: str) -> str:
+        svg = (
+            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' "
+            "viewBox='0 0 24 24' fill='none' stroke='%23CECCE8' stroke-width='2' "
+            "stroke-linecap='round' stroke-linejoin='round'>"
+            + paths + "</svg>"
+        )
+        return "data:image/svg+xml," + svg.replace("<", "%3C").replace(">", "%3E")
+
+    icons = [
+        _uri(
+            "<path d='M12 22v-5'/><path d='M9 8V2'/><path d='M15 8V2'/>"
+            "<path d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/>"
+        ),  # plug → Connect
+        _uri(
+            "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'/>"
+            "<circle cx='12' cy='12' r='3'/>"
+        ),  # eye → Observe
+        _uri("<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>"),  # zap → Optimize
+        _uri(
+            "<rect width='8' height='4' x='8' y='2' rx='1' ry='1'/>"
+            "<path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/>"
+            "<path d='M12 11h4'/><path d='M12 16h4'/><path d='M8 11h.01'/><path d='M8 16h.01'/>"
+        ),  # clipboard → Prove
+    ]
+    icons_json = "[" + ",".join(f'"{u}"' for u in icons) + "]"
+    return f"""(function(){{
+  var icons={icons_json};
+  function applyIcons(){{
+    var p=window.parent;if(!p)return;
+    var ls=p.document.querySelectorAll(
+      'section[data-testid="stSidebar"] [role="radiogroup"] label'
+    );
+    if(!ls.length)return;
+    ls.forEach(function(l,i){{if(i<icons.length)l.setAttribute('data-trace-nav',i);}});
+    var sid='trace-nav-icons';
+    var el=p.document.getElementById(sid);
+    if(!el){{el=p.document.createElement('style');el.id=sid;p.document.head.appendChild(el);}}
+    var b='section[data-testid="stSidebar"] [data-trace-nav]';
+    // Lock padding on every state so the text indent never shifts
+    var css=b+'{{position:relative!important;padding-left:36px!important;}}'+
+      b+':hover,'+b+':focus,'+b+':active{{padding-left:36px!important;}}'+
+      // Shared ::before rules — absolutely positioned so they never move
+      b+'::before{{content:""!important;display:block!important;position:absolute!important;'+
+        'left:8px!important;top:50%!important;transform:translateY(-50%)!important;'+
+        'width:16px!important;height:16px!important;'+
+        'background-size:16px 16px!important;background-repeat:no-repeat!important;'+
+        'background-position:center!important;pointer-events:none!important;}}';
+    // Per-icon ::before background-image
+    icons.forEach(function(u,i){{
+      var s='section[data-testid="stSidebar"] [data-trace-nav="'+i+'"]';
+      css+=s+'::before{{background-image:url("'+u+'")!important;}}';
+    }});
+    el.textContent=css;
+  }}
+  applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
+}})();"""
+
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -19,105 +126,348 @@ st.set_page_config(
 DATA_DIR = Path(__file__).parent / "docs" / "sample-data"
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
+st.markdown(
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">',
+    unsafe_allow_html=True,
+)
+
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
-
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+html, body { font-family: Inter, sans-serif !important; }
+button, input, select, textarea { font-family: inherit !important; }
+h1, h2, h3, h4, h5, h6, p, label { font-family: Inter, sans-serif !important; }
+/* Streamlit text containers — exclude icon/svg wrappers */
+[data-testid="stMarkdownContainer"],
+[data-testid="stText"],
+[data-testid="stCaptionContainer"],
+[data-testid="stMetricLabel"],
+[data-testid="stMetricValue"],
+[data-testid="stMetricDelta"],
+[data-testid="stRadio"] label,
+[data-testid="stSelectbox"] label,
+[data-testid="stMultiSelect"] label,
+[data-testid="stSidebar"] label {
+  font-family: Inter, sans-serif !important;
+}
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1.25rem; padding-bottom: 2rem; }
+.stApp {
+  background:
+    linear-gradient(to bottom, transparent 0%, #F1F8FF 100%),
+    linear-gradient(to right, #F0F0FB 0%, #F9F9FB 100%) !important;
+}
+.block-container { padding-top: 1.25rem; padding-bottom: 2rem; max-width: 1440px !important; margin-left: auto !important; margin-right: auto !important; }
 
-section[data-testid="stSidebar"] > div:first-child { background: #0f172a !important; }
-section[data-testid="stSidebar"] label { color: #cbd5e1 !important; }
-section[data-testid="stSidebar"] .stRadio > div { gap: 2px; }
+/* ── Sidebar nav ─────────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] > div:first-child { background: #0F0A37 !important; }
 
-.kpi { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:18px 22px; height:100%; }
-.kpi-label { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500;
-             color:#64748b; text-transform:uppercase; letter-spacing:.09em; margin-bottom:4px; }
-.kpi-value { font-size:26px; font-weight:700; color:#0f172a; line-height:1.2; }
-.kpi-sub   { font-size:12px; color:#64748b; margin-top:2px; }
-.kpi-delta-good { font-size:12px; font-weight:600; color:#006c49; margin-top:4px; }
-.kpi-delta-bad  { font-size:12px; font-weight:600; color:#ba1a1a; margin-top:4px; }
+/* Nav group — 4px horizontal padding matches the logo wrapper's 4px inset */
+section[data-testid="stSidebar"] div[data-testid="stRadio"],
+section[data-testid="stSidebar"] div[role="radiogroup"] {
+  width: 100% !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] > div,
+section[data-testid="stSidebar"] div[role="radiogroup"] > div {
+  width: 100% !important;
+  gap: 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
 
-.sh { font-size:16px; font-weight:600; color:#0f172a;
-      border-bottom:2px solid #4edea3; padding-bottom:5px; margin:18px 0 12px; }
+/* Nav item — hide the input AND the BaseWeb visual circle (first div child of label) */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] input[type="radio"],
+section[data-testid="stSidebar"] div[role="radiogroup"] input[type="radio"] {
+  display: none !important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-of-type {
+  display: none !important;
+}
 
-.rec { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:18px 22px; margin-bottom:10px; }
-.rec.applied { border-color:#4edea3; background:#f0fdf8; }
-.rec-title   { font-size:15px; font-weight:600; color:#0f172a; margin-bottom:5px; }
-.rec-body    { font-size:13px; color:#475569; line-height:1.55; margin-bottom:8px; }
-.rec-quality { font-size:11px; color:#94a3b8; font-style:italic; }
-.pill-green { display:inline-block; background:#dcfce7; color:#166534; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
-.pill-gray  { display:inline-block; background:#f1f5f9; color:#475569; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
-.pill-navy  { display:inline-block; background:#1e293b; color:#e2e8f0; border-radius:99px;
-              font-size:11px; font-weight:700; padding:2px 9px; margin-right:5px; }
+/* Nav item — default */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label,
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  color: #CECCE8 !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 9px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease, color 0.12s ease !important;
+  margin: 0 !important;
+  min-height: 36px !important;
+  letter-spacing: 0.01em !important;
+}
 
-.formula { background:#0f172a; color:#4edea3; font-family:'JetBrains Mono',monospace;
+/* Nav item — text/span */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
+section[data-testid="stSidebar"] div[role="radiogroup"] label p,
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label span,
+section[data-testid="stSidebar"] div[role="radiogroup"] label span {
+  color: inherit !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: inherit !important;
+  margin: 0 !important;
+}
+
+/* Nav item — active */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked),
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
+  background: #2E2261 !important;
+  color: #CECCE8 !important;
+  font-weight: 600 !important;
+}
+
+/* Nav item — hover (skip if already active) */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label:not(:has(input:checked)):hover,
+section[data-testid="stSidebar"] div[role="radiogroup"] label:not(:has(input:checked)):hover {
+  background: rgba(206,204,232,0.08) !important;
+  color: #CECCE8 !important;
+}
+
+/* Sweep: all text inside the sidebar uses #CECCE8 */
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] button {
+  color: #CECCE8 !important;
+}
+
+/* Full-width element containers inside the sidebar */
+section[data-testid="stSidebar"] [data-testid="stElementContainer"],
+section[data-testid="stSidebar"] .element-container {
+  width: 100% !important;
+}
+
+/* Close button inside sidebar — 36×36 rounded square, matches open button shape */
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  color: #CECCE8 !important;
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+/* Open button (stExpandSidebarButton) — inverted: light bg + dark icon, 36×36 rounded square */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stExpandSidebarButton"] * {
+  visibility: visible !important;
+  display: block !important;
+}
+[data-testid="stExpandSidebarButton"] {
+  width: 36px !important;
+  height: 36px !important;
+  background: #CECCE8 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+[data-testid="stExpandSidebarButton"]:hover {
+  background: #B5B2D4 !important;
+}
+[data-testid="stExpandSidebarButton"] svg,
+[data-testid="stExpandSidebarButton"] span {
+  fill: #0F0A37 !important;
+  color: #0F0A37 !important;
+}
+
+/* Mobile (≤ 768px): same button, fixed top-left, ☰ replaces arrow icon */
+@media (max-width: 768px) {
+  [data-testid="stExpandSidebarButton"] {
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 9999 !important;
+  }
+  [data-testid="stExpandSidebarButton"] svg,
+  [data-testid="stExpandSidebarButton"] span[data-testid="stIconMaterial"] {
+    display: none !important;
+  }
+  [data-testid="stExpandSidebarButton"]::before {
+    content: "☰" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    color: #0F0A37 !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+  }
+}
+
+/* ── Metric card ─────────────────────────────────────────────────────────── */
+.kpi { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; height:100%; }
+.kpi-label { font-size:11px; font-weight:400; color:#9ca3af;
+             text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.kpi-value { font-size:28px; font-weight:700; color:#111827; line-height:1.2; }
+.kpi-sub   { font-size:12px; color:#9ca3af; margin-top:4px; }
+.kpi-delta-good { font-size:12px; font-weight:600; color:#059669; margin-top:4px; }
+.kpi-delta-bad  { font-size:12px; font-weight:600; color:#ef4444; margin-top:4px; }
+
+/* ── Section heading ─────────────────────────────────────────────────────── */
+.sh { font-size:18px; font-weight:600; color:#111827; margin:18px 0 12px; }
+
+/* ── Rec cards ───────────────────────────────────────────────────────────── */
+.rec { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:18px 22px; margin-bottom:10px; }
+.rec.applied { border-color:#10b981; background:#f0fdf8; }
+.rec-title   { font-size:15px; font-weight:600; color:#111827; margin-bottom:5px; }
+.rec-body    { font-size:13px; color:#374151; line-height:1.55; margin-bottom:8px; }
+.rec-quality { font-size:11px; color:#9ca3af; font-style:italic; }
+
+/* ── Pills ───────────────────────────────────────────────────────────────── */
+.pill-green { display:inline-block; background:#10b981; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+.pill-gray  { display:inline-block; background:#9ca3af; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+.pill-navy  { display:inline-block; background:#0b082d; color:#ffffff; border-radius:99px;
+              font-size:11px; font-weight:600; padding:4px 8px; margin-right:5px; }
+
+/* ── Formula block ───────────────────────────────────────────────────────── */
+.formula { background:#111827; color:#10b981; font-family:'Inter',monospace;
            font-size:12px; border-radius:8px; padding:14px 18px; line-height:2.0; }
 
-.badge-hi  { background:#fee2e2; color:#b91c1c; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; margin-right:4px; }
-.badge-med { background:#fef3c7; color:#92400e; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; margin-right:4px; }
-.badge-lo  { background:#f1f5f9; color:#64748b; border-radius:4px;
-             padding:1px 7px; font-size:11px; font-weight:600; }
+/* ── Severity badges ─────────────────────────────────────────────────────── */
+.badge-hi  { background:#ef4444; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; }
+.badge-med { background:#f59e0b; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; }
+.badge-lo  { background:#9ca3af; color:#ffffff; border-radius:4px;
+             padding:2px 8px; font-size:11px; font-weight:600; }
 
+/* ── Synthetic data banner ───────────────────────────────────────────────── */
 .synth { background:#fef9c3; border:1px solid #fde047; border-radius:6px;
          padding:8px 14px; font-size:12px; color:#713f12; margin-bottom:14px; }
 
-.conn-summary { background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+/* ── Connect summary tiles ───────────────────────────────────────────────── */
+.conn-summary { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
                 padding:14px 18px; text-align:center; }
-.conn-summary-num { font-size:28px; font-weight:700; color:#0f172a; line-height:1.1; }
-.conn-summary-lbl { font-size:11px; color:#64748b; font-family:'JetBrains Mono',monospace;
+.conn-summary-num { font-size:28px; font-weight:700; color:#111827; line-height:1.1; }
+.conn-summary-lbl { font-size:11px; color:#9ca3af; font-family:Inter,sans-serif;
                     text-transform:uppercase; letter-spacing:.06em; }
 
-.status-connected  { background:#dcfce7; color:#166534; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-uploaded   { background:#dbeafe; color:#1e40af; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-active     { background:#dcfce7; color:#166534; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-warning    { background:#fef3c7; color:#92400e; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-failed     { background:#fee2e2; color:#b91c1c; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
-.status-coming_soon { background:#f1f5f9; color:#475569; border-radius:99px;
-                      padding:2px 10px; font-size:11px; font-weight:600; }
-.status-paused     { background:#f1f5f9; color:#475569; border-radius:99px;
-                     padding:2px 10px; font-size:11px; font-weight:600; }
+/* ── Status badges — solid color + white text (Figma Badge component) ─────── */
+.status-connected  { background:#10b981; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-uploaded   { background:#3b82f6; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-active     { background:#10b981; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-warning    { background:#f59e0b; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-failed     { background:#ef4444; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
+.status-coming_soon { background:#9ca3af; color:#ffffff; border-radius:99px;
+                      padding:4px 8px; font-size:11px; font-weight:600; }
+.status-paused     { background:#9ca3af; color:#ffffff; border-radius:99px;
+                     padding:4px 8px; font-size:11px; font-weight:600; }
 
-.drawer { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+.drawer { background:#f8fafb; border:1px solid #e5e7eb; border-radius:10px;
           padding:20px 24px; margin-top:12px; }
-.drawer-title { font-size:17px; font-weight:700; color:#0f172a; margin-bottom:14px; }
+.drawer-title { font-size:17px; font-weight:700; color:#111827; margin-bottom:14px; }
 
 .trace-wrap { display:flex; align-items:stretch; overflow-x:auto;
-              padding:16px; background:#f8fafc; border-radius:12px; gap:0; }
+              padding:16px; background:#f8fafb; border-radius:12px; gap:0; }
 .trace-node { min-width:148px; max-width:168px; border-radius:10px; padding:12px 10px;
               flex:0 0 auto; }
-.trace-node-ok   { background:#f0fdf8; border:2px solid #4edea3; }
+.trace-node-ok   { background:#f0fdf8; border:2px solid #10b981; }
 .trace-node-warn { background:#fffbeb; border:2px solid #f59e0b; }
-.trace-node-err  { background:#fff5f5; border:2px solid #ba1a1a; }
+.trace-node-err  { background:#fff5f5; border:2px solid #ef4444; }
 .trace-arrow { display:flex; align-items:center; padding:0 6px;
-               color:#94a3b8; font-size:22px; flex:0 0 auto; }
+               color:#9ca3af; font-size:22px; flex:0 0 auto; }
 
 .whatif-table { width:100%; border-collapse:collapse; font-size:13px; }
-.whatif-table th { background:#0f172a; color:#f8fafc; padding:10px 14px;
-                   font-weight:600; text-align:left; }
-.whatif-table td { padding:9px 14px; border-bottom:1px solid #e2e8f0; }
+.whatif-table th { background:#f9fafb; color:#9ca3af; padding:10px 14px;
+                   font-weight:600; font-size:11px; text-transform:uppercase;
+                   letter-spacing:.04em; text-align:left; }
+.whatif-table td { padding:9px 14px; border-bottom:1px solid #e5e7eb; }
 .whatif-table tr.current td { background:#fff; }
 .whatif-table tr.balanced td { background:#f0fdf8; font-weight:500; }
 .whatif-table tr.aggressive td { background:#fff7ed; }
 .rec-tag { background:#dbeafe; color:#1e40af; border-radius:4px;
            padding:1px 7px; font-size:10px; font-weight:600; }
 
-.evidence-block { background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+.evidence-block { background:#fff; border:1px solid #e5e7eb; border-radius:8px;
                   padding:16px 20px; margin-bottom:12px; }
-.evidence-label { font-size:10px; font-weight:700; color:#64748b;
+.evidence-label { font-size:10px; font-weight:700; color:#6b7280;
                   text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;
-                  font-family:'JetBrains Mono',monospace; }
-.evidence-value { font-size:13px; color:#0f172a; line-height:1.6; }
+                  font-family:Inter,sans-serif; }
+.evidence-value { font-size:13px; color:#111827; line-height:1.6; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+div.stButton > button[kind="primary"],
+div.stDownloadButton > button[kind="primary"],
+div.stFormSubmitButton > button[kind="primaryFormSubmit"] {
+  background: linear-gradient(135deg, #6A5DD4 0%, #365DE7 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: filter 0.15s ease !important;
+}
+div.stButton > button[kind="primary"]:hover,
+div.stDownloadButton > button[kind="primary"]:hover,
+div.stFormSubmitButton > button[kind="primaryFormSubmit"]:hover {
+  background: linear-gradient(135deg, #6A5DD4 0%, #365DE7 100%) !important;
+  filter: brightness(1.1) !important;
+  color: #ffffff !important;
+}
+div.stButton > button[kind="primary"]:active,
+div.stDownloadButton > button[kind="primary"]:active {
+  filter: brightness(0.92) !important;
+}
+
+div.stButton > button[kind="secondary"],
+div.stDownloadButton > button[kind="secondary"] {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+div.stButton > button[kind="secondary"]:hover,
+div.stDownloadButton > button[kind="secondary"]:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+div.stButton > button[kind="secondary"]:active,
+div.stDownloadButton > button[kind="secondary"]:active {
+  background: #f3f4f6 !important;
+}
+
+div.stButton > button:disabled,
+div.stButton > button[disabled] {
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -369,30 +719,35 @@ def render_trace_graph(spans):
         retries = span.get("retry_count", 0)
         if retries >= 3:
             node_cls = "trace-node-err"
-            retry_html = f'<div style="background:#fee2e2;color:#b91c1c;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">⚠ {retries} retries</div>'
+            retry_html = f'<div style="background:#fee2e2;color:#ef4444;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-top:5px;">{_svg("alert-triangle", 10, "#ef4444")} {retries} retries</div>'
         elif retries >= 1:
             node_cls = "trace-node-warn"
             retry_html = f'<div style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;display:inline-block;margin-top:5px;">↺ {retries} retr{"y" if retries == 1 else "ies"}</div>'
         else:
             node_cls = "trace-node-ok"
-            retry_html = '<div style="color:#4edea3;font-size:10px;margin-top:5px;font-weight:600;">✓ Clean</div>'
+            retry_html = '<div style="color:#10b981;font-size:10px;margin-top:5px;font-weight:600;">✓ Clean</div>'
 
         accepted = span.get("accepted_output", True)
-        acc_color = "#006c49" if accepted else "#b91c1c"
+        acc_color = "#059669" if accepted else "#ef4444"
         acc_label = "✓ Accepted" if accepted else "✗ Rejected"
 
         co2e = span.get("co2e_kg", 0.0)
         model_short = span["model_name"].replace("claude-sonnet-4-6", "Sonnet 4.6").replace("claude-opus-4-8", "Opus 4.8").replace("gpt-4.1", "GPT-4.1")
 
+        t_icon   = _svg("hash",        11, "#6b7280")
+        l_icon   = _svg("clock",       11, "#6b7280")
+        c_icon   = _svg("dollar-sign", 11, "#6b7280")
+        co2_icon = _svg("leaf",        11, "#10b981")
+        ev_icon  = _svg("star",        11, "#f59e0b")
         box = f'''<div class="trace-node {node_cls}">
-  <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;">{span["agent_name"]}</div>
-  <div style="font-size:10px;color:#64748b;font-family:monospace;margin-bottom:7px;">{model_short}</div>
-  <div style="font-size:11px;color:#475569;line-height:1.75;">
-    <div>🔡 {span["input_tokens"]:,}→{span["output_tokens"]:,}</div>
-    <div>⏱ {span["latency_ms"]/1000:.1f}s</div>
-    <div>💵 ${span["cost_usd"]:.2f}</div>
-    <div>🌿 {co2e:.3f} kg</div>
-    <div>★ {span["eval_score"]:.2f}</div>
+  <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:3px;">{span["agent_name"]}</div>
+  <div style="font-size:10px;color:#6b7280;font-family:Inter,sans-serif;margin-bottom:7px;">{model_short}</div>
+  <div style="font-size:11px;color:#374151;line-height:1.75;">
+    <div style="display:flex;align-items:center;gap:4px;">{t_icon} {span["input_tokens"]:,}→{span["output_tokens"]:,}</div>
+    <div style="display:flex;align-items:center;gap:4px;">{l_icon} {span["latency_ms"]/1000:.1f}s</div>
+    <div style="display:flex;align-items:center;gap:4px;">{c_icon} ${span["cost_usd"]:.2f}</div>
+    <div style="display:flex;align-items:center;gap:4px;">{co2_icon} {co2e:.3f} kg</div>
+    <div style="display:flex;align-items:center;gap:4px;">{ev_icon} {span["eval_score"]:.2f}</div>
     <div style="color:{acc_color};font-size:10px;font-weight:600;">{acc_label}</div>
   </div>
   {retry_html}
@@ -405,29 +760,46 @@ def render_trace_graph(spans):
 
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
+st.markdown(_nav_icon_css(), unsafe_allow_html=True)
 with st.sidebar:
     st.markdown(
         '<div style="padding:16px 4px 6px;">'
-        '<div style="font-size:22px;font-weight:700;color:#f8fafc;letter-spacing:-.02em;">🌿 TRACE</div>'
-        '<div style="font-size:10px;color:#64748b;margin-top:2px;font-family:monospace;">'
+        f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
+        f'{_svg("leaf", 20, "#4ade80")} TRACE</div>'
+        '<div style="font-size:10px;color:#CECCE8;margin-top:2px;font-family:Inter,sans-serif;">'
         'AI GREENOPS DASHBOARD</div>'
-        '<div style="font-size:11px;color:#475569;margin-top:8px;padding:6px 8px;background:#1e293b;border-radius:6px;">'
-        '📁 Northstar Bank<br>'
-        '<span style="color:#64748b;font-size:10px;">Digital Banking Modernization</span></div>'
+        '<div style="font-size:11px;color:#CECCE8;margin-top:8px;padding:6px 8px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:6px;">'
+        f'{_svg("folder", 14, "#CECCE8")} Northstar Bank<br>'
+        '<span style="color:#CECCE8;font-size:10px;">Digital Banking Modernization</span></div>'
         '</div>',
         unsafe_allow_html=True,
     )
-    page = st.radio(
-        "nav",
-        ["Connect", "Observe", "Optimize", "Prove"],
+    _NAV = {
+        "Connect":  "Connect",
+        "Observe":  "Observe",
+        "Optimize": "Optimize",
+        "Prove":    "Prove",
+    }
+    _nav_keys = list(_NAV.keys())
+    # Read URL param only on first session load to set the initial radio position
+    if "_nav_idx" not in st.session_state:
+        _saved = st.query_params.get("page", "Connect")
+        _NAV_INV = {v: k for k, v in _NAV.items()}
+        _init_label = _NAV_INV.get(_saved, "Connect")
+        st.session_state._nav_idx = _nav_keys.index(_init_label) if _init_label in _nav_keys else 0
+    _page_raw = st.radio(
+        "",
+        _nav_keys,
+        index=st.session_state._nav_idx,
         label_visibility="collapsed",
     )
-    st.markdown("<hr style='border-color:#1e293b;margin:10px 0;'>", unsafe_allow_html=True)
+    page = _NAV[_page_raw]
+    st.markdown("<hr style='border-color:rgba(206,204,232,0.15);margin:10px 0;'>", unsafe_allow_html=True)
 
     n_applied = len(st.session_state.applied_recs)
     if n_applied:
         st.markdown(
-            f'<div style="font-size:12px;color:#4edea3;margin-bottom:8px;">'
+            f'<div style="font-size:12px;color:#CECCE8;margin-bottom:8px;">'
             f'✓ {n_applied} rec{"s" if n_applied > 1 else ""} applied</div>',
             unsafe_allow_html=True,
         )
@@ -436,25 +808,31 @@ with st.sidebar:
             st.rerun()
 
     st.markdown(
-        '<div style="margin-top:24px;font-size:10px;color:#334155;line-height:1.6;">'
-        '⚠️ Synthetic client data<br>SCI-for-AI methodology<br>'
-        'AI:Works Global Hackathon 2026</div>',
+        f'<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;display:flex;align-items:flex-start;gap:5px;">'
+        f'{_svg("alert-triangle", 12, "#CECCE8")}'
+        '<span>Synthetic client data<br>SCI-for-AI methodology<br>AI:Works Global Hackathon 2026</span></div>',
         unsafe_allow_html=True,
     )
 
+
+# Silently update the browser URL to persist the current page across refreshes.
+# Uses replaceState so the back button is unaffected. Unique timestamp forces
+# React to re-execute the script on every rerun.
+_components.html(
+    f"<script>"
+    f"window.parent.history.replaceState(null,'','?page={page}');"
+    f"{_nav_icon_js()}"
+    f"// {time.time()}"
+    f"</script>",
+    height=0,
+)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
-    st.markdown("## TRACE Connect: Data Sources")
+    st.markdown("## Data Sources")
     st.caption("Every connected system, its status, data freshness, and normalization health")
-    st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        '<b style="color:#4edea3;">Connect</b>'
-        '<span style="color:#334155;"> → Observe → Optimize → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
 
     # ── Summary stats ──
     healthy  = sum(1 for c in CONNECTOR_STATE if c["status"] in ("Connected", "Uploaded", "Active"))
@@ -481,7 +859,7 @@ if page == "Connect":
             )
 
     st.markdown(
-        '<div style="font-size:12px;color:#64748b;margin:8px 0 4px;">'
+        '<div style="font-size:12px;color:#6b7280;margin:8px 0 4px;">'
         'Last normalization run: <b>12 minutes ago</b> &nbsp;·&nbsp; '
         f'Total records ingested: <b>{total_records:,}</b></div>',
         unsafe_allow_html=True,
@@ -498,13 +876,13 @@ if page == "Connect":
             st.session_state.mapping_saved    = False
             st.session_state.norm_done        = False
     with col_btn2:
-        st.button("⟳ Run Sync", use_container_width=True, disabled=True,
+        st.button("Run Sync", use_container_width=True, disabled=True,
                   help="In production TRACE: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
     with col_btn3:
         st.button("↑ Upload File", use_container_width=True, disabled=True,
                   help="Use '＋ Connect New System' to upload a new data source file.")
     with col_btn4:
-        st.button("📋 Norm Log", use_container_width=True, disabled=True,
+        st.button("Norm Log", use_container_width=True, disabled=True,
                   help="In production TRACE: shows the normalization history — which records mapped successfully and which were flagged. Simulated in this demo.")
 
     # ── Systems table ──
@@ -512,7 +890,7 @@ if page == "Connect":
 
     header = (
         '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        '<thead><tr style="background:#0f172a;color:#f8fafc;">'
+        '<thead><tr style="background:#f9fafb;color:#9ca3af;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">'
         '<th style="padding:10px 12px;text-align:left;">System</th>'
         '<th style="padding:10px 12px;text-align:left;">Category</th>'
         '<th style="padding:10px 12px;text-align:left;">Type</th>'
@@ -527,19 +905,19 @@ if page == "Connect":
 
     rows = ""
     for i, c in enumerate(CONNECTOR_STATE):
-        bg = "#fff" if i % 2 == 0 else "#f8fafc"
+        bg = "#fff" if i % 2 == 0 else "#f8fafb"
         badge = status_badge(c["status"])
         norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
         rows += (
-            f'<tr style="background:{bg};border-bottom:1px solid #e2e8f0;">'
-            f'<td style="padding:10px 12px;font-weight:600;color:#0f172a;">{c["system"]}</td>'
-            f'<td style="padding:10px 12px;color:#475569;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
-            f'<td style="padding:10px 12px;font-family:monospace;font-size:12px;color:#475569;">{c["type"]}</td>'
+            f'<tr style="background:{bg};border-bottom:1px solid #e5e7eb;">'
+            f'<td style="padding:10px 12px;font-weight:600;color:#111827;">{c["system"]}</td>'
+            f'<td style="padding:10px 12px;color:#374151;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
+            f'<td style="padding:10px 12px;font-family:Inter,sans-serif;font-size:12px;color:#374151;">{c["type"]}</td>'
             f'<td style="padding:10px 12px;">{badge}</td>'
-            f'<td style="padding:10px 12px;color:#64748b;font-size:12px;">{c["last_sync"]}</td>'
-            f'<td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:12px;">{c["records"]}</td>'
+            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["last_sync"]}</td>'
+            f'<td style="padding:10px 12px;text-align:right;font-family:Inter,sans-serif;font-size:12px;">{c["records"]}</td>'
             f'<td style="padding:10px 12px;color:{norm_color};font-weight:600;font-size:12px;cursor:help;" title="Normalization: the % of ingested records successfully mapped to TRACE\'s schema (app name, model, region, token counts all present and matched). Unmapped records appear in the Norm Log.">{c["norm_pct"]}</td>'
-            f'<td style="padding:10px 12px;color:#64748b;font-size:12px;">{c["owner"]}</td>'
+            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["owner"]}</td>'
             f'<td style="padding:10px 12px;color:#3b82f6;font-size:12px;cursor:pointer;">{c["action"]}</td>'
             '</tr>'
         )
@@ -552,8 +930,8 @@ if page == "Connect":
         for i, name in enumerate(AVAILABLE_CONNECTORS):
             with cols[i % 3]:
                 st.markdown(
-                    f'<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;'
-                    f'padding:10px 14px;margin-bottom:8px;font-size:13px;color:#475569;">'
+                    f'<div style="background:#f8fafb;border:1px dashed #d1d5db;border-radius:6px;'
+                    f'padding:10px 14px;margin-bottom:8px;font-size:13px;color:#374151;">'
                     f'<span class="status-coming_soon">Coming Soon</span>'
                     f'&nbsp;&nbsp;<b>{name}</b></div>',
                     unsafe_allow_html=True,
@@ -603,7 +981,7 @@ if page == "Connect":
                 if src == "FinOps / Cloud Cost":
                     st.markdown("**System:** Cloudability Export")
                     st.markdown(
-                        '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">'
+                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
                         'Expected fields: account · service · region · cost_usd · usage_kwh · '
                         'timestamp · tags_project · tags_workspace · business_unit · environment'
                         '</div>',
@@ -613,7 +991,7 @@ if page == "Connect":
                     if sample_path.exists():
                         with open(sample_path, "rb") as f_sample:
                             st.download_button(
-                                "📎 Download sample file",
+                                "Download sample file",
                                 data=f_sample,
                                 file_name="finops_cloud_export_sample.csv",
                                 mime="text/csv",
@@ -633,8 +1011,8 @@ if page == "Connect":
 
                         st.success(
                             f"**File validated.** {n_total:,} records found.\n\n"
-                            f"⚠️ {n_no_region} records missing `region`.\n\n"
-                            f"⚠️ {n_no_workspace} records missing `tags_workspace`.\n\n"
+                            f"{n_no_region} records missing `region`.\n\n"
+                            f"{n_no_workspace} records missing `tags_workspace`.\n\n"
                             f"Proceed to field mapping?"
                         )
 
@@ -664,9 +1042,9 @@ if page == "Connect":
                              ["Store full prompt/response", "Store metadata only", "Store redacted prompt/response"],
                              index=1)
                     st.markdown("""
-<div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.7;">
+<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.7;">
 <b>Store full prompt / response</b> — saves the complete text of every request and response.
-⚠️ Only use if content is non-sensitive and your data governance policy permits it.<br>
+Note: Only use if content is non-sensitive and your data governance policy permits it.<br>
 <b>Store metadata only</b> (default — recommended) — saves token counts, model, latency, cost, and eval scores. No actual text stored.
 All carbon and cost calculations work with metadata only.<br>
 <b>Store redacted prompt / response</b> — saves the text with PII automatically removed (names, account numbers, etc.).
@@ -688,7 +1066,7 @@ Requires a redaction filter to be configured.
 
                 mapping_html = (
                     '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-                    '<thead><tr style="background:#f1f5f9;">'
+                    '<thead><tr style="background:#f3f4f6;">'
                     '<th style="padding:7px 10px;text-align:left;">Source field</th>'
                     '<th style="padding:7px 10px;text-align:left;">TRACE field</th>'
                     '<th style="padding:7px 10px;text-align:left;">Status</th>'
@@ -698,9 +1076,9 @@ Requires a redaction filter to be configured.
                     color = "#166534" if status == "Mapped" else "#92400e"
                     icon  = "✓" if status == "Mapped" else "↺"
                     mapping_html += (
-                        f'<tr style="border-bottom:1px solid #e2e8f0;">'
-                        f'<td style="padding:6px 10px;font-family:monospace;color:#475569;">{src_f}</td>'
-                        f'<td style="padding:6px 10px;font-family:monospace;color:#0f172a;">{trace_f}</td>'
+                        f'<tr style="border-bottom:1px solid #e5e7eb;">'
+                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
+                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
                         f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
                         '</tr>'
                     )
@@ -732,13 +1110,13 @@ Requires a redaction filter to be configured.
     # ── Status legend ──
     with st.expander("Status reference", expanded=False):
         legend = [
-            ("Connected",    "#dcfce7", "#166534", "API connection is healthy and syncing"),
-            ("Uploaded",     "#dbeafe", "#1e40af", "Static file was uploaded successfully"),
-            ("Active",       "#dcfce7", "#166534", "Reference dataset is active"),
-            ("Warning",      "#fef3c7", "#92400e", "Data ingested but incomplete, stale, or partially mapped"),
-            ("Failed",       "#fee2e2", "#b91c1c", "Connection or ingestion failed"),
-            ("Paused",       "#f1f5f9", "#475569", "Connector configured but not syncing"),
-            ("Coming Soon",  "#f1f5f9", "#475569", "Connector tile exists but not enabled"),
+            ("Connected",    "#10b981", "#ffffff", "API connection is healthy and syncing"),
+            ("Uploaded",     "#3b82f6", "#ffffff", "Static file was uploaded successfully"),
+            ("Active",       "#10b981", "#ffffff", "Reference dataset is active"),
+            ("Warning",      "#f59e0b", "#ffffff", "Data ingested but incomplete, stale, or partially mapped"),
+            ("Failed",       "#ef4444", "#ffffff", "Connection or ingestion failed"),
+            ("Paused",       "#9ca3af", "#ffffff", "Connector configured but not syncing"),
+            ("Coming Soon",  "#9ca3af", "#ffffff", "Connector tile exists but not enabled"),
         ]
         cols = st.columns(4)
         for i, (name, bg, fg, desc) in enumerate(legend):
@@ -747,7 +1125,7 @@ Requires a redaction filter to be configured.
                     f'<div style="margin-bottom:8px;">'
                     f'<span style="background:{bg};color:{fg};border-radius:99px;padding:2px 10px;'
                     f'font-size:11px;font-weight:600;">{name}</span>'
-                    f'<div style="font-size:11px;color:#64748b;margin-top:3px;">{desc}</div></div>',
+                    f'<div style="font-size:11px;color:#6b7280;margin-top:3px;">{desc}</div></div>',
                     unsafe_allow_html=True,
                 )
 
@@ -756,21 +1134,10 @@ Requires a redaction filter to be configured.
 # PAGE: OBSERVE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Observe":
-    st.markdown("## TRACE Observe: AI Workload Dashboard")
-    st.markdown(
-        '<div class="synth">⚠️ <b>Synthetic client data</b> — shaped like real AI/Works + Langfuse + CCF exports. '
-        'All numbers illustrative. Coefficients from public benchmarks.</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">'
-        'Connect → <b style="color:#4edea3;">Observe</b>'
-        '<span style="color:#334155;"> → Optimize → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("## AI Workload Dashboard")
 
-    tab_dash, tab_detail, tab_traces, tab_debt = st.tabs(
-        ["📊 Dashboard", "🔍 AI Detail", "🔗 Agent Traces", "⚡ Energy Debt"]
+    tab_overview, tab_breakdown, tab_deepdive = st.tabs(
+        ["Overview", "Breakdown", "Deep Dive"]
     )
 
     any_applied = bool(st.session_state.applied_recs)
@@ -781,11 +1148,11 @@ elif page == "Observe":
     base_tokens       = llm_raw["total_tokens"].sum()
     base_traces       = int(llm_raw["trace_count"].sum()) if "trace_count" in llm_raw.columns else 0
 
-    # ── Dashboard tab ──
-    with tab_dash:
-        st.caption("📅 May 2026 (30 days) · Cloud infrastructure + AI inference combined · Synthetic Northstar Bank data · SCI-for-AI methodology")
+    # ── Overview tab ──
+    with tab_overview:
+        st.caption("May 2026 (30 days) · Cloud infrastructure + AI inference combined · Synthetic Northstar Bank data · SCI-for-AI methodology")
 
-        with st.expander("ℹ️ What's the difference between AI inference and cloud infrastructure?", expanded=False):
+        with st.expander("What's the difference between AI inference and cloud infrastructure?", expanded=False):
             st.markdown("""
 **AI inference** = the energy and carbon of *calling* an AI model — every prompt sent to Claude, GPT-4, or similar.
 Measured in tokens; tracked via Langfuse or an AI gateway. Optimized by changing model, routing, or prompt design.
@@ -796,78 +1163,44 @@ Measured in kWh from cloud billing exports; tracked via CCF methodology. Optimiz
 They are tracked separately because they have **different optimization levers**. TRACE surfaces both so you can act on either.
 """)
 
-        st.markdown('<div class="sh">Total Footprint</div>', unsafe_allow_html=True)
-        c1, c2, c3, c4, c5 = st.columns(5)
+        # Row 1: activity metrics
+        st.markdown('<div class="sh">Activity</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
         with c1:
-            if any_applied:
-                d = total_cost_curr - total_cost_base
-                kpi("Total Cost", f"${total_cost_curr:,.0f}",
-                    delta=f"{d/total_cost_base*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
-            else:
-                kpi("Total Cost", f"${total_cost_base:,.0f}", sub="AI + cloud combined")
-        with c2:
-            if any_applied:
-                d = total_carbon_curr - total_carbon_base
-                kpi("Total Carbon", f"{total_carbon_curr:,.1f} kg",
-                    delta=f"{d/total_carbon_base*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
-            else:
-                kpi("Total Carbon", f"{total_carbon_base:,.1f} kg CO₂e", sub="AI + cloud combined")
-        with c3:
-            ai_energy = ai_curr["ai_energy_kwh"].sum()
-            cloud_energy = cloud_raw["usage_kwh"].sum()
-            kpi("Total Energy", f"{ai_energy + cloud_energy:,.0f} kWh",
-                sub=f"{ai_energy/(ai_energy+cloud_energy)*100:.0f}% from AI inference")
-        with c4:
-            total_water = curr_ai_water + base_cloud_water
-            kpi("Total Water", f"{total_water:,.0f} L",
-                sub=f"{curr_ai_water/total_water*100:.0f}% from AI inference")
-        with c5:
             kpi("Total Tokens", f"{base_tokens/1e6:.1f}M",
                 sub=f"across {llm_raw['app'].nunique()} apps · {llm_raw['model'].nunique()} models")
-
-        st.markdown('<div class="sh">AI Inference</div>', unsafe_allow_html=True)
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            if any_applied:
-                d = curr_ai_cost - base_ai_cost
-                kpi("AI Cost", f"${curr_ai_cost:,.0f}",
-                    delta=f"{d/base_ai_cost*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
-            else:
-                kpi("AI Cost", f"${base_ai_cost:,.0f}", sub=f"across {llm_raw['app'].nunique()} apps")
         with c2:
-            if any_applied:
-                d = curr_ai_carbon - base_ai_carbon
-                kpi("AI Carbon", f"{curr_ai_carbon:,.1f} kg",
-                    delta=f"{d/base_ai_carbon*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
-            else:
-                kpi("AI Carbon", f"{base_ai_carbon:,.1f} kg CO₂e",
-                    sub=f"{base_ai_carbon/total_carbon_base*100:.0f}% of total")
-        with c3:
-            ai_energy_only = ai_curr["ai_energy_kwh"].sum()
-            kpi("AI Energy", f"{ai_energy_only:,.0f} kWh",
-                sub=f"{llm_raw['model'].nunique()} models tracked")
-        with c4:
-            if any_applied:
-                d = curr_ai_water - base_ai_water
-                kpi("AI Water", f"{curr_ai_water:,.0f} L",
-                    delta=f"{d/base_ai_water*100:+.1f}%  ({d:+,.0f} L)", good=(d <= 0))
-            else:
-                kpi("AI Water", f"{base_ai_water:,.0f} L", sub="energy × WUE per region")
-        with c5:
             total_runs = len(trace_data["traces"])
             kpi("Traced Workflows", str(total_runs), sub=f"from {trace_data['total_traces']:,} total in ledger")
 
-        st.markdown('<div class="sh">Cloud Infrastructure</div>', unsafe_allow_html=True)
+        # Row 2: impact metrics — total big number + AI/Cloud breakdown inline
+        st.markdown('<div class="sh">Footprint</div>', unsafe_allow_html=True)
+        ai_energy = ai_curr["ai_energy_kwh"].sum()
+        cloud_energy = cloud_raw["usage_kwh"].sum()
+        total_water = curr_ai_water + base_cloud_water
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            kpi("Cloud Cost", f"${base_cloud_cost:,.0f}")
+            if any_applied:
+                d = total_cost_curr - total_cost_base
+                kpi("Cost", f"${total_cost_curr:,.0f}",
+                    delta=f"{d/total_cost_base*100:+.1f}%  (${d:+,.0f})", good=(d <= 0))
+            else:
+                kpi("Cost", f"${total_cost_base:,.0f}",
+                    sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;${base_ai_cost:,.0f}<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;${base_cloud_cost:,.0f}')
         with c2:
-            kpi("Cloud Carbon", f"{base_cloud_carbon:,.1f} kg CO₂e",
-                sub=f"{base_cloud_carbon/total_carbon_base*100:.0f}% of total")
+            if any_applied:
+                d = total_carbon_curr - total_carbon_base
+                kpi("Carbon", f"{total_carbon_curr:,.1f} kg",
+                    delta=f"{d/total_carbon_base*100:+.1f}%  ({d:+,.1f} kg)", good=(d <= 0))
+            else:
+                kpi("Carbon", f"{total_carbon_base:,.1f} kg CO₂e",
+                    sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{base_ai_carbon:,.1f} kg<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{base_cloud_carbon:,.1f} kg')
         with c3:
-            kpi("Cloud Energy", f"{cloud_raw['usage_kwh'].sum():,.0f} kWh")
+            kpi("Energy", f"{ai_energy + cloud_energy:,.0f} kWh",
+                sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{ai_energy:,.0f} kWh<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{cloud_energy:,.0f} kWh')
         with c4:
-            kpi("Cloud Water", f"{base_cloud_water:,.0f} L", sub="usage_kWh × WUE per region")
+            kpi("Water", f"{total_water:,.0f} L",
+                sub=f'<span style="color:#7C3AED">AI</span>&nbsp;&nbsp;{curr_ai_water:,.0f} L<br><span style="color:#2563EB">Cloud</span>&nbsp;&nbsp;{base_cloud_water:,.0f} L')
 
         st.markdown('<div class="sh">Daily Carbon Trend</div>', unsafe_allow_html=True)
         daily_ai    = ai_curr.groupby("date")["ai_carbon_kg"].sum().reset_index()
@@ -879,7 +1212,7 @@ They are tracked separately because they have **different optimization levers**.
 
         fig = px.area(
             daily_long, x="date", y="kg CO₂e", color="Source",
-            color_discrete_map={"AI Inference": "#006c49", "Cloud Infra": "#94a3b8"},
+            color_discrete_map={"AI Inference": "#7C3AED", "Cloud Infra": "#2563EB"},
             template="simple_white",
         )
         fig.update_layout(
@@ -891,8 +1224,8 @@ They are tracked separately because they have **different optimization levers**.
         st.plotly_chart(fig, use_container_width=True)
 
     # ── AI Detail tab ──
-    with tab_detail:
-        st.caption("Carbon, energy, water, and cost by app, model, and region · `tokens ÷ 1M × kWh/1M × gCO₂e/kWh`")
+    with tab_breakdown:
+        st.caption("AI usage cross-referenced with carbon, energy, water, and cost · `tokens ÷ 1M × kWh/1M × gCO₂e/kWh`")
 
         by_app = (ai_curr
                   .groupby("app")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "total_tokens"]]
@@ -904,7 +1237,7 @@ They are tracked separately because they have **different optimization levers**.
         top_c_pct    = top["ai_carbon_kg"] / by_app["ai_carbon_kg"].sum() * 100
         top_cost_pct = top["ai_cost_usd"]  / by_app["ai_cost_usd"].sum()  * 100
         st.warning(
-            f"⚡ **{top['app']}** — **{top_c_pct:.0f}% of AI carbon** and "
+            f"**{top['app']}** — **{top_c_pct:.0f}% of AI carbon** and "
             f"**{top_cost_pct:.0f}% of AI cost**. "
             f"Why? It runs a **large model** (1.2 kWh/1M tokens — the most energy-intensive class) "
             f"in **ap-south / Mumbai** (630 gCO₂e/kWh — India's grid is 3× dirtier than Oregon's). "
@@ -912,131 +1245,57 @@ They are tracked separately because they have **different optimization levers**.
             f"→ Fix one app, cut ~half the AI footprint."
         )
 
-        PALETTE = ["#0f172a", "#006c49", "#4edea3", "#94a3b8", "#e2e8f0"]
+        group_by = st.radio("Group by", ["App", "Model", "Region"], horizontal=True, key="obs_groupby")
+
+        if group_by == "App":
+            grouped = (ai_curr
+                       .groupby("app")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index())
+            grouped.columns = ["App", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)"]
+            label_col = "App"
+        elif group_by == "Model":
+            grouped = (ai_curr
+                       .groupby("model")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index())
+            grouped.columns = ["Model", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)"]
+            label_col = "Model"
+        else:
+            grouped = (ai_curr
+                       .groupby("region")[["total_tokens", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters", "ai_cost_usd"]]
+                       .sum().sort_values("ai_carbon_kg", ascending=False).reset_index()
+                       .merge(grid[["region", "g_co2e_per_kwh", "wue_liters_per_kwh"]], on="region", how="left"))
+            grouped.columns = ["Region", "Tokens", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)", "Cost (USD)", "gCO₂e/kWh", "WUE (L/kWh)"]
+            label_col = "Region"
+
+        st.markdown('<div class="sh">AI Usage × Impact — All Metrics</div>', unsafe_allow_html=True)
+        st.dataframe(grouped, use_container_width=True, hide_index=True)
+
+        PALETTE = ["#7C3AED", "#9333EA", "#A855F7", "#C4B5FD", "#6D28D9"]
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown('<div class="sh">Carbon by App (kg CO₂e / month)</div>', unsafe_allow_html=True)
-            fig = px.bar(by_app, x="ai_carbon_kg", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_carbon_kg": "kg CO₂e", "app": ""})
+            st.markdown(f'<div class="sh">Carbon by {group_by} (kg CO₂e / month)</div>', unsafe_allow_html=True)
+            fig = px.bar(grouped, x="Carbon (kg CO₂e)", y=label_col, orientation="h",
+                         color=label_col, color_discrete_sequence=PALETTE, template="simple_white",
+                         labels={"Carbon (kg CO₂e)": "kg CO₂e", label_col: ""})
             fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
                                height=260, font=dict(family="Inter", size=12))
             st.plotly_chart(fig, use_container_width=True)
         with col2:
-            st.markdown('<div class="sh">Cost by App (USD / month)</div>', unsafe_allow_html=True)
-            fig = px.bar(by_app, x="ai_cost_usd", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_cost_usd": "USD", "app": ""})
+            st.markdown(f'<div class="sh">Cost by {group_by} (USD / month)</div>', unsafe_allow_html=True)
+            fig = px.bar(grouped, x="Cost (USD)", y=label_col, orientation="h",
+                         color=label_col, color_discrete_sequence=PALETTE, template="simple_white",
+                         labels={"Cost (USD)": "USD", label_col: ""})
             fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
                                height=260, font=dict(family="Inter", size=12))
             st.plotly_chart(fig, use_container_width=True)
 
-        st.markdown('<div class="sh">Energy & Water by App</div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            fig = px.bar(by_app, x="ai_energy_kwh", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_energy_kwh": "kWh", "app": ""})
-            fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
-                               height=260, font=dict(family="Inter", size=12),
-                               title=dict(text="Energy by App (kWh / month)", font=dict(size=12)))
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.bar(by_app, x="ai_water_liters", y="app", orientation="h",
-                         color="app", color_discrete_sequence=PALETTE, template="simple_white",
-                         labels={"ai_water_liters": "Liters", "app": ""})
-            fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=5, b=0),
-                               height=260, font=dict(family="Inter", size=12),
-                               title=dict(text="Water by App (L / month · energy × WUE)", font=dict(size=12)))
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown('<div class="sh">By Model</div>', unsafe_allow_html=True)
-        by_model = (ai_curr.groupby("model")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-                    .sum().reset_index().sort_values("ai_carbon_kg", ascending=False))
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            fig = px.pie(by_model, values="ai_carbon_kg", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Carbon by Model")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.pie(by_model, values="ai_cost_usd", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Cost by Model")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col3:
-            fig = px.pie(by_model, values="ai_energy_kwh", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Energy by Model (kWh)")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-        with col4:
-            fig = px.pie(by_model, values="ai_water_liters", names="model",
-                         color_discrete_sequence=PALETTE, hole=0.45,
-                         template="simple_white", title="Water by Model (L)")
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=230,
-                               font=dict(family="Inter", size=12))
-            fig.update_traces(textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown('<div class="sh">By Region (carbon · energy · water)</div>', unsafe_allow_html=True)
-        by_region = (ai_curr.groupby("region")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-                     .sum().reset_index()
-                     .merge(grid, on="region"))
-        by_region["label"] = by_region["region"] + "  (" + by_region["g_co2e_per_kwh"].astype(str) + " g/kWh)"
-        by_region = by_region.sort_values("ai_carbon_kg", ascending=False)
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            fig = px.bar(by_region, x="label", y="ai_carbon_kg",
-                         color="g_co2e_per_kwh",
-                         color_continuous_scale=["#4edea3", "#f59e0b", "#b91c1c"],
-                         range_color=[100, 700], template="simple_white",
-                         labels={"label": "Region", "ai_carbon_kg": "kg CO₂e", "g_co2e_per_kwh": "gCO₂e/kWh"},
-                         title="Carbon by Region (kg CO₂e)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            fig = px.bar(by_region, x="label", y="ai_energy_kwh",
-                         color="ai_energy_kwh",
-                         color_continuous_scale=["#bfdbfe", "#3b82f6", "#1e3a8a"],
-                         template="simple_white",
-                         labels={"label": "Region", "ai_energy_kwh": "kWh"},
-                         title="Energy by Region (kWh)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        with col3:
-            fig = px.bar(by_region, x="label", y="ai_water_liters",
-                         color="wue_liters_per_kwh",
-                         color_continuous_scale=["#bae6fd", "#0284c7", "#075985"],
-                         template="simple_white",
-                         labels={"label": "Region", "ai_water_liters": "Liters", "wue_liters_per_kwh": "WUE"},
-                         title="Water by Region (L · energy × WUE)")
-            fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=30, b=0),
-                               height=240, font=dict(family="Inter", size=12))
-            st.plotly_chart(fig, use_container_width=True)
-        st.caption(
-            "Dirtiest grids drive carbon; wettest / hottest climates drive water. Region shift addresses both. "
-            "ap-south (Mumbai) scores worst on both: 630 gCO₂e/kWh grid + WUE 1.8 L/kWh — "
-            "3× dirtier and 2× more water-intensive than us-west (Oregon). "
-            "Shifting Support-Bot to Oregon cuts carbon AND water in the same move."
-        )
-        st.dataframe(
-            by_region[["region", "g_co2e_per_kwh", "wue_liters_per_kwh", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
-            .rename(columns={"region": "Region", "g_co2e_per_kwh": "gCO₂e/kWh", "wue_liters_per_kwh": "WUE (L/kWh)",
-                              "ai_carbon_kg": "Carbon (kg)", "ai_energy_kwh": "Energy (kWh)", "ai_water_liters": "Water (L)"}),
-            use_container_width=True, hide_index=True,
-        )
+        if group_by == "Region":
+            st.caption(
+                "Dirtiest grids drive carbon; wettest / hottest climates drive water. Region shift addresses both. "
+                "ap-south (Mumbai) scores worst on both: 630 gCO₂e/kWh grid + WUE 1.8 L/kWh — "
+                "3× dirtier and 2× more water-intensive than us-west (Oregon). "
+                "Shifting Support-Bot to Oregon cuts carbon AND water in the same move."
+            )
 
         st.markdown('<div class="sh">Full Detail — App × Model × Region</div>', unsafe_allow_html=True)
         detail = (ai_curr
@@ -1052,31 +1311,32 @@ They are tracked separately because they have **different optimization levers**.
         detail["Tokens"]       = detail["Tokens"].map("{:,.0f}".format)
         st.dataframe(detail, use_container_width=True, hide_index=True)
 
-    # ── Agent Traces tab ──
-    with tab_traces:
+    # ── Deep Dive tab (Agent Traces + Energy Debt) ──
+    with tab_deepdive:
+        st.markdown('<div class="sh">Agent Traces</div>', unsafe_allow_html=True)
         st.caption("Each row is one step in an AI agent workflow — showing the exact cost, carbon, and quality of every model call.")
 
-        with st.expander("🗺️ How to read this graph", expanded=True):
+        with st.expander("How to read this graph", expanded=False):
             st.markdown("""
 **Each box = one step in an AI agent workflow** (one call to a model).
 
 **Border color shows health:**
-- 🟢 **Green** = Clean run (0 retries)
-- 🟡 **Amber** = Some retries (1–2 retries)
-- 🔴 **Red** = High retries (3+ retries)
+- **Green border** = Clean run (0 retries)
+- **Amber border** = Some retries (1–2 retries)
+- **Red border** = High retries (3+ retries)
 
 **Inside each box:**
-| Icon | Meaning |
+| Label | Meaning |
 |---|---|
-| 🔡 | Tokens **in → out** (input tokens → output tokens) |
-| ⏱ | **Latency** — how long the step took |
-| 💵 | **Cost** in USD for this step |
-| 🌿 | **Carbon** in kg CO₂e for this step |
-| ★ | **Eval score** — output quality (0 = poor · 1 = perfect) |
-| ✓ Accepted | Output was **used** by the next step |
-| ✗ Rejected | Output was **discarded** — quality too low or agent retried |
+| Tokens | Tokens **in → out** (input tokens → output tokens) |
+| Latency | How long the step took |
+| Cost | Cost in USD for this step |
+| Carbon | Carbon in kg CO₂e for this step |
+| Eval | Output quality score (0 = poor · 1 = perfect) |
+| Accepted | Output was **used** by the next step |
+| Rejected | Output was **discarded** — quality too low or agent retried |
 
-> ⚠️ **Retries = wasted compute.** A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon.
+> **Retries = wasted compute.** A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon.
 > Retries are invisible in billing dashboards — TRACE surfaces them so you can fix the prompt.
 """)
 
@@ -1106,7 +1366,7 @@ They are tracked separately because they have **different optimization levers**.
         worst = max(t_spans, key=lambda s: s.get("retry_count", 0))
         if worst["retry_count"] > 0:
             st.error(
-                f"⚠️ **{worst['agent_name']}** has the highest retry count "
+                f"**{worst['agent_name']}** has the highest retry count "
                 f"(**{worst['retry_count']} retries**). "
                 f"This step accounts for ${worst['cost_usd']:.2f} of the trace cost "
                 f"and {worst.get('co2e_kg', 0):.3f} kg CO₂e. "
@@ -1134,16 +1394,16 @@ They are tracked separately because they have **different optimization levers**.
         st.dataframe(pd.DataFrame(span_rows), use_container_width=True, hide_index=True)
 
         st.markdown(
-            '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">'
+            '<div style="font-size:12px;color:#9ca3af;margin-top:6px;">'
             'CO₂e estimated from token count × kWh/1M tokens × regional grid intensity (kg CO₂e/kWh). '
             'Confidence: Medium (region and model-class factors available; provider-specific hardware not measured).</div>',
             unsafe_allow_html=True,
         )
 
-    # ── Energy Debt tab ──
-    with tab_debt:
+        st.divider()
+        st.markdown('<div class="sh">Energy Debt</div>', unsafe_allow_html=True)
         st.caption("Apps ranked by blended score: 60% runtime carbon + 40% code-risk")
-        st.info("""**⚡ What is Energy Debt?**
+        st.info("""**What is Energy Debt?**
 
 Energy Debt measures two things at once for each AI application:
 
@@ -1199,11 +1459,11 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 
         worst_app = assess.iloc[0]
         st.error(
-            f"🔴 **{worst_app['app']}** — Energy Debt Score **{worst_app['score']:.2f} / 1.00** · "
+            f"**{worst_app['app']}** — Energy Debt Score **{worst_app['score']:.2f} / 1.00** · "
             f"{worst_app['ai_carbon_kg']:.1f} kg CO₂e/mo · {int(worst_app['semgrep_total'])} findings"
         )
 
-        RANK_COLORS = ["#b91c1c", "#d97706", "#6b7280", "#6b7280", "#9ca3af"]
+        RANK_COLORS = ["#ef4444", "#d97706", "#6b7280", "#6b7280", "#9ca3af"]
         for i, row in assess.iterrows():
             rc = RANK_COLORS[min(i, len(RANK_COLORS) - 1)]
             score_bar = f"{row['score'] * 100:.0f}%"
@@ -1221,16 +1481,16 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
     <div style="font-size:24px;font-weight:800;color:{rc};min-width:30px;line-height:1;">#{i+1}</div>
     <div style="flex:1;">
       <div class="rec-title">{row['app']}</div>
-      <div style="font-size:12px;color:#64748b;">{row['ai_carbon_kg']:.1f} kg CO₂e/mo &nbsp;·&nbsp; ${row['ai_cost_usd']:,.0f}/mo</div>
+      <div style="font-size:12px;color:#6b7280;">{row['ai_carbon_kg']:.1f} kg CO₂e/mo &nbsp;·&nbsp; ${row['ai_cost_usd']:,.0f}/mo</div>
     </div>
     <div style="text-align:right;">
       <div style="font-size:24px;font-weight:800;color:{rc};line-height:1;">{row['score']:.2f} / 1.00</div>
-      <div style="font-size:9px;color:#94a3b8;font-family:monospace;">ENERGY DEBT SCORE</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px;">Higher = more urgent</div>
+      <div style="font-size:9px;color:#9ca3af;font-family:Inter,sans-serif;">ENERGY DEBT SCORE</div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:2px;">Higher = more urgent</div>
     </div>
   </div>
-  <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">Score = 60% carbon rank + 40% code risk rank &nbsp;·&nbsp; {score_bar} of maximum debt</div>
-  <div style="background:#f1f5f9;border-radius:3px;height:5px;margin-bottom:8px;">
+  <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">Score = 60% carbon rank + 40% code risk rank &nbsp;·&nbsp; {score_bar} of maximum debt</div>
+  <div style="background:#f3f4f6;border-radius:3px;height:5px;margin-bottom:8px;">
     <div style="background:{rc};height:5px;border-radius:3px;width:{score_bar};"></div>
   </div>
   {badges}
@@ -1238,10 +1498,10 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 
         if code_findings:
             st.markdown('<div class="sh">Code Inefficiency Findings — What to Fix</div>', unsafe_allow_html=True)
-            st.caption("From a Semgrep static analysis scan of the apps' source code. Each finding is a pattern that wastes energy at runtime. 🔴 energy-debt = direct compute waste · 🟡 other findings = broader code issues.")
+            st.caption("From a Semgrep static analysis scan of the apps' source code. Each finding is a pattern that wastes energy at runtime. energy-debt findings = direct compute waste · other findings = broader code issues.")
             for f in code_findings[:4]:
-                sev_color = {"HIGH": "#b91c1c", "MEDIUM": "#92400e", "LOW": "#64748b"}.get(f["severity"], "#64748b")
-                sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7", "LOW": "#f1f5f9"}.get(f["severity"], "#f1f5f9")
+                sev_color = {"HIGH": "#ef4444", "MEDIUM": "#92400e", "LOW": "#6b7280"}.get(f["severity"], "#6b7280")
+                sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7", "LOW": "#f3f4f6"}.get(f["severity"], "#f3f4f6")
                 st.markdown(
                     f'<div class="rec" style="margin-bottom:8px;">'
                     f'<div class="rec-title">'
@@ -1250,8 +1510,8 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
                     f'{f["finding"][:80]}{"…" if len(f["finding"])>80 else ""}</div>'
                     f'<div class="rec-body" style="margin-top:4px;">'
                     f'<b>Fix:</b> {f["recommendation"]}</div>'
-                    f'<div style="font-size:11px;color:#94a3b8;">'
-                    f'📁 {f["file_path"]} &nbsp;·&nbsp; 🤖 {f["agent_name"]} · {f["component"]}</div>'
+                    f'<div style="font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:4px;">'
+                    f'{_svg("folder", 12, "#9ca3af")} {f["file_path"]} &nbsp;·&nbsp; {f["agent_name"]} · {f["component"]}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -1261,14 +1521,8 @@ A score of **1.00 = worst possible**. The ranking tells your modernization team 
 # PAGE: OPTIMIZE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Optimize":
-    st.markdown("## TRACE Optimize: Recommendations")
+    st.markdown("## Recommendations")
     st.caption("Apply a recommendation — watch AI cost and carbon drop live")
-    st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        'Connect → Observe → <b style="color:#4edea3;">Optimize</b>'
-        '<span style="color:#334155;"> → Prove</span></div>',
-        unsafe_allow_html=True,
-    )
 
     any_applied = bool(st.session_state.applied_recs)
 
@@ -1296,7 +1550,7 @@ elif page == "Optimize":
     # ── Recommendation cards ──
     st.markdown('<div class="sh">AI Workload Recommendations</div>', unsafe_allow_html=True)
     st.caption(
-        "⚡ Apply runs a live what-if simulation — it recalculates all metrics as if this change "
+        "Apply runs a live what-if simulation — it recalculates all metrics as if this change "
         "were in production. Nothing in your real infrastructure changes. "
         "Use ↩ Reset all in the sidebar to restore the baseline."
     )
@@ -1323,10 +1577,10 @@ elif page == "Optimize":
             else '<span class="pill-gray">Cost unchanged (carbon-only win)</span>'
         )
         card_cls = "rec applied" if applied else "rec"
-        icon     = "✅" if applied else "⚡"
+        rec_icon = _svg("check-circle", 16, "#10b981") if applied else _svg("zap", 16, "#6366f1")
         st.markdown(f"""
 <div class="{card_cls}">
-  <div class="rec-title">{icon} {rec['title']}</div>
+  <div class="rec-title" style="display:flex;align-items:center;gap:6px;">{rec_icon} {rec['title']}</div>
   <div class="rec-body">{rec['rationale']}</div>
   <div style="margin-bottom:8px;">{actions_html}</div>
   <div style="margin-bottom:8px;">
@@ -1338,7 +1592,7 @@ elif page == "Optimize":
         col_btn, _ = st.columns([2, 4])
         with col_btn:
             if not applied:
-                if st.button("⚡ Apply", key=f"apply_{rec['id']}", type="primary", use_container_width=True):
+                if st.button("Apply", key=f"apply_{rec['id']}", type="primary", use_container_width=True):
                     with st.spinner("Computing optimized footprint…"):
                         time.sleep(0.6)
                     st.session_state.applied_recs.add(rec["id"])
@@ -1353,8 +1607,8 @@ elif page == "Optimize":
     st.markdown('<div class="sh">Code Inefficiency Fixes</div>', unsafe_allow_html=True)
     st.caption("These findings come from a Semgrep static analysis scan of the apps' source code. Fixing them reduces wasted compute at the code level, complementing the model and region optimizations above.")
     for f in code_findings[:2]:
-        sev_color = {"HIGH": "#b91c1c", "MEDIUM": "#92400e"}.get(f["severity"], "#64748b")
-        sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7"}.get(f["severity"], "#f1f5f9")
+        sev_color = {"HIGH": "#ef4444", "MEDIUM": "#92400e"}.get(f["severity"], "#6b7280")
+        sev_bg    = {"HIGH": "#fee2e2", "MEDIUM": "#fef3c7"}.get(f["severity"], "#f3f4f6")
         st.markdown(
             f'<div class="rec">'
             f'<div class="rec-title">'
@@ -1362,8 +1616,8 @@ elif page == "Optimize":
             f'font-size:11px;font-weight:600;margin-right:8px;">{f["severity"]}</span>'
             f'Energy debt: {f["finding"][:70]}{"…" if len(f["finding"])>70 else ""}</div>'
             f'<div class="rec-body">{f["recommendation"]}</div>'
-            f'<div style="font-size:11px;color:#94a3b8;">'
-            f'📁 {f["file_path"]} &nbsp;·&nbsp; Impact: {f["estimated_runtime_impact"][:60]}…</div>'
+            f'<div style="font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:4px;">'
+            f'{_svg("folder", 12, "#9ca3af")} {f["file_path"]} &nbsp;·&nbsp; Impact: {f["estimated_runtime_impact"][:60]}…</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -1405,10 +1659,10 @@ elif page == "Optimize":
       <td>{base_ai_water:,.0f} L</td>
       <td>12.8s</td>
       <td>Low</td>
-      <td><span style="color:#64748b;font-size:12px;">Baseline</span></td>
+      <td><span style="color:#6b7280;font-size:12px;">Baseline</span></td>
     </tr>
     <tr class="balanced">
-      <td><b>⭐ Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
+      <td><b>Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
       <td>${ai_cost_bal:,.0f} <span style="color:#166534;font-size:11px;">−20.5%</span></td>
       <td>{ai_co2_bal + base_cloud_carbon:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
       <td>{ai_water_bal:,.0f} L <span style="color:#166534;font-size:11px;">−16.1%</span></td>
@@ -1427,7 +1681,7 @@ elif page == "Optimize":
     </tr>
   </tbody>
 </table>
-<div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+<div style="font-size:11px;color:#9ca3af;margin-top:8px;">
   Projections apply all recommendations in the chosen scenario to the current AI workload. Cloud cost and carbon unchanged.
   Water = AI energy × regional WUE. Latency estimates are illustrative. Quality risk is subjective — review each recommendation before applying.
 </div>
@@ -1439,15 +1693,10 @@ elif page == "Optimize":
 # PAGE: PROVE
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "Prove":
-    st.markdown("## TRACE Prove: Evidence Pack")
+    st.markdown("## Evidence Pack")
     st.caption("Open, auditable · SCI-for-AI methodology · No offsets · Transparent assumptions")
-    st.markdown(
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">'
-        'Connect → Observe → Optimize → <b style="color:#4edea3;">Prove</b></div>',
-        unsafe_allow_html=True,
-    )
 
-    tab_evidence, tab_method = st.tabs(["📋 Evidence Pack", "📐 Methodology"])
+    tab_evidence, tab_method = st.tabs(["Evidence Pack", "Methodology"])
 
     with tab_evidence:
         any_applied = bool(st.session_state.applied_recs)
@@ -1467,17 +1716,18 @@ elif page == "Prove":
         with col_left:
             st.markdown(
                 '<div class="sh">Connected Data Sources '
-                '<span style="font-size:11px;color:#94a3b8;font-weight:400;cursor:help;" '
+                f'<span style="font-size:11px;color:#9ca3af;font-weight:400;cursor:help;" '
                 'title="Each source below contributed records to this evidence pack. '
                 'Records = total rows ingested this period. '
                 'Mapped = records successfully matched to TRACE\'s schema (app name, model, region, token counts all present). '
                 'Unmapped records are excluded from calculations and flagged in the Norm Log.">'
-                'ℹ️</span></div>',
+                f'{_svg("info", 14, "#9ca3af")}</span></div>',
                 unsafe_allow_html=True,
             )
             sources_html = ""
             for c in CONNECTOR_STATE:
-                icon = "🟢" if c["status"] in ("Connected", "Active") else ("🔵" if c["status"] == "Uploaded" else "🟡")
+                _dot_color = "#10b981" if c["status"] in ("Connected", "Active") else ("#3b82f6" if c["status"] == "Uploaded" else "#f59e0b")
+                icon = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{_dot_color};flex-shrink:0;margin-right:4px;"></span>'
                 norm_tip = (
                     f"{c['records']} rows ingested this period. "
                     f"{c['norm_pct']} successfully normalized to TRACE's schema — "
@@ -1485,10 +1735,10 @@ elif page == "Prove":
                     f"Unmapped records are flagged in the Norm Log."
                 )
                 sources_html += (
-                    f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
-                    f'border-bottom:1px solid #f1f5f9;font-size:13px;">'
-                    f'<span>{icon} <b>{c["system"]}</b> — {c["type"]}</span>'
-                    f'<span style="color:#64748b;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;'
+                    f'border-bottom:1px solid #f3f4f6;font-size:13px;">'
+                    f'<span style="display:flex;align-items:center;">{icon}<b>{c["system"]}</b>&nbsp;— {c["type"]}</span>'
+                    f'<span style="color:#6b7280;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
                     f'</div>'
                 )
             st.markdown(f'<div class="evidence-block"><div class="evidence-label">Connected Sources</div>{sources_html}</div>',
@@ -1538,7 +1788,7 @@ elif page == "Prove":
             ]
             ba_html = (
                 '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-                '<thead><tr style="background:#f1f5f9;">'
+                '<thead><tr style="background:#f3f4f6;">'
                 '<th style="padding:8px 10px;text-align:left;">Metric</th>'
                 '<th style="padding:8px 10px;text-align:right;">Before</th>'
                 '<th style="padding:8px 10px;text-align:right;">After</th>'
@@ -1546,11 +1796,11 @@ elif page == "Prove":
                 '</tr></thead><tbody>'
             )
             for metric, before, after, delta in ba_rows:
-                delta_color = "#166534" if delta.startswith("-") else ("#64748b" if delta == "—" else "#b91c1c")
+                delta_color = "#166534" if delta.startswith("-") else ("#6b7280" if delta == "—" else "#ef4444")
                 ba_html += (
-                    f'<tr style="border-bottom:1px solid #e2e8f0;">'
+                    f'<tr style="border-bottom:1px solid #e5e7eb;">'
                     f'<td style="padding:8px 10px;font-weight:500;">{metric}</td>'
-                    f'<td style="padding:8px 10px;text-align:right;color:#64748b;">{before}</td>'
+                    f'<td style="padding:8px 10px;text-align:right;color:#6b7280;">{before}</td>'
                     f'<td style="padding:8px 10px;text-align:right;font-weight:600;">{after}</td>'
                     f'<td style="padding:8px 10px;text-align:right;color:{delta_color};font-weight:600;">{delta}</td>'
                     '</tr>'
@@ -1560,11 +1810,11 @@ elif page == "Prove":
 
             st.markdown('<div class="sh">Applied Optimizations</div>', unsafe_allow_html=True)
             if applied_titles:
-                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;">✅ {t}</div>' for t in applied_titles)
+                recs_html = "".join(f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:13px;display:flex;align-items:center;gap:6px;">{_svg("check-circle", 14, "#10b981")} {t}</div>' for t in applied_titles)
                 st.markdown(f'<div class="evidence-block">{recs_html}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div class="evidence-block" style="color:#94a3b8;font-size:13px;">'
+                    '<div class="evidence-block" style="color:#9ca3af;font-size:13px;">'
                     'No optimizations applied yet. Go to Optimize to apply recommendations.</div>',
                     unsafe_allow_html=True,
                 )
@@ -1595,8 +1845,8 @@ elif page == "Prove":
     ✓ Standards alignment (SCI-for-AI, ISO 21031, GHG Protocol)<br>
     <br>
     <b>What requires production TRACE (live data):</b><br>
-    ⚠️ This demo uses synthetic Northstar Bank data — not real usage logs.<br>
-    ⚠️ Production TRACE with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
+    Note: This demo uses synthetic Northstar Bank data — not real usage logs.<br>
+    Note: Production TRACE with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
     <br>
     A production audit pack carries the same methodology with real data, making it defensible to a GHG Protocol-aligned sustainability audit.
   </div>
@@ -1619,14 +1869,14 @@ elif page == "Prove":
 
         with c_dl1:
             csv_ai = ai_export.to_csv(index=False)
-            st.download_button("📥 Download AI Ledger CSV", csv_ai,
+            st.download_button("Download AI Ledger CSV", csv_ai,
                                "trace_ai_ledger.csv", "text/csv", use_container_width=True)
         with c_dl2:
             csv_cloud = cloud_export.to_csv(index=False)
-            st.download_button("📥 Download Cloud Ledger CSV", csv_cloud,
+            st.download_button("Download Cloud Ledger CSV", csv_cloud,
                                "trace_cloud_ledger.csv", "text/csv", use_container_width=True)
         with c_dl3:
-            st.button("📄 Evidence Pack PDF", disabled=True,
+            st.button("Evidence Pack PDF", disabled=True,
                       help="PDF export on roadmap", use_container_width=True)
 
     with tab_method:
@@ -1652,51 +1902,51 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
             st.markdown('<div class="sh">Standards Alignment</div>', unsafe_allow_html=True)
             st.markdown("""
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
-<thead><tr style="background:#f1f5f9;">
+<thead><tr style="background:#f3f4f6;">
 <th style="padding:8px 10px;text-align:left;">Standard</th>
 <th style="padding:8px 10px;text-align:left;">How TRACE uses it</th>
 </tr></thead>
 <tbody>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://sci.greensoftware.foundation/" target="_blank" style="color:#3b82f6;text-decoration:none;">SCI-for-AI</a>
-    <span style="font-weight:400;color:#64748b;"> (Green Software Foundation)</span>
+    <span style="font-weight:400;color:#6b7280;"> (Green Software Foundation)</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Primary formula: tokens → energy → carbon</td>
+  <td style="padding:8px 10px;color:#374151;">Primary formula: tokens → energy → carbon</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://ghgprotocol.org/corporate-standard" target="_blank" style="color:#3b82f6;text-decoration:none;">GHG Protocol</a>
-    <span style="font-weight:400;color:#64748b;"> / ISO 14064</span>
+    <span style="font-weight:400;color:#6b7280;"> / ISO 14064</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">GHG accounting: operational boundary, location-based, no offsets</td>
+  <td style="padding:8px 10px;color:#374151;">GHG accounting: operational boundary, location-based, no offsets</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/" target="_blank" style="color:#3b82f6;text-decoration:none;">OpenTelemetry GenAI</a>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Token field names (<code>llm.usage.input_tokens</code>)</td>
+  <td style="padding:8px 10px;color:#374151;">Token field names (<code>llm.usage.input_tokens</code>)</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://langfuse.com/docs/tracing" target="_blank" style="color:#3b82f6;text-decoration:none;">Langfuse</a>
-    <span style="font-weight:400;color:#64748b;"> trace schema</span>
+    <span style="font-weight:400;color:#6b7280;"> trace schema</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">LLM usage log shape (app, model, tokens, region, cost)</td>
+  <td style="padding:8px 10px;color:#374151;">LLM usage log shape (app, model, tokens, region, cost)</td>
 </tr>
-<tr style="border-bottom:1px solid #e2e8f0;">
+<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://www.cloudcarbonfootprint.org/" target="_blank" style="color:#3b82f6;text-decoration:none;">Cloud Carbon Footprint</a>
-    <span style="font-weight:400;color:#64748b;"> output schema</span>
+    <span style="font-weight:400;color:#6b7280;"> output schema</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;">Cloud usage log shape (service, region, kWh, cost)</td>
+  <td style="padding:8px 10px;color:#374151;">Cloud usage log shape (service, region, kWh, cost)</td>
 </tr>
 <tr>
   <td style="padding:8px 10px;font-weight:600;">
     <a href="https://semgrep.dev/docs/cli-reference/" target="_blank" style="color:#3b82f6;text-decoration:none;">Semgrep</a>
-    <span style="font-weight:400;color:#64748b;"> JSON output</span>
+    <span style="font-weight:400;color:#6b7280;"> JSON output</span>
   </td>
-  <td style="padding:8px 10px;color:#475569;"><code>semgrep --json</code> output for Energy Debt layer</td>
+  <td style="padding:8px 10px;color:#374151;"><code>semgrep --json</code> output for Energy Debt layer</td>
 </tr>
 </tbody></table>
 """, unsafe_allow_html=True)
@@ -1725,7 +1975,7 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
             grid_d.columns = ["Region", "gCO₂e / kWh", "WUE (L/kWh)"]
             fig = px.bar(grid_d, x="gCO₂e / kWh", y="Region", orientation="h",
                          color="gCO₂e / kWh",
-                         color_continuous_scale=["#4edea3", "#f59e0b", "#b91c1c"],
+                         color_continuous_scale=["#10b981", "#f59e0b", "#ef4444"],
                          range_color=[0, 700], template="simple_white")
             fig.update_layout(coloraxis_showscale=False, showlegend=False,
                                margin=dict(l=0, r=0, t=5, b=0), height=175,

@@ -1,4 +1,6 @@
 fileignoreconfig:
+- filename: app.py
+  checksum: cced0753374262f26ce045caf5b705b7c1221e9e2f06c5c9b4fd8e7ceca8e94e
 - filename: .changeset/big-experts-kick.md
   checksum: 74d451296b12b20492767a90f35ec464016a6eca3593c13a672b40d0fd8f8b06
 - filename: .changeset/breezy-singers-own.md
