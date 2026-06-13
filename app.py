@@ -768,37 +768,52 @@ def apply_all_recs(llm_df, coeffs_df, grid_df, applied_ids, all_recs):
 
 # ── Connector state ────────────────────────────────────────────────────────────
 CATEGORY_TOOLTIPS = {
-    "AI delivery":         "Runtime platform that routes, manages, and executes AI model calls for production workloads (e.g. AI/Works Control Plane).",
-    "LLM observability":   "Traces and logs every LLM call — tokens used, latency, cost, and quality eval scores per request. Powers the Agent Traces view.",
-    "FinOps":              "Cloud billing and cost management exports. Maps cloud spend to teams, services, and regions for the cloud infrastructure footprint.",
-    "Cloud monitoring":    "Resource utilization and performance metrics from cloud infrastructure providers. Feeds kWh estimates for cloud carbon.",
-    "Carbon methodology":  "Reference data: regional grid intensity factors (gCO₂e/kWh), emission coefficients, and WUE values used in all TRACE calculations.",
-    "SDLC sustainability": "Static code analysis that surfaces energy inefficiency patterns in source code before they reach production. Powers the Energy Debt score.",
+    "AI Model Provider":  "Direct API connection to an LLM provider. Token usage, cost, model metadata, and latency are ingested per request.",
+    "LLM observability":  "Traces and logs every LLM call — tokens used, latency, cost, and quality eval scores per request. Powers the Agent Traces view.",
+    "Observability":      "APM and infrastructure observability. Correlates AI request traces with cloud resource metrics and latency signals.",
+    "FinOps":             "Cloud billing and cost management exports. Maps cloud spend to teams, services, and regions for the cloud infrastructure footprint.",
+    "Cloud monitoring":   "Resource utilization and performance metrics from cloud infrastructure providers. Feeds kWh estimates for cloud carbon.",
 }
 
 CONNECTOR_STATE = [
     {
-        "system": "AI/Works Control Plane", "category": "AI delivery",
-        "type": "API", "status": "Connected", "last_sync": "12 min ago",
-        "records": "1,248", "norm_pct": "98%", "owner": "Platform Team",
+        "system": "OpenAI API", "category": "AI Model Provider",
+        "type": "API", "status": "Connected", "last_sync": "2 min ago",
+        "records": "3,241", "norm_pct": "96%", "owner": "AI Engineering",
         "action": "View / Sync",
-        "tagline": "Created by Thoughtworks",
     },
     {
-        "system": "CCF Factors", "category": "Carbon methodology",
-        "type": "Static CSV", "status": "Active", "last_sync": "Jun 10",
-        "records": "64", "norm_pct": "100%", "owner": "Sustainability",
-        "action": "View",
-        "tagline": "Funded by Thoughtworks",
+        "system": "Anthropic Claude API", "category": "AI Model Provider",
+        "type": "API", "status": "Connected", "last_sync": "5 min ago",
+        "records": "1,847", "norm_pct": "97%", "owner": "AI Engineering",
+        "action": "View / Sync",
+    },
+    {
+        "system": "Google Gemini / Vertex AI", "category": "AI Model Provider",
+        "type": "API", "status": "Warning", "last_sync": "45 min ago",
+        "records": "892", "norm_pct": "84%", "owner": "AI Engineering",
+        "action": "Fix Mapping",
+    },
+    {
+        "system": "AWS Bedrock", "category": "AI Model Provider",
+        "type": "API", "status": "Warning", "last_sync": "2 hr ago",
+        "records": "421", "norm_pct": "79%", "owner": "Cloud Platform",
+        "action": "Fix Mapping",
+    },
+    {
+        "system": "Azure OpenAI Service", "category": "AI Model Provider",
+        "type": "API", "status": "Connected", "last_sync": "8 min ago",
+        "records": "1,102", "norm_pct": "93%", "owner": "AI Engineering",
+        "action": "View / Sync",
     },
     {
         "system": "Langfuse", "category": "LLM observability",
         "type": "API", "status": "Connected", "last_sync": "18 min ago",
-        "records": "842", "norm_pct": "94%", "owner": "AI Eng",
+        "records": "842", "norm_pct": "94%", "owner": "AI Engineering",
         "action": "View / Sync",
     },
     {
-        "system": "Datadog", "category": "LLM observability",
+        "system": "Datadog APM", "category": "Observability",
         "type": "API", "status": "Warning", "last_sync": "1 hr ago",
         "records": "493", "norm_pct": "81%", "owner": "SRE",
         "action": "Fix Mapping",
@@ -814,12 +829,6 @@ CONNECTOR_STATE = [
         "type": "API", "status": "Connected", "last_sync": "20 min ago",
         "records": "1,876", "norm_pct": "92%", "owner": "Cloud Team",
         "action": "View / Sync",
-    },
-    {
-        "system": "Code Scan Findings", "category": "SDLC sustainability",
-        "type": "Static JSON", "status": "Warning", "last_sync": "Jun 10",
-        "records": "36", "norm_pct": "76%", "owner": "Engineering",
-        "action": "Fix Mapping",
     },
 ]
 
@@ -1019,8 +1028,18 @@ _components.html(
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
-    st.markdown("## Data Sources")
-    st.caption("Every connected system, its status, data freshness, and normalization health")
+    st.markdown("## Connected Data Sources")
+    st.markdown(
+        '<div style="font-size:13px;color:#374151;background:#F0F4FF;border-left:3px solid #6366f1;'
+        'padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;line-height:1.6;">'
+        '<b>Northstar Bank</b> already has data spread across individual AI model providers, '
+        'LLM observability tools, cloud monitoring platforms, and FinOps exports — each owned by a '
+        'different team. TRACE unifies these fragmented systems into a single GreenOps view. '
+        'In production these would connect via API, file upload, OpenTelemetry, or webhook. '
+        'In this prototype the integrations are simulated with synthetic demo data.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
     # ── Summary stats ──
     healthy  = sum(1 for c in CONNECTOR_STATE if c["status"] in ("Connected", "Uploaded", "Active"))
@@ -1158,8 +1177,8 @@ if page == "Connect":
 
         # Step 1: Source type
         st.markdown("**Choose source type:**")
-        source_options = ["AI/Works", "LLM Observability", "Cloud Monitoring",
-                          "FinOps / Cloud Cost", "Carbon Factors", "Code / CI", "Custom Source"]
+        source_options = ["AI Model Provider", "LLM Observability", "Cloud Monitoring",
+                          "FinOps / Cloud Cost", "Custom Source"]
         src_cols = st.columns(len(source_options))
         for i, opt in enumerate(source_options):
             with src_cols[i]:
