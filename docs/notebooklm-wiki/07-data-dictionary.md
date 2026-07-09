@@ -1,6 +1,6 @@
 # 07 — Data Dictionary
 
-> **Summary:** Every data field used in the TRACE app — what it means, what values it takes, where it comes from, and whether it is mock, calculated, or sourced from a real standard. Useful for answering questions about specific numbers or data shapes.
+> **Summary:** Every data field used in the RECPT app — what it means, what values it takes, where it comes from, and whether it is mock, calculated, or sourced from a real standard. Useful for answering questions about specific numbers or data shapes.
 
 ---
 
@@ -282,7 +282,7 @@ The JSON files (`recommendations.json`, `llm_trace_export.json`, `code_scan_find
 
 ## Key takeaways
 
-- All data in the TRACE demo is synthetic — no real client, company, or usage data
+- All data in the RECPT demo is synthetic — no real client, company, or usage data
 - The model coefficient values (kWh/1M tokens) are sourced from published hardware benchmarks, not made up
 - The grid intensity values are sourced from Electricity Maps, EPA eGRID, and ENTSO-E — the same sources CCF uses
 - The WUE values are estimates (Medium confidence); most are from climate and industry survey data

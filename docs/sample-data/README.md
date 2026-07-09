@@ -1,4 +1,4 @@
-# Sample data — TRACE MVP
+# Sample data — RECPT MVP
 
 > **Status:** v1 · **Last updated:** 2026-06-10
 

@@ -1,12 +1,12 @@
 # 06 — Calculations & Methodology
 
-> **Summary:** Every formula TRACE uses, where each one came from, the assumptions behind the numbers, worked examples in plain English, and an honest account of what is exact versus estimated.
+> **Summary:** Every formula RECPT uses, where each one came from, the assumptions behind the numbers, worked examples in plain English, and an honest account of what is exact versus estimated.
 
 ---
 
-## The big picture: what TRACE calculates
+## The big picture: what RECPT calculates
 
-TRACE takes two types of raw data — **AI usage data** (token counts) and **cloud billing data** (kilowatt-hours) — and converts them into four metrics:
+RECPT takes two types of raw data — **AI usage data** (token counts) and **cloud billing data** (kilowatt-hours) — and converts them into four metrics:
 
 - **Cost** (USD)
 - **Carbon** (kg CO₂e)
@@ -46,7 +46,7 @@ ai_carbon_kg = ai_energy_kWh × grid_intensity_gCO₂e_per_kWh / 1000
 
 **Source:** SCI-for-AI (Green Software Foundation); grid intensity values from Electricity Maps, EPA eGRID, ENTSO-E. This is a location-based calculation — it uses the actual carbon content of the grid where the computation runs, with no market-based renewable energy certificates or offsets applied.
 
-**Why no offsets?** TRACE follows the ISO 21031 standard, which requires location-based accounting. This produces a more honest, auditable number. Claiming a model runs on renewable energy via offsets would reduce the reported carbon without actually changing the physical electricity used.
+**Why no offsets?** RECPT follows the ISO 21031 standard, which requires location-based accounting. This produces a more honest, auditable number. Claiming a model runs on renewable energy via offsets would reduce the reported carbon without actually changing the physical electricity used.
 
 **Implemented in:** `calc_ai()` in `app.py`.
 
@@ -178,7 +178,7 @@ Hyperscalers (AWS, Google, Azure) operate with PUE (Power Usage Effectiveness) v
 0.6 × 1.2 = 0.72 kWh / 1M tokens (full facility, mid-tier)
 ```
 
-TRACE uses **0.6 kWh / 1M tokens** for mid-tier models — this represents the server-level estimate with PUE included in the blending. The final coefficient is a round number that sits within the range of published benchmark estimates.
+RECPT uses **0.6 kWh / 1M tokens** for mid-tier models — this represents the server-level estimate with PUE included in the blending. The final coefficient is a round number that sits within the range of published benchmark estimates.
 
 **Small and large model scaling:**
 - `small` models use approximately half the energy of `mid` → 0.3 kWh/1M
@@ -193,7 +193,7 @@ TRACE uses **0.6 kWh / 1M tokens** for mid-tier models — this represents the s
 
 ## Confidence levels
 
-TRACE uses three confidence levels, consistent with how CCF approaches measurement confidence:
+RECPT uses three confidence levels, consistent with how CCF approaches measurement confidence:
 
 | Level | Meaning | When it applies |
 |---|---|---|
@@ -252,7 +252,7 @@ Support-Bot runs a `large` Anthropic model in `ap-south` (Mumbai).
 
 ## The recommendation calculation
 
-When a recommendation is applied, TRACE does not use pre-computed numbers. It recomputes the entire AI footprint from scratch with the recommendation's changes applied.
+When a recommendation is applied, RECPT does not use pre-computed numbers. It recomputes the entire AI footprint from scratch with the recommendation's changes applied.
 
 **How it works:**
 1. Take the full LLM usage DataFrame (30 days × 4 apps × multiple records)
@@ -263,24 +263,24 @@ When a recommendation is applied, TRACE does not use pre-computed numbers. It re
 6. Recalculate all energy, carbon, cost, and water metrics for the modified dataset
 7. Update all KPIs, charts, and the before/after table
 
-This is why the impact numbers in TRACE are not approximations — they are genuine recalculations of the model.
+This is why the impact numbers in RECPT are not approximations — they are genuine recalculations of the model.
 
 ---
 
-## How TRACE compares to other tools
+## How RECPT compares to other tools
 
 **Compared to Greenpixie:**
 - Both are estimate-based (neither reads an actual power meter)
 - Greenpixie uses an explicit PUE multiplier at runtime: `total_facility_energy = IT_energy × PUE`
-- TRACE folds PUE into the per-token coefficient — different approach, equivalent result
-- TRACE adds water consumption; Greenpixie does not
+- RECPT folds PUE into the per-token coefficient — different approach, equivalent result
+- RECPT adds water consumption; Greenpixie does not
 
 **Compared to Cloud Carbon Footprint (CCF):**
 - CCF measures infrastructure energy directly from billing kWh data (High confidence)
-- TRACE estimates AI energy from token counts × coefficient (Medium confidence)
+- RECPT estimates AI energy from token counts × coefficient (Medium confidence)
 - Both use the same location-based grid intensity approach
 - Both use the same grid intensity data sources (Electricity Maps, EPA eGRID, ENTSO-E)
-- TRACE adds the AI inference layer that CCF does not have
+- RECPT adds the AI inference layer that CCF does not have
 
 ---
 
@@ -303,11 +303,11 @@ This is why the impact numbers in TRACE are not approximations — they are genu
 
 1. **Closed-model coefficients are estimates.** Anthropic and OpenAI do not publish per-model energy consumption. The kWh/1M values are derived from public hardware benchmarks and may not reflect the specific infrastructure these providers use.
 
-2. **WUE values are estimated for most regions.** Google publishes facility-level WUE. AWS does not publish region-level WUE with the same transparency. The values in TRACE are estimates from industry surveys and climate-based reasoning.
+2. **WUE values are estimated for most regions.** Google publishes facility-level WUE. AWS does not publish region-level WUE with the same transparency. The values in RECPT are estimates from industry surveys and climate-based reasoning.
 
 3. **Hardware mix is blended.** The coefficients assume a typical mix of A100/H100 GPUs. Providers may use different hardware, quantisation, or batching strategies that alter per-token energy.
 
-4. **PUE is an industry average.** Hyperscalers report PUE values between 1.1 and 1.2. TRACE uses 1.2 as a conservative estimate. Actual facility PUE varies.
+4. **PUE is an industry average.** Hyperscalers report PUE values between 1.1 and 1.2. RECPT uses 1.2 as a conservative estimate. Actual facility PUE varies.
 
 5. **Token-to-energy scaling is approximate.** The relationship between model size and energy per token is not perfectly linear. The large/mid/small coefficient ratios (1.2 / 0.6 / 0.3) are reasonable approximations, not precision measurements.
 
@@ -315,8 +315,8 @@ This is why the impact numbers in TRACE are not approximations — they are genu
 
 ## Key takeaways
 
-- TRACE uses five core formulas: AI energy, AI carbon, AI cost, cloud carbon, and water — all traceable to published sources
+- RECPT uses five core formulas: AI energy, AI carbon, AI cost, cloud carbon, and water — all traceable to published sources
 - The kWh/1M token coefficients are derived from GPU specs and benchmark data, not vendor-measured — this is the primary source of uncertainty
 - The methodology is aligned to SCI-for-AI and ISO 21031 — location-based, no offsets, transparent
-- Medium confidence is the honest answer for AI inference carbon — and TRACE says so in the app itself
+- Medium confidence is the honest answer for AI inference carbon — and RECPT says so in the app itself
 - The recommendation engine recalculates the full footprint from scratch — the impact numbers are genuine, not estimates on top of estimates

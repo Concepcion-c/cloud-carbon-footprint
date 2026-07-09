@@ -1,9 +1,9 @@
-# PRD: TRACE — 6-hour Hackathon MVP (v2, OSS-leveraged)
+# PRD: RECPT — 6-hour Hackathon MVP (v2, OSS-leveraged)
 
 > **Status:** Draft v2 (current) · **Owner:** Concepcion-c · **Last updated:** 2026-06-10
 > Supersedes `./hackathon-mvp-prd.md`. Same goal — a ≤5-min-demoable MVP in ~6 hours — but
 > **reuses mature open-source tools** for the expensive parts to spend the fewest AI credits.
-> Full product: `./trace-prd.md`. Strategy: `../strategy/sustainability-strategy-analysis.md`.
+> Full product: `./recpt-prd.md`. Strategy: `../strategy/sustainability-strategy-analysis.md`.
 
 ## 1. The one-sentence MVP
 A **Streamlit** dashboard that loads **synthetic client data shaped like real tool outputs**
@@ -14,18 +14,18 @@ SCI-for-AI methodology.
 
 ## 2. Core principle — reuse, don't rebuild (this is the credit-saver)
 **We do not host or integrate these tools during the hackathon. We adopt their data *shapes*
-and show the integration path.** Only the unique TRACE logic is custom code.
+and show the integration path.** Only the unique RECPT logic is custom code.
 
 | Layer | We BUILD | We ADOPT (schema/lineage) | We ROADMAP (slide only) |
 |---|---|---|---|
 | Cloud carbon | — (use synthetic, CCF-shaped) | **CCF** methodology + output shape | Full CCF ingestion (Athena/BigQuery) |
-| AI usage ledger | TRACE calculator | **Langfuse** trace schema | Live Langfuse host |
+| AI usage ledger | RECPT calculator | **Langfuse** trace schema | Live Langfuse host |
 | AI gateway | — | gateway-log shape | **LiteLLM** proxy |
 | Telemetry standard | — | **SCI-for-AI**, **OpenTelemetry GenAI** fields | OTel ingestion |
 | Risk/Assess | Assess score logic | **Semgrep** JSON shape | **Trivy**, custom energy rules |
 | UI / storage | **Streamlit** + pandas | (DuckDB optional) | React polish |
 
-**Decided build stack:** Streamlit + pandas (+ optional DuckDB) + custom TRACE calculator +
+**Decided build stack:** Streamlit + pandas (+ optional DuckDB) + custom RECPT calculator +
 bundled synthetic CSVs. **Why Streamlit:** fastest credible data dashboard for a semi-technical
 builder — Python, no front-end build, charts included. (Revises v1's static-HTML call.)
 
@@ -92,7 +92,7 @@ Include a before/after row pair for S3.
 |---|---|---|
 | 0:00–0:20 | `pip install streamlit pandas`; `app.py` hello; repo subfolder | App runs |
 | 0:20–0:50 | Drop in the 4 synthetic CSVs (pre-generated); load with pandas | Data loads |
-| 0:50–1:40 | TRACE calculator (AI + cloud carbon/cost) | Numbers correct |
+| 0:50–1:40 | RECPT calculator (AI + cloud carbon/cost) | Numbers correct |
 | 1:40–3:00 | Dashboard: hero KPIs + AI breakdown (table + bar charts) | M2, M3 |
 | 3:00–4:15 | Recommendation + **Apply** (recompute + delta display) | M4 |
 | 4:15–5:00 | Methodology note + coefficient view + branding; (S1 cloud tab / S2 Assess if ahead) | M5 + polish |
@@ -118,5 +118,5 @@ is how we build it, client zero."*
 
 ## 11. Definition of done
 A `streamlit run`-able dashboard meeting §7, a recorded ≤5-min demo, and a drafted written
-submission — committed to `~/projects/TRACE` (private). Production integration (CCF/Langfuse/
+submission — committed to `~/projects/RECPT` (private). Production integration (CCF/Langfuse/
 LiteLLM/OTel/Semgrep) shown as a roadmap slide, not built.

@@ -1,5 +1,5 @@
 {
-  "scan_source": "Semgrep + TRACE Energy Rules",
+  "scan_source": "Semgrep + RECPT Energy Rules",
   "scanned_at": "2026-06-10T07:30:00Z",
   "repo": "northstar-digital-banking",
   "total_findings": 36,
@@ -8,7 +8,7 @@
       "finding_id": "ef_001",
       "repo": "northstar-digital-banking",
       "file_path": "services/account/AccountRepository.java",
-      "rule_id": "trace.energy.full-table-scan",
+      "rule_id": "recpt.energy.full-table-scan",
       "severity": "HIGH",
       "finding": "Full table scan on accounts table with no index. Pattern: SELECT * FROM accounts WHERE status = ?",
       "recommendation": "Add index on status column. Use SELECT id, name FROM accounts WHERE status = ? LIMIT 100 with cursor pagination.",
@@ -22,7 +22,7 @@
       "finding_id": "ef_002",
       "repo": "northstar-digital-banking",
       "file_path": "services/payment/PaymentService.java",
-      "rule_id": "trace.energy.n-plus-one-query",
+      "rule_id": "recpt.energy.n-plus-one-query",
       "severity": "HIGH",
       "finding": "N+1 query pattern in payment loop. getPaymentById() called inside loop over transaction list.",
       "recommendation": "Replace with batch query: getPaymentsByIds(transactionIds). Reduces DB round trips from N to 1.",
@@ -36,7 +36,7 @@
       "finding_id": "ef_003",
       "repo": "northstar-digital-banking",
       "file_path": "services/account/AccountService.java",
-      "rule_id": "trace.energy.uncached-repeated-call",
+      "rule_id": "recpt.energy.uncached-repeated-call",
       "severity": "MEDIUM",
       "finding": "getAccountPolicy() called on every request with no cache. Policy data changes at most daily.",
       "recommendation": "Cache policy result with TTL of 1 hour using @Cacheable. Eliminates ~95% of policy DB calls.",
@@ -50,7 +50,7 @@
       "finding_id": "ef_004",
       "repo": "northstar-digital-banking",
       "file_path": "services/reporting/ReportGenerator.java",
-      "rule_id": "trace.energy.synchronous-batch",
+      "rule_id": "recpt.energy.synchronous-batch",
       "severity": "MEDIUM",
       "finding": "Batch report generation runs synchronously in request thread. Processing 500+ records per request.",
       "recommendation": "Move batch processing to async job queue. Return job ID immediately; poll for completion.",
@@ -64,7 +64,7 @@
       "finding_id": "ef_005",
       "repo": "northstar-digital-banking",
       "file_path": "services/account/NotificationService.java",
-      "rule_id": "trace.energy.redundant-serialization",
+      "rule_id": "recpt.energy.redundant-serialization",
       "severity": "LOW",
       "finding": "Account object serialized to JSON and immediately deserialized in same method call. Round-trip with no transformation.",
       "recommendation": "Pass the object directly. Remove unnecessary serialize/deserialize cycle.",
@@ -78,7 +78,7 @@
       "finding_id": "ef_006",
       "repo": "northstar-digital-banking",
       "file_path": "services/legacy/LegacyAdapterService.java",
-      "rule_id": "trace.energy.large-context-window-prompt",
+      "rule_id": "recpt.energy.large-context-window-prompt",
       "severity": "MEDIUM",
       "finding": "Full legacy codebase context (89K tokens) sent on every BuildAgent retry. Context does not change between retries.",
       "recommendation": "Cache architecture context hash. Only re-send context if hash changes. Estimated 60K token saving per retry.",
@@ -89,5 +89,5 @@
       "component": "DynamicSpec"
     }
   ],
-  "_note": "Synthetic data — shaped like Semgrep JSON output extended with TRACE energy attribution fields. 30 additional findings omitted."
+  "_note": "Synthetic data — shaped like Semgrep JSON output extended with RECPT energy attribution fields. 30 additional findings omitted."
 }

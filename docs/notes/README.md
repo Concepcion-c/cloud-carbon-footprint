@@ -1,4 +1,4 @@
-# Notes — TRACE
+# Notes — RECPT
 
 > Running scratch notes and working log. Informal by design.
 > Promote anything durable into the PRD, architecture, assumptions, or CHANGELOG.

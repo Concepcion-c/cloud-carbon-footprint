@@ -1,4 +1,4 @@
-"""TRACE — AI GreenOps Dashboard v3.  Run: streamlit run app.py"""
+"""RECPT — AI GreenOps Dashboard v3.  Run: streamlit run app.py"""
 
 import json
 import time
@@ -139,12 +139,40 @@ def _nav_icon_js() -> str:
         if(w)w.setAttribute('data-trace-seg','1');
       }}
     }});
+    // Connect page button row — stamp data-conn-btn-row on its stHorizontalBlock
+    p.document.querySelectorAll('[data-testid="stHorizontalBlock"]').forEach(function(hb){{
+      var bt=Array.from(hb.querySelectorAll('button')).map(function(b){{return b.textContent.trim();}});
+      if(bt.indexOf('＋ Connect New System')>=0&&bt.indexOf('Run Sync')>=0&&
+         bt.indexOf('↑ Upload File')>=0&&bt.indexOf('Norm Log')>=0){{
+        hb.setAttribute('data-conn-btn-row','1');
+      }}
+    }});
+    // Evidence Pack columns — stamp data-evidence-row on its stHorizontalBlock
+    p.document.querySelectorAll('[data-testid="stHorizontalBlock"]').forEach(function(hb){{
+      var txt=hb.textContent||'';
+      if(txt.indexOf('Connected Data Sources')>=0&&txt.indexOf('Before / After Comparison')>=0){{
+        hb.setAttribute('data-evidence-row','1');
+      }}
+    }});
     // Status reference modal — Streamlit strips onclick attrs, so bind close events here
     function closeSref(){{var d=p.document.querySelector('.sref-details');if(d)d.open=false;}}
     var sc=p.document.querySelector('.sref-close');
     var sb=p.document.querySelector('.sref-backdrop');
     if(sc)sc.addEventListener('click',closeSref);
     if(sb)sb.addEventListener('click',closeSref);
+    // Rec card buttons — forward HTML button clicks to hidden Streamlit buttons
+    p.document.querySelectorAll('.rec-btn').forEach(function(htmlBtn){{
+      if(htmlBtn._recBound)return;
+      htmlBtn._recBound=true;
+      var col=htmlBtn.closest('[data-testid="stColumn"]');
+      if(!col)return;
+      var stBtn=col.querySelector('[data-testid="stElementContainer"]:has(div.stButton) button');
+      if(!stBtn)return;
+      htmlBtn.addEventListener('click',function(e){{
+        e.preventDefault();
+        stBtn.click();
+      }});
+    }});
   }}
   applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
 }})();"""
@@ -152,11 +180,12 @@ def _nav_icon_js() -> str:
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="TRACE | AI GreenOps",
+    page_title="RECPT | AI GreenOps",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 
 DATA_DIR = Path(__file__).parent / "docs" / "sample-data"
 
@@ -430,7 +459,7 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 .info-disc-body li { margin-bottom:4px; }
 
 /* ── Rec cards ───────────────────────────────────────────────────────────── */
-.rec { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:18px 22px; margin-bottom:10px; }
+.rec { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:18px 22px 0; margin-bottom:10px; overflow:hidden; }
 .rec.applied { border-color:#10b981; background:#f0fdf8; }
 .rec-title   { font-size:15px; font-weight:600; color:#111827; margin-bottom:5px; }
 .rec-body    { font-size:13px; color:#374151; line-height:1.55; margin-bottom:8px; }
@@ -466,6 +495,12 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 .conn-summary-num { font-size:28px; font-weight:700; color:#111827; line-height:1.1; }
 .conn-summary-lbl { font-size:0.8rem; color:#111827; font-family:Inter,sans-serif; }
 
+/* ── Card grid wrapper — reused by Connect summary cards & Agent Traces KPI row ── */
+.card-grid-wrap { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; align-items:stretch; }
+@media (max-width:1300px) { .card-grid-wrap { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:560px) { .card-grid-wrap { grid-template-columns:1fr; gap:24px; } }
+.card-grid-wrap > .conn-summary, .card-grid-wrap > .kpi { min-width:0; height:100%; }
+
 /* ── Status badges ────────────────────────────────────────────────────────── */
 .status-connected  { background:var(--trace-success-bg); color:var(--trace-success-fg); border-radius:99px;
                      padding:4px 8px; font-size:11px; font-weight:600; }
@@ -495,6 +530,8 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 .trace-node-err  { background:var(--trace-danger-bg);  border:2px solid var(--trace-danger-fg);  }
 .trace-arrow { display:flex; align-items:center; padding:0 6px;
                color:#9ca3af; font-size:22px; flex:0 0 auto; }
+
+.conn-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
 .whatif-table { width:100%; border-collapse:collapse; font-size:13px; }
 .whatif-table th { background:#F9F9FB; color:#9ca3af; padding:10px 14px;
@@ -613,12 +650,30 @@ div.stButton > button[data-testid="stBaseButton-secondary"][disabled] {
   color: #FFFFFF !important;
   font-weight: 600 !important;
 }
+[data-trace-seg] label:has(input:checked) [data-testid="stMarkdownContainer"],
+[data-trace-seg] label:has(input:checked) [data-testid="stMarkdownContainer"] p,
+[data-trace-seg] label:has(input:checked):hover [data-testid="stMarkdownContainer"],
+[data-trace-seg] label:has(input:checked):hover [data-testid="stMarkdownContainer"] p {
+  color: #FFFFFF !important;
+}
 [data-trace-seg] label:not(:has(input:checked)):hover {
   background: #E8E6FE !important;
   color: #6A5DD4 !important;
 }
 
-/* ── Rec cards — equal height, button fused to card bottom ───────────────── */
+/* ── Connect button row — earlier stack breakpoint than Streamlit's default ── */
+@media (max-width:700px) {
+  [data-conn-btn-row] { flex-direction:column !important; }
+  [data-conn-btn-row] > [data-testid="stColumn"] { width:100% !important; flex:1 1 100% !important; min-width:100% !important; }
+}
+
+/* ── Evidence Pack columns — stack before Streamlit's default breakpoint ── */
+@media (max-width:900px) {
+  [data-evidence-row] { flex-direction:column !important; }
+  [data-evidence-row] > [data-testid="stColumn"] { width:100% !important; flex:1 1 100% !important; min-width:100% !important; }
+}
+
+/* ── Rec cards — equal height, button inside card ───────────────────────── */
 [data-testid="stHorizontalBlock"]:has(.rec) {
   align-items: stretch !important;
 }
@@ -635,22 +690,69 @@ div.stButton > button[data-testid="stBaseButton-secondary"][disabled] {
 [data-testid="stHorizontalBlock"]:has(.rec) .rec {
   flex: 1 !important;
   margin-bottom: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-bottom: none !important;
 }
-[data-testid="stHorizontalBlock"]:has(.rec) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"]:has(div.stButton) div.stButton > button {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-  border-top: none !important;
-  width: 100% !important;
+
+/* ── KPI cards — equal height across any st.columns row that contains them ── */
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) {
+  align-items: stretch !important;
 }
-[data-testid="stHorizontalBlock"]:has(.rec) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"]:has(div.stButton) div.stButton > button[data-testid="stBaseButton-secondary"] {
-  border-left: 1px solid #10b981 !important;
-  border-right: 1px solid #10b981 !important;
-  border-bottom: 1px solid #10b981 !important;
-  color: #10b981 !important;
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"]:has(.kpi) {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) [data-testid="stElementContainer"]:has(.kpi) [data-testid="stMarkdown"],
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) [data-testid="stElementContainer"]:has(.kpi) [data-testid="stMarkdownContainer"] {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .kpi) .kpi {
+  flex: 1 !important;
+}
+
+/* Hide real Streamlit button — triggered via JS click bridge from .rec-btn */
+[data-testid="stHorizontalBlock"]:has(.rec) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"]:has(div.stButton) {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+.rec-btn {
+  display: block;
+  width: calc(100% + 44px);
+  margin: 12px -22px 0;
+  padding: 10px 22px;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: center;
+}
+.rec-btn-apply {
+  background: #6A5DD4;
+  color: #ffffff;
+  border-top-color: #6A5DD4;
+}
+.rec-btn-apply:hover { background: #5b4fc2; }
+.rec-btn-apply:active { background: #4e44ab; }
+.rec-btn-undo {
+  background: transparent;
+  color: #10b981;
+  border-top-color: #10b981;
+}
+.rec-btn-undo:hover { background: rgba(16,185,129,0.05); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -722,7 +824,7 @@ def load_code_findings():
         return json.load(fh)["findings"]
 
 
-# ── TRACE Calculator ───────────────────────────────────────────────────────────
+# ── RECPT Calculator ───────────────────────────────────────────────────────────
 def calc_ai(llm_df, coeffs_df, grid_df):
     df = (llm_df
           .merge(coeffs_df[["model", "provider", "usd_per_1m_tokens", "kwh_per_1m_tokens"]],
@@ -960,7 +1062,7 @@ with st.sidebar:
         '<div style="padding:16px 4px 40px;">'
         f'<div style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;">'
         f'{_svg("leaf", 20, "#4ade80")} RECPT</div>'
-        '<div style="font-size:10px;color:#FFFFFF;margin-top:2px;font-family:Inter,sans-serif;">'
+        '<div style="font-size:10px;color:#FFFFFF !important;margin-top:2px;font-family:Inter,sans-serif;">'
         'RESPONSIBLE EMISSIONS &amp; CARBON PROFILING TELEMETRY</div>'
         '<div style="margin-top:16px;padding:8px 10px;background:#1f2937;border-radius:6px;display:flex;align-items:center;gap:10px;">'
         f'{_svg("landmark", 18, "#CECCE8")}'
@@ -1005,9 +1107,8 @@ with st.sidebar:
             st.rerun()
 
     st.markdown(
-        f'<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;display:flex;align-items:flex-start;gap:5px;">'
-        f'{_svg("alert-triangle", 12, "#CECCE8")}'
-        '<span>Synthetic client data<br>SCI-for-AI methodology<br>AI:Works Global Hackathon 2026</span></div>',
+        '<div style="margin-top:24px;font-size:10px;color:#CECCE8;line-height:1.6;">'
+        'Synthetic client data<br>SCI-for-AI methodology<br>AI:Works Global Hackathon 2026</div>',
         unsafe_allow_html=True,
     )
 
@@ -1034,7 +1135,7 @@ if page == "Connect":
         'padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;line-height:1.6;">'
         '<b>Northstar Bank</b> already has data spread across individual AI model providers, '
         'LLM observability tools, cloud monitoring platforms, and FinOps exports — each owned by a '
-        'different team. TRACE unifies these fragmented systems into a single GreenOps view. '
+        'different team. RECPT unifies these fragmented systems into a single GreenOps view. '
         'In production these would connect via API, file upload, OpenTelemetry, or webhook. '
         'In this prototype the integrations are simulated with synthetic demo data.'
         '</div>',
@@ -1050,29 +1151,28 @@ if page == "Connect":
         int(c["records"].replace(",", "")) for c in CONNECTOR_STATE
     )
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    for col, num, label, icon, variant in [
-        (c1, len(CONNECTOR_STATE), "Connected systems", "layers",         "neutral"),
-        (c2, api_live,             "Live API",          "zap",            "neutral"),
-        (c3, static_f,             "Static uploads",    "upload",         "neutral"),
-        (c4, healthy,              "Healthy",           "check-circle",   "success"),
-        (c5, warnings,             "Warnings",          "alert-triangle", "warning"),
+    _summary_cards_html = []
+    for num, label, icon, variant in [
+        (len(CONNECTOR_STATE), "Connected systems", "layers",         "neutral"),
+        (api_live,             "Live API",          "zap",            "neutral"),
+        (static_f,             "Static uploads",    "upload",         "neutral"),
+        (healthy,              "Healthy",           "check-circle",   "success"),
+        (warnings,             "Warnings",          "alert-triangle", "warning"),
     ]:
-        with col:
-            bg  = f"var(--trace-{variant}-bg)"
-            fg  = f"var(--trace-{variant}-fg)"
-            icon_box = (
-                f'<div style="width:40px;height:40px;min-width:40px;background:{bg};'
-                f'border-radius:8px;display:flex;align-items:center;justify-content:center;">'
-                f'{_svg(icon, 20, fg)}</div>'
-            )
-            st.markdown(
-                f'<div class="conn-summary">{icon_box}'
-                f'<div><div class="conn-summary-num">{num}</div>'
-                f'<div class="conn-summary-lbl">{label}</div>'
-                f'</div></div>',
-                unsafe_allow_html=True,
-            )
+        bg  = f"var(--trace-{variant}-bg)"
+        fg  = f"var(--trace-{variant}-fg)"
+        icon_box = (
+            f'<div style="width:40px;height:40px;min-width:40px;background:{bg};'
+            f'border-radius:8px;display:flex;align-items:center;justify-content:center;">'
+            f'{_svg(icon, 20, fg)}</div>'
+        )
+        _summary_cards_html.append(
+            f'<div class="conn-summary">{icon_box}'
+            f'<div><div class="conn-summary-num">{num}</div>'
+            f'<div class="conn-summary-lbl">{label}</div>'
+            f'</div></div>'
+        )
+    st.markdown(f'<div class="card-grid-wrap">{"".join(_summary_cards_html)}</div>', unsafe_allow_html=True)
 
     st.markdown(
         '<div style="font-size:12px;color:#6b7280;margin:8px 0 4px;">'
@@ -1093,13 +1193,13 @@ if page == "Connect":
             st.session_state.norm_done        = False
     with col_btn2:
         st.button("Run Sync", use_container_width=True, disabled=True,
-                  help="In production TRACE: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
+                  help="In production RECPT: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
     with col_btn3:
         st.button("↑ Upload File", use_container_width=True, disabled=True,
                   help="Use '＋ Connect New System' to upload a new data source file.")
     with col_btn4:
         st.button("Norm Log", use_container_width=True, disabled=True,
-                  help="In production TRACE: shows the normalization history — which records mapped successfully and which were flagged. Simulated in this demo.")
+                  help="In production RECPT: shows the normalization history — which records mapped successfully and which were flagged. Simulated in this demo.")
 
     # ── Systems table ──
     _sref_items = "".join(
@@ -1162,13 +1262,13 @@ if page == "Connect":
             f'<td style="padding:10px 12px;">{badge}</td>'
             f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["last_sync"]}</td>'
             f'<td style="padding:10px 12px;text-align:right;font-family:Inter,sans-serif;font-size:12px;">{c["records"]}</td>'
-            f'<td style="padding:10px 12px;color:{norm_color};font-weight:600;font-size:12px;cursor:help;" title="Normalization: the % of ingested records successfully mapped to TRACE\'s schema (app name, model, region, token counts all present and matched). Unmapped records appear in the Norm Log.">{c["norm_pct"]}</td>'
+            f'<td style="padding:10px 12px;color:{norm_color};font-weight:600;font-size:12px;cursor:help;" title="Normalization: the % of ingested records successfully mapped to RECPT\'s schema (app name, model, region, token counts all present and matched). Unmapped records appear in the Norm Log.">{c["norm_pct"]}</td>'
             f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["owner"]}</td>'
             f'<td style="padding:10px 12px;color:#3b82f6;font-size:12px;cursor:pointer;">{c["action"]}</td>'
             '</tr>'
         )
 
-    st.markdown(header + rows + "</tbody></table>", unsafe_allow_html=True)
+    st.markdown(f'<div class="conn-table-wrap">{header}{rows}</tbody></table></div>', unsafe_allow_html=True)
 
     # ── Connect New System Drawer ──
     if st.session_state.show_drawer:
@@ -1295,13 +1395,13 @@ Requires a redaction filter to be configured.
             # Step 4: Field mapping (shown after upload)
             if st.session_state.upload_validated:
                 st.markdown("---")
-                st.markdown("**Map source fields to TRACE schema**")
+                st.markdown("**Map source fields to RECPT schema**")
 
                 mapping_html = (
                     '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
                     '<thead><tr style="background:#F9F9FB;">'
                     '<th style="padding:7px 10px;text-align:left;">Source field</th>'
-                    '<th style="padding:7px 10px;text-align:left;">TRACE field</th>'
+                    '<th style="padding:7px 10px;text-align:left;">RECPT field</th>'
                     '<th style="padding:7px 10px;text-align:left;">Status</th>'
                     '</tr></thead><tbody>'
                 )
@@ -1336,7 +1436,7 @@ Requires a redaction filter to be configured.
     if st.session_state.norm_done:
         st.success(
             f"✓ **Normalization complete.** "
-            f"`{st.session_state.uploaded_file_name}` has been normalized into the TRACE schema. "
+            f"`{st.session_state.uploaded_file_name}` has been normalized into the RECPT schema. "
             "Records are now available in the Observe dashboard."
         )
 
@@ -1412,7 +1512,7 @@ elif page == "Observe":
             'Measured in tokens; tracked via Langfuse or an AI gateway. Optimized by changing model, routing, or prompt design.</p>'
             '<p><strong>Cloud infrastructure</strong> = the servers, databases, and networking that your applications <em>run on</em> — the "compute and storage" layer. '
             'Measured in kWh from cloud billing exports; tracked via CCF methodology. Optimized by right-sizing, region choice, or reserved capacity.</p>'
-            '<p>They are tracked separately because they have <strong>different optimization levers</strong>. TRACE surfaces both so you can act on either.</p>'
+            '<p>They are tracked separately because they have <strong>different optimization levers</strong>. RECPT surfaces both so you can act on either.</p>'
             '</div>'
             '</details>',
             unsafe_allow_html=True,
@@ -1565,7 +1665,7 @@ elif page == "Observe":
             '<tr><td style="padding:3px 10px 3px 0;">Rejected</td><td>Output was <strong>discarded</strong> — quality too low or agent retried</td></tr>'
             '</table>'
             '<p style="margin:0;"><strong>Retries = wasted compute.</strong> A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon. '
-            'Retries are invisible in billing dashboards — TRACE surfaces them so you can fix the prompt.</p>'
+            'Retries are invisible in billing dashboards — RECPT surfaces them so you can fix the prompt.</p>'
             '</div>'
             '</details>',
             unsafe_allow_html=True,
@@ -1578,7 +1678,6 @@ elif page == "Observe":
 
         # Trace summary KPIs
         t_spans = selected_trace["spans"]
-        c1, c2, c3, c4, c5 = st.columns(5)
         kpi_data = [
             ("Total Cost",    f'${selected_trace["total_cost_usd"]:.2f}'),
             ("Total Latency", f'{selected_trace["total_latency_ms"]/1000:.1f}s'),
@@ -1586,9 +1685,11 @@ elif page == "Observe":
             ("Total CO₂e",    f'{sum(s.get("co2e_kg",0) for s in t_spans):.4f} kg'),
             ("Total Water",   f'{sum(s.get("water_liters",0) for s in t_spans):.3f} L'),
         ]
-        for col, (label, val) in zip([c1, c2, c3, c4, c5], kpi_data):
-            with col:
-                kpi(label, val)
+        _trace_kpi_html = "".join(
+            f'<div class="kpi"><div class="kpi-label">{label}</div><div class="kpi-value">{val}</div></div>'
+            for label, val in kpi_data
+        )
+        st.markdown(f'<div class="card-grid-wrap">{_trace_kpi_html}</div>', unsafe_allow_html=True)
 
         st.markdown('<div class="sh">Agent Graph</div>', unsafe_allow_html=True)
         st.markdown(render_trace_graph(t_spans), unsafe_allow_html=True)
@@ -1863,6 +1964,11 @@ elif page == "Optimize":
                 )
                 card_cls = "rec applied" if applied else "rec"
                 rec_icon = _svg("check-circle", 16, "#10b981") if applied else _svg("zap", 16, "#6366f1")
+                btn_html = (
+                    '<button class="rec-btn rec-btn-undo">↩ Undo</button>'
+                    if applied else
+                    '<button class="rec-btn rec-btn-apply">Apply</button>'
+                )
                 st.markdown(f"""
 <div class="{card_cls}">
   <div class="rec-title" style="display:flex;align-items:center;gap:6px;">{rec_icon} {rec['title']}</div>
@@ -1872,6 +1978,7 @@ elif page == "Optimize":
     <span class="pill-green">Carbon {c_pct:+.1f}% for {rec['app']}</span>{cost_pill}
   </div>
   <div class="rec-quality">Quality trade-off: {rec['quality_note']}</div>
+  {btn_html}
 </div>""", unsafe_allow_html=True)
 
                 if not applied:
@@ -1921,7 +2028,7 @@ elif page == "Prove":
             "Token counts are precise (from Langfuse / AI billing). "
             "Energy is estimated using GPU benchmarks — no AI provider publishes per-call energy data. "
             "Grid intensity is sourced from Electricity Maps / EPA eGRID. "
-            "This is a stronger basis than market-based reporting: TRACE uses location-based accounting — no offsets, just physics."
+            "This is a stronger basis than market-based reporting: RECPT uses location-based accounting — no offsets, just physics."
         )
 
         # Evidence sections
@@ -1933,7 +2040,7 @@ elif page == "Prove":
                 f'<span style="font-size:11px;color:#9ca3af;font-weight:400;cursor:help;" '
                 'title="Each source below contributed records to this evidence pack. '
                 'Records = total rows ingested this period. '
-                'Mapped = records successfully matched to TRACE\'s schema (app name, model, region, token counts all present). '
+                'Mapped = records successfully matched to RECPT\'s schema (app name, model, region, token counts all present). '
                 'Unmapped records are excluded from calculations and flagged in the Norm Log.">'
                 f'{_svg("info", 14, "#9ca3af")}</span></div>',
                 unsafe_allow_html=True,
@@ -1944,7 +2051,7 @@ elif page == "Prove":
                 icon = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{_dot_color};flex-shrink:0;margin-right:4px;"></span>'
                 norm_tip = (
                     f"{c['records']} rows ingested this period. "
-                    f"{c['norm_pct']} successfully normalized to TRACE's schema — "
+                    f"{c['norm_pct']} successfully normalized to RECPT's schema — "
                     f"app name, model, region, and token counts all present and matched. "
                     f"Unmapped records are flagged in the Norm Log."
                 )
@@ -2043,7 +2150,7 @@ elif page == "Prove":
     <b>Water (WUE):</b> Region-level WUE factors (liters/kWh) from public data center efficiency reports. Water = energy × WUE.<br>
     <b>Confidence bands:</b> High = all fields present. Medium = one field estimated. Low = region or model class missing.<br>
     <b>Methodology version:</b> CCF-v2.1 + SCI-for-AI (Green Software Foundation). Aligned to ISO 21031 operational boundary.<br>
-    <b>Production TRACE</b> would support client-approved factors, provider-specific data, and confidence intervals.
+    <b>Production RECPT</b> would support client-approved factors, provider-specific data, and confidence intervals.
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -2058,9 +2165,9 @@ elif page == "Prove":
     ✓ The before / after comparison showing optimization impact<br>
     ✓ Standards alignment (SCI-for-AI, ISO 21031, GHG Protocol)<br>
     <br>
-    <b>What requires production TRACE (live data):</b><br>
+    <b>What requires production RECPT (live data):</b><br>
     Note: This demo uses synthetic Northstar Bank data — not real usage logs.<br>
-    Note: Production TRACE with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
+    Note: Production RECPT with live connectors produces a fully traceable evidence pack with actual token counts, timestamps, and model names.<br>
     <br>
     A production audit pack carries the same methodology with real data, making it defensible to a GHG Protocol-aligned sustainability audit.
   </div>
@@ -2117,7 +2224,7 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
 <thead><tr style="background:#F9F9FB;">
 <th style="padding:8px 10px;text-align:left;">Standard</th>
-<th style="padding:8px 10px;text-align:left;">How TRACE uses it</th>
+<th style="padding:8px 10px;text-align:left;">How RECPT uses it</th>
 </tr></thead>
 <tbody>
 <tr style="border-bottom:1px solid #e5e7eb;">

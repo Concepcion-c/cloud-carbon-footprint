@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic optimization recommendations for the TRACE MVP demo. Expected values are precomputed from the synthetic CSVs + model_coefficients.csv + grid_intensity.csv so the dashboard can validate its own math. All illustrative.",
+  "_comment": "Synthetic optimization recommendations for the RECPT MVP demo. Expected values are precomputed from the synthetic CSVs + model_coefficients.csv + grid_intensity.csv so the dashboard can validate its own math. All illustrative.",
   "recommendations": [
     {
       "id": "rec-support-bot-rightsizing",

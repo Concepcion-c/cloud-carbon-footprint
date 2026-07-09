@@ -3,7 +3,7 @@
 > **Status:** v2 analysis (independent-product pivot) · **Date:** 2026-06-10 · **Audience:** self (evaluation)
 > **v2 change:** the lead recommendation is now an **independent, sellable product** (CCF-lineage), *not* an AI:works-embedded module — because TW does not license AI:works to clients. AI:works is repositioned as "client zero" + an accelerator. See §1, §6 (note), §7.
 > **Lenses applied:** Product Manager (buildable) · TW executive (sellable, on-strategy) · Head of Sustainability (credible, outcome-backed).
-> **Sources:** local `TRACE_Documents/` (IT Sustainability Market Analysis; AI/Works platform docs; CCF revival/roadmap docs; team check-ins — paraphrased, no PII) + public web research on TW FY26 / AI:works / competitors. Confidential material is distilled, never quoted.
+> **Sources:** local `RECPT_Documents/` (IT Sustainability Market Analysis; AI/Works platform docs; CCF revival/roadmap docs; team check-ins — paraphrased, no PII) + public web research on TW FY26 / AI:works / competitors. Confidential material is distilled, never quoted.
 
 ---
 
@@ -15,7 +15,7 @@
 
 Anchor on the carbon the client actually pays for — **run-time** (the delivered app's ongoing cloud + AI-inference footprint) — not **build-time** (the AI credits TW spends building it). Measure it **SCI-for-AI / ISO 21031 conformant** with an **open, auditable methodology** — the trust differentiator vs black-box calculators, and the one a proprietary platform can't expose but an open tool can.
 
-**The recommended hackathon MVP:** an **independent "carbon beside cost + optimization for AI" product** (codename **TRACE**), demoed on *synthetic client* cloud-billing + LLM-usage data — with a **CAST-like "which apps are inefficient" scan** as the attention-grabber and **AI:works shown as client-zero proof** (before/after a modernization). This is *more* sellable than an AI:works-embedded module and directly answers the judges' "can you actually sell this?".
+**The recommended hackathon MVP:** an **independent "carbon beside cost + optimization for AI" product** (codename **RECPT**), demoed on *synthetic client* cloud-billing + LLM-usage data — with a **CAST-like "which apps are inefficient" scan** as the attention-grabber and **AI:works shown as client-zero proof** (before/after a modernization). This is *more* sellable than an AI:works-embedded module and directly answers the judges' "can you actually sell this?".
 
 **Why it wins as a *service* (not advisory):** packaged, tool-backed, and **repeatable across any client** — regardless of whether they ever touch AI:works; produces a per-engagement **auditable carbon ledger + savings recommendations**; and underwrites **carbon-linked gain-share pricing** no peer publicly offers.
 
@@ -149,7 +149,7 @@ Scores 1–5 per criterion. Weights: Strategic fit ×3 · Market pull ×3 · Pro
 ## 7. Recommended hackathon MVP — the independent product
 
 ### Concept
-**TRACE — "carbon beside cost + optimization for AI."** A standalone, CCF-lineage product the **client buys and keeps**. It ingests the client's own usage data, shows **carbon next to cost** for their **cloud *and* AI inference**, and recommends optimizations that cut both. It does **not** require the client to own or use AI:works. *(Backronym: Token-level Realtime AI Carbon Estimation.)*
+**RECPT — "carbon beside cost + optimization for AI."** A standalone, CCF-lineage product the **client buys and keeps**. It ingests the client's own usage data, shows **carbon next to cost** for their **cloud *and* AI inference**, and recommends optimizations that cut both. It does **not** require the client to own or use AI:works. *(Backronym: Responsible Emissions & Carbon Profiling Telemetry.)*
 
 ### Two carbons — be crisp about which we sell
 - **Build-time carbon/cost** = the AI credits/energy TW spends *while building* the software (what the AI:works Control Plane meters). Weak client story — it's our delivery cost.
@@ -233,4 +233,4 @@ Vibe-coded front-end that **ingests a small synthetic client export** and render
 
 ---
 
-*Next actions if you greenlight: (a) ✅ feasibility one-pager → `docs/research/feasibility-ai-carbon-product.md`; (b) turn §7 into `docs/prd/trace-prd.md`; (c) draft the ≤5-min demo script in `docs/demo/`; (d) spec the synthetic client export + coefficient table in `docs/sample-data/`.*
+*Next actions if you greenlight: (a) ✅ feasibility one-pager → `docs/research/feasibility-ai-carbon-product.md`; (b) turn §7 into `docs/prd/recpt-prd.md`; (c) draft the ≤5-min demo script in `docs/demo/`; (d) spec the synthetic client export + coefficient table in `docs/sample-data/`.*

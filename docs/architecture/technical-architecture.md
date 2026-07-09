@@ -1,4 +1,4 @@
-# Technical architecture — TRACE
+# Technical architecture — RECPT
 
 > **Status:** Draft · **Last updated:** 2026-06-10
 > Keep this current so PRDs, user stories, and code can reference it. Ask Claude to
@@ -6,7 +6,7 @@
 > `../../CHANGELOG.md`).
 
 ## Context
-TRACE builds on the open-source **Cloud Carbon Footprint (CCF)** codebase (this repo is a
+RECPT builds on the open-source **Cloud Carbon Footprint (CCF)** codebase (this repo is a
 fork). CCF is a monorepo (`packages/`) — `app`, `api`, `client`, `cli`, plus cloud-provider
 packages. Our work extends it toward **AI / LLM emissions**.
 

@@ -1,6 +1,6 @@
 # 03 — Functionality Guide
 
-> **Summary:** A complete list of every feature in the TRACE MVP, what each one does, what data it uses, and what it produces. Distinguishes between fully implemented features, simulated demo features, and planned roadmap features.
+> **Summary:** A complete list of every feature in the RECPT MVP, what each one does, what data it uses, and what it produces. Distinguishes between fully implemented features, simulated demo features, and planned roadmap features.
 
 ---
 
@@ -255,7 +255,7 @@ Throughout this document, features are labelled as:
 
 ### Apply recommendation ✅ Implemented
 
-**What it does:** When the Apply button is clicked, TRACE recalculates the entire AI footprint with the recommendation's actions applied, then updates all affected metrics across the app.
+**What it does:** When the Apply button is clicked, RECPT recalculates the entire AI footprint with the recommendation's actions applied, then updates all affected metrics across the app.
 
 **How it works (simplified):** The `apply_all_recs()` function in `app.py` takes the LLM usage DataFrame, splits the affected app's traffic according to the recommendation's `fraction` parameter, applies the model swap and/or region shift to the specified fraction, recalculates all energy/carbon/cost/water metrics, and returns a new DataFrame. All downstream KPIs and charts use this recalculated DataFrame.
 

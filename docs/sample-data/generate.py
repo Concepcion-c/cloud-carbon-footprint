@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TRACE — synthetic sample data generator (deterministic).
+RECPT — synthetic sample data generator (deterministic).
 
 Produces tool-shaped synthetic data for the hackathon MVP (see
 ../prd/hackathon-mvp-prd-v2.md). NO real client data. Re-run anytime:

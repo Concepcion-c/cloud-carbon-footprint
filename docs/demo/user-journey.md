@@ -1,4 +1,4 @@
-# TRACE Demo — User Journey
+# RECPT Demo — User Journey
 
 > **What this is:** A screen-by-screen walkthrough of every click and what appears in the app,
 > mapped to the demo narrative. Use alongside `demo-script.md` (the presenter beat sheet).
@@ -10,18 +10,18 @@
 
 1. Run `streamlit run app.py` in the project folder.
 2. Open the app full-screen in a browser.
-3. Confirm the sidebar shows: **🌿 TRACE / AI GREENOPS DASHBOARD / 📁 Northstar Bank**.
+3. Confirm the sidebar shows: **🌿 RECPT / AI GREENOPS DASHBOARD / 📁 Northstar Bank**.
 4. The app opens on the **Connect** page by default. No data has been uploaded or changed yet.
 
 ---
 
 ## Stage 1 — Connect
-**Story beat:** Show the judges that TRACE already knows where to find a client's data — and that connecting a new source is a deliberate, auditable step, not a black box.
+**Story beat:** Show the judges that RECPT already knows where to find a client's data — and that connecting a new source is a deliberate, auditable step, not a black box.
 
 ### Step 1.1 — Land on Connect
 
 **What the user sees:**
-- Page title: **TRACE Connect: Data Sources**
+- Page title: **RECPT Connect: Data Sources**
 - A row of five summary tiles: **7 Connected Systems · 3 Live API · 3 Static Uploads · 5 Healthy · 2 Warnings**
 - Last normalization run: **12 minutes ago** · Total records ingested: **6,567**
 - Three action buttons: **＋ Connect New System · ⟳ Run Sync · ↑ Upload File · 📋 Norm Log**
@@ -34,7 +34,7 @@
   - 🟢 **CCF Factors** — Static CSV · Active
   - 🟡 **Code Scan Findings** — Static JSON · Warning
 
-**What to say:** *"This is Northstar Bank's data estate as TRACE sees it today. Seven sources already connected — live APIs pulling every 15–20 minutes, static exports uploaded. Two warnings tell us where data is stale or partially mapped. Everything is visible, nothing is hidden."*
+**What to say:** *"This is Northstar Bank's data estate as RECPT sees it today. Seven sources already connected — live APIs pulling every 15–20 minutes, static exports uploaded. Two warnings tell us where data is stale or partially mapped. Everything is visible, nothing is hidden."*
 
 ---
 
@@ -78,7 +78,7 @@
 ### Step 2.1 — Dashboard tab
 
 **What the user sees:**
-- Page title: **TRACE Observe: AI Workload Dashboard**
+- Page title: **RECPT Observe: AI Workload Dashboard**
 - A yellow synthetic-data banner: *"⚠️ Synthetic client data — shaped like real AI/Works + Langfuse + CCF exports."*
 - Four tabs: **📊 Dashboard · 🔍 AI Detail · 🔗 Agent Traces · ⚡ Energy Debt**
 - The Dashboard tab is open by default.
@@ -211,7 +211,7 @@ Support-Bot is #1. The score is a blend: 60% runtime carbon + 40% code-risk find
 ### Step 3.1 — Read the recommendation
 
 **What the user sees:**
-- Page title: **TRACE Optimize: Recommendations**
+- Page title: **RECPT Optimize: Recommendations**
 - Caption: *"Apply a recommendation — watch AI cost and carbon drop live"*
 - Section heading: **AI Workload Recommendations**
 
@@ -244,7 +244,7 @@ Support-Bot is #1. The score is a blend: 60% runtime carbon + 40% code-risk find
 | ⭐ Balanced (recommended) | $24,900 −20.5% | ~920 kg −16.1% | ~X L −16.1% | 11.9s | Low-medium |
 | Aggressive carbon mode | $22,500 −28.0% | ~810 kg −26.5% | ~X L −28.0% | 14.2s | Medium |
 
-**What to say:** *"TRACE is specific about the trade-off — 70% of Support-Bot's traffic shifts to a smaller model because that traffic is routine summarization. The hard 30% stays on the large model. We're not doing a blanket downgrade. Quality is an explicit variable, not a footnote."*
+**What to say:** *"RECPT is specific about the trade-off — 70% of Support-Bot's traffic shifts to a smaller model because that traffic is routine summarization. The hard 30% stays on the large model. We're not doing a blanket downgrade. Quality is an explicit variable, not a footnote."*
 
 ---
 
@@ -291,7 +291,7 @@ The Support-Bot card now shows a green background and a ✅ icon. The **Apply** 
 ### Step 4.1 — Evidence Pack tab
 
 **What the user sees:**
-- Page title: **TRACE Prove: Evidence Pack**
+- Page title: **RECPT Prove: Evidence Pack**
 - Two tabs: **📋 Evidence Pack · 📐 Methodology**
 - The Evidence Pack tab is open by default.
 
@@ -349,7 +349,7 @@ Energy Debt Score    = 0.6 × carbon_rank + 0.4 × code_risk_rank
 ```
 
 Standards Alignment table:
-| Standard | How TRACE uses it |
+| Standard | How RECPT uses it |
 |---|---|
 | SCI-for-AI (Green Software Foundation) | Primary formula |
 | ISO 21031 | GHG accounting: operational boundary, location-based, no offsets |

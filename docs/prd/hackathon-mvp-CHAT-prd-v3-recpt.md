@@ -1,19 +1,19 @@
-# PRD: TRACE — Hackathon MVP v3
+# PRD: RECPT — Hackathon MVP v3
 
 > **Status:** Draft v3 · **Owner:** Concepcion-c · **Last updated:** 2026-06-10  
 > Supersedes `hackathon-mvp-prd-v2(2).md`.  
-> Same goal: a ≤5-minute demoable MVP that can be built quickly, uses synthetic/tool-shaped data, and proves the Phase 1–3 TRACE product story: **Connect → Observe → Optimize**.  
-> Full product direction: TRACE becomes the cross-cloud, cross-model, client-facing control layer for AI workload observability, AI FinOps, GreenOps, carbon accounting, evidence lineage, and SDLC sustainability KPIs.
+> Same goal: a ≤5-minute demoable MVP that can be built quickly, uses synthetic/tool-shaped data, and proves the Phase 1–3 RECPT product story: **Connect → Observe → Optimize**.  
+> Full product direction: RECPT becomes the cross-cloud, cross-model, client-facing control layer for AI workload observability, AI FinOps, GreenOps, carbon accounting, evidence lineage, and SDLC sustainability KPIs.
 
 ---
 
 ## 1. Product thesis
 
-**TRACE is the AI Cost, Carbon, and Control Plane for software delivery.**
+**RECPT is the AI Cost, Carbon, and Control Plane for software delivery.**
 
-TRACE starts by connecting to the fragmented tools clients already have — LLM observability, cloud monitoring, FinOps/cloud cost, CCF, and AI/Works — then normalizes that telemetry into one shared cost + carbon + governance model.
+RECPT starts by connecting to the fragmented tools clients already have — LLM observability, cloud monitoring, FinOps/cloud cost, CCF, and AI/Works — then normalizes that telemetry into one shared cost + carbon + governance model.
 
-Over time, TRACE becomes the system of record and system of action for AI workload management:
+Over time, RECPT becomes the system of record and system of action for AI workload management:
 
 - Native LLM observability
 - Token, cost, carbon, and quality per trace
@@ -25,7 +25,7 @@ Over time, TRACE becomes the system of record and system of action for AI worklo
 
 ### One-sentence MVP
 
-A **Streamlit** dashboard that simulates enterprise onboarding, shows connected systems, ingests synthetic client exports shaped like real tools, normalizes them into a TRACE schema, observes AI workload cost/carbon by workflow and agent trace, recommends optimizations, and shows cost + CO₂e reductions with transparent evidence.
+A **Streamlit** dashboard that simulates enterprise onboarding, shows connected systems, ingests synthetic client exports shaped like real tools, normalizes them into a RECPT schema, observes AI workload cost/carbon by workflow and agent trace, recommends optimizations, and shows cost + CO₂e reductions with transparent evidence.
 
 ---
 
@@ -33,9 +33,9 @@ A **Streamlit** dashboard that simulates enterprise onboarding, shows connected 
 
 ### What this MVP proves
 
-1. **TRACE Connect:** TRACE can ingest from fragmented enterprise tools and normalize their data into one schema.
-2. **TRACE Observe:** TRACE can replace basic LLM observability for AI workloads by showing traces, agents, tokens, cost, carbon, latency, and quality signals.
-3. **TRACE Optimize:** TRACE can recommend lower-cost/lower-carbon actions and show before/after impact.
+1. **RECPT Connect:** RECPT can ingest from fragmented enterprise tools and normalize their data into one schema.
+2. **RECPT Observe:** RECPT can replace basic LLM observability for AI workloads by showing traces, agents, tokens, cost, carbon, latency, and quality signals.
+3. **RECPT Optimize:** RECPT can recommend lower-cost/lower-carbon actions and show before/after impact.
 
 ### What this MVP does not claim
 
@@ -47,7 +47,7 @@ This MVP does **not** build full live integrations with every competitor tool. I
 
 ### Strategic wedge
 
-TRACE should be described as:
+RECPT should be described as:
 
 > **The GreenOps intelligence layer and AI workload control plane for enterprise software delivery — connecting LLM observability, FinOps, cloud monitoring, AI/Works, and CCF-based carbon accounting into measurable optimization and governance outcomes.**
 
@@ -57,28 +57,28 @@ TRACE should be described as:
 
 | Phase | Product goal | MVP proof |
 |---|---|---|
-| **Phase 1: TRACE Connect** | Ingest and normalize telemetry | Connector hub, file upload/API mock, validation, mapping, normalized schema |
-| **Phase 2: TRACE Observe** | Replace LLM observability for AI workloads | AI workload dashboard, agent graph, trace details, cost/carbon per trace |
-| **Phase 3: TRACE Optimize** | Become a system of action | Recommendations, what-if scenarios, before/after savings |
+| **Phase 1: RECPT Connect** | Ingest and normalize telemetry | Connector hub, file upload/API mock, validation, mapping, normalized schema |
+| **Phase 2: RECPT Observe** | Replace LLM observability for AI workloads | AI workload dashboard, agent graph, trace details, cost/carbon per trace |
+| **Phase 3: RECPT Optimize** | Become a system of action | Recommendations, what-if scenarios, before/after savings |
 
 ---
 
 ## 4. Core principle — reuse, do not rebuild
 
-**We do not host or integrate these tools during the hackathon. We adopt their data shapes and show the integration path.** Only the unique TRACE logic is custom code.
+**We do not host or integrate these tools during the hackathon. We adopt their data shapes and show the integration path.** Only the unique RECPT logic is custom code.
 
 | Layer | We BUILD | We ADOPT / SIMULATE | We ROADMAP |
 |---|---|---|---|
-| Connector hub | TRACE Connect UI + connector state model | Tool-shaped exports from AI/Works, Langfuse/LangSmith, FinOps, CCF | Live APIs, OTel collector, webhooks |
-| Cloud carbon | TRACE calculation from CCF-shaped exports | CCF methodology/output shape | Full CCF ingestion from cloud billing |
-| AI usage ledger | TRACE calculator | Langfuse/LangSmith/OpenTelemetry GenAI-shaped traces | Live LLM gateway / provider APIs |
+| Connector hub | RECPT Connect UI + connector state model | Tool-shaped exports from AI/Works, Langfuse/LangSmith, FinOps, CCF | Live APIs, OTel collector, webhooks |
+| Cloud carbon | RECPT calculation from CCF-shaped exports | CCF methodology/output shape | Full CCF ingestion from cloud billing |
+| AI usage ledger | RECPT calculator | Langfuse/LangSmith/OpenTelemetry GenAI-shaped traces | Live LLM gateway / provider APIs |
 | LLM observability | Basic trace + agent graph + trace metrics | Synthetic trace spans | Full native tracing SDK |
 | FinOps | Cost allocation from static exports | Cloudability/Finout-style cost fields | Budgeting, showback/chargeback, anomaly detection |
 | Optimization | Rule-based recommendations | Model substitution, prompt compression, caching, region shift | AI-assisted recommendation engine |
 | Energy debt | Static code-scan findings | Semgrep-shaped JSON | Custom SDLC energy rules and CI gates |
 | UI/storage | Streamlit + pandas | Local bundled CSV/JSON | Production UI and database |
 
-**Decided build stack:** Streamlit + pandas + custom TRACE calculator + bundled synthetic CSV/JSON files.
+**Decided build stack:** Streamlit + pandas + custom RECPT calculator + bundled synthetic CSV/JSON files.
 
 ---
 
@@ -100,7 +100,7 @@ They are using AI to accelerate modernization but need to answer:
 
 A fictional financial services company, **Northstar Bank**, is modernizing a legacy digital banking platform with AI/Works-style workflows.
 
-TRACE is onboarded to monitor:
+RECPT is onboarded to monitor:
 
 - AI/Works usage
 - LLM traces
@@ -112,7 +112,7 @@ TRACE is onboarded to monitor:
 
 # 6. MVP screens
 
-## Screen 1: TRACE Connect — Data Sources
+## Screen 1: RECPT Connect — Data Sources
 
 ### Purpose
 
@@ -121,7 +121,7 @@ Show every connected system, whether it is a live API connection or a static fil
 ### Top summary
 
 ```text
-TRACE Connect
+RECPT Connect
 
 Connected systems: 7
 Live API connections: 3
@@ -159,7 +159,7 @@ Last normalization run: 12 minutes ago
 | **Connected** | API connection is healthy and syncing |
 | **Uploaded** | Static file was uploaded successfully |
 | **Active** | Reference dataset is active, such as carbon factors |
-| **Needs Mapping** | TRACE received data but fields need manual mapping |
+| **Needs Mapping** | RECPT received data but fields need manual mapping |
 | **Warning** | Data ingested, but incomplete, stale, or partially mapped |
 | **Failed** | Connection or ingestion failed |
 | **Paused** | Connector is configured but not syncing |
@@ -185,7 +185,7 @@ Last normalization run: 12 minutes ago
 
 ### Purpose
 
-Demonstrate that TRACE can connect to mature clients with live tooling and less mature clients with static exports.
+Demonstrate that RECPT can connect to mature clients with live tooling and less mature clients with static exports.
 
 ```text
 Connect New System
@@ -272,13 +272,13 @@ Proceed to field mapping?
 
 ### Purpose
 
-Show TRACE can handle messy enterprise data.
+Show RECPT can handle messy enterprise data.
 
 ```text
-Map source fields to TRACE schema
+Map source fields to RECPT schema
 ```
 
-| Source field | TRACE field | Status |
+| Source field | RECPT field | Status |
 |---|---|---|
 | `model_name` | `model` | Mapped |
 | `provider_name` | `provider` | Mapped |
@@ -347,11 +347,11 @@ Warnings:
 
 ---
 
-## Screen 2: Normalize — TRACE shared schema
+## Screen 2: Normalize — RECPT shared schema
 
 ### Purpose
 
-Show that TRACE turns fragmented telemetry into a common cost/carbon/governance model.
+Show that RECPT turns fragmented telemetry into a common cost/carbon/governance model.
 
 ### Shared schema fields
 
@@ -410,7 +410,7 @@ Missing workflow attribution: 6 records
 
 ### Purpose
 
-Show TRACE can replace basic LLM observability for AI workloads while adding carbon and governance context.
+Show RECPT can replace basic LLM observability for AI workloads while adding carbon and governance context.
 
 ### Hero KPIs
 
@@ -457,7 +457,7 @@ Each node shows:
 
 Key demo message:
 
-> TRACE does not only show that a workflow cost $18.42. It shows which agent step created the most cost and carbon, and whether that cost produced accepted output.
+> RECPT does not only show that a workflow cost $18.42. It shows which agent step created the most cost and carbon, and whether that cost produced accepted output.
 
 ---
 
@@ -465,7 +465,7 @@ Key demo message:
 
 ### Purpose
 
-Show TRACE can move from observability to action.
+Show RECPT can move from observability to action.
 
 ### Recommendation rules
 
@@ -821,7 +821,7 @@ cloud_carbon_kg = usage_kwh × region_carbon_intensity_kg_per_kwh
 
 Add visible disclaimer:
 
-> MVP uses synthetic data and transparent estimated factors. Production TRACE would support client-approved factors, provider-specific data, CCF methodology extensions, SCI-for-AI alignment, and confidence bands.
+> MVP uses synthetic data and transparent estimated factors. Production RECPT would support client-approved factors, provider-specific data, CCF methodology extensions, SCI-for-AI alignment, and confidence bands.
 
 ---
 
@@ -835,7 +835,7 @@ Add visible disclaimer:
 - Static upload flow for CSV/JSON
 - Field mapping screen
 - Normalization summary
-- Shared TRACE schema table
+- Shared RECPT schema table
 - Hero KPIs: cost, carbon, tokens, latency, quality
 - AI workload dashboard by app/model/region/workflow/agent
 - Trace detail with agent graph
@@ -876,10 +876,10 @@ Add visible disclaimer:
 
 ## Connect
 
-1. As a platform owner, I want to see all connected systems in one place so I know what telemetry TRACE is using.
+1. As a platform owner, I want to see all connected systems in one place so I know what telemetry RECPT is using.
 2. As a FinOps analyst, I want to upload a static cloud cost export so I can start measuring before live APIs are configured.
-3. As an AI engineer, I want to connect an LLM trace export so TRACE can show cost/carbon per workflow and agent.
-4. As a sustainability lead, I want to upload carbon factors so TRACE can calculate CO₂e transparently.
+3. As an AI engineer, I want to connect an LLM trace export so RECPT can show cost/carbon per workflow and agent.
+4. As a sustainability lead, I want to upload carbon factors so RECPT can calculate CO₂e transparently.
 5. As a delivery lead, I want to see connection status and data quality warnings so I know whether the numbers are trustworthy.
 
 ## Observe
@@ -908,7 +908,7 @@ Add visible disclaimer:
 - User can choose API vs file upload connection method.
 - User can upload/read at least 3 bundled sample files.
 - User can view a field mapping screen.
-- User can run normalization and see a normalized TRACE table.
+- User can run normalization and see a normalized RECPT table.
 - User can see data quality warnings and telemetry completeness.
 
 ## Phase 2: Observe
@@ -946,73 +946,73 @@ Add visible disclaimer:
 ## Script
 
 ```text
-Hi, I’m Chinwe, and this is TRACE: the AI Cost, Carbon, and Control Plane for software delivery.
+Hi, I’m Chinwe, and this is RECPT: the AI Cost, Carbon, and Control Plane for software delivery.
 
 The problem we’re solving is simple: enterprises are adopting AI faster than they can govern it. AI is helping teams modernize systems, generate code, write tests, and operate software faster, but most organizations cannot clearly answer three questions: What is this AI usage costing us? What carbon impact is it creating? And what should we change to reduce waste without slowing delivery?
 
-TRACE is designed to answer those questions.
+RECPT is designed to answer those questions.
 
-For this demo, we’re using a fictional financial services client, Northstar Bank, modernizing a legacy digital banking platform. The team is using AI/Works-style workflows to reverse engineer legacy code, generate specs, create services, and test the new application. TRACE sits across that delivery lifecycle and turns fragmented telemetry into cost, carbon, and optimization decisions.
+For this demo, we’re using a fictional financial services client, Northstar Bank, modernizing a legacy digital banking platform. The team is using AI/Works-style workflows to reverse engineer legacy code, generate specs, create services, and test the new application. RECPT sits across that delivery lifecycle and turns fragmented telemetry into cost, carbon, and optimization decisions.
 
 We start in the onboarding flow.
 
-I create a new TRACE workspace called Digital Banking Modernization. TRACE asks what we want to monitor: LLM usage, cloud cost, carbon impact, SDLC sustainability KPIs, and optimization opportunities.
+I create a new RECPT workspace called Digital Banking Modernization. RECPT asks what we want to monitor: LLM usage, cloud cost, carbon impact, SDLC sustainability KPIs, and optimization opportunities.
 
-Now TRACE shows the available data sources. In a real client environment, these could include Datadog, New Relic, LangSmith, Langfuse, Google Cloud Monitoring, Apptio Cloudability, CloudHealth, Flexera, Vantage, Finout, AI/Works, and Cloud Carbon Footprint.
+Now RECPT shows the available data sources. In a real client environment, these could include Datadog, New Relic, LangSmith, Langfuse, Google Cloud Monitoring, Apptio Cloudability, CloudHealth, Flexera, Vantage, Finout, AI/Works, and Cloud Carbon Footprint.
 
 For the MVP, we’ll connect three sources.
 
-First, I connect an AI/Works control plane export. This gives TRACE workspace, workflow, model, token, cost, and agent activity data.
+First, I connect an AI/Works control plane export. This gives RECPT workspace, workflow, model, token, cost, and agent activity data.
 
-Second, I connect an LLM observability trace export. This gives TRACE the step-by-step trace of prompts, model calls, retrieval steps, agent loops, latency, and eval signals.
+Second, I connect an LLM observability trace export. This gives RECPT the step-by-step trace of prompts, model calls, retrieval steps, agent loops, latency, and eval signals.
 
-Third, I connect a cloud and FinOps export. This gives TRACE cloud service, region, cost, and infrastructure usage data.
+Third, I connect a cloud and FinOps export. This gives RECPT cloud service, region, cost, and infrastructure usage data.
 
-Once I click ingest, TRACE validates the files, maps the fields, and shows a telemetry completeness score. We can see token data, cost data, region data, and workflow attribution. Some records have high confidence, while others have medium or low confidence because the source data is incomplete. That is important because TRACE is not pretending the data is perfect. It shows where the evidence is strong and where more instrumentation is needed.
+Once I click ingest, RECPT validates the files, maps the fields, and shows a telemetry completeness score. We can see token data, cost data, region data, and workflow attribution. Some records have high confidence, while others have medium or low confidence because the source data is incomplete. That is important because RECPT is not pretending the data is perfect. It shows where the evidence is strong and where more instrumentation is needed.
 
-Next, TRACE normalizes the data into a shared schema.
+Next, RECPT normalizes the data into a shared schema.
 
 Now records from AI/Works, Langfuse-style traces, and Cloudability-style cost exports all appear in one model. Each row has a provider, model, region, workspace, workflow, agent, input tokens, output tokens, latency, cost, estimated kilowatt-hours, estimated CO₂e, confidence level, and methodology version.
 
-This is the TRACE Connect layer: ingest and normalize.
+This is the RECPT Connect layer: ingest and normalize.
 
-Now we move into TRACE Observe.
+Now we move into RECPT Observe.
 
-Here we can see the AI workload dashboard. At the top, we see total AI cost, total estimated CO₂e, total tokens, average latency, and quality score. Below that, TRACE breaks down cost and carbon by model, workflow, agent, and region.
+Here we can see the AI workload dashboard. At the top, we see total AI cost, total estimated CO₂e, total tokens, average latency, and quality score. Below that, RECPT breaks down cost and carbon by model, workflow, agent, and region.
 
 The most important view is the workflow trace.
 
-I open the customer account service generation workflow. TRACE shows the full agent path: SpecAgent, BuildAgent, TestAgent, ReviewAgent, and FixAgent. For each step, we can see model used, prompt tokens, output tokens, cost, carbon, latency, retry count, and eval score.
+I open the customer account service generation workflow. RECPT shows the full agent path: SpecAgent, BuildAgent, TestAgent, ReviewAgent, and FixAgent. For each step, we can see model used, prompt tokens, output tokens, cost, carbon, latency, retry count, and eval score.
 
-This is where TRACE becomes more than a dashboard. We can see that BuildAgent and FixAgent are driving most of the cost and carbon. We can also see that FixAgent retries multiple times before human review. That is a sustainability signal, a cost signal, and an engineering workflow signal.
+This is where RECPT becomes more than a dashboard. We can see that BuildAgent and FixAgent are driving most of the cost and carbon. We can also see that FixAgent retries multiple times before human review. That is a sustainability signal, a cost signal, and an engineering workflow signal.
 
-Now we move into TRACE Optimize.
+Now we move into RECPT Optimize.
 
-TRACE generates recommendations based on the telemetry.
+RECPT generates recommendations based on the telemetry.
 
-The first recommendation is model substitution. TRACE has identified that low-risk summarization tasks are using a premium model when a smaller model could likely perform the task with lower cost and lower carbon impact.
+The first recommendation is model substitution. RECPT has identified that low-risk summarization tasks are using a premium model when a smaller model could likely perform the task with lower cost and lower carbon impact.
 
-The second recommendation is prompt compression. The BuildAgent is sending the same architecture context repeatedly on every retry. TRACE estimates that compressing and caching that context could save thousands of tokens per workflow.
+The second recommendation is prompt compression. The BuildAgent is sending the same architecture context repeatedly on every retry. RECPT estimates that compressing and caching that context could save thousands of tokens per workflow.
 
-The third recommendation is caching. The same policy retrieval step is repeated across most agent runs. TRACE recommends caching that retrieval output and shows the estimated cost and CO₂e savings.
+The third recommendation is caching. The same policy retrieval step is repeated across most agent runs. RECPT recommends caching that retrieval output and shows the estimated cost and CO₂e savings.
 
-The fourth recommendation is agent loop pruning. FixAgent averages more than four retries before human review. TRACE recommends capping retries at two and escalating earlier when confidence is low.
+The fourth recommendation is agent loop pruning. FixAgent averages more than four retries before human review. RECPT recommends capping retries at two and escalating earlier when confidence is low.
 
-The fifth recommendation is an energy debt finding. TRACE scanned the generated service and found a repeated full-table query pattern that may increase runtime compute once the application is deployed. That gives the team a sustainability KPI inside the SDLC, not after the fact.
+The fifth recommendation is an energy debt finding. RECPT scanned the generated service and found a repeated full-table query pattern that may increase runtime compute once the application is deployed. That gives the team a sustainability KPI inside the SDLC, not after the fact.
 
 Now we open the what-if scenario view.
 
-TRACE compares the current model mix to an optimized model mix and an aggressive carbon reduction mode. The balanced optimization scenario reduces estimated AI cost by about 20% and estimated CO₂e by about 16%, while keeping quality risk low to medium.
+RECPT compares the current model mix to an optimized model mix and an aggressive carbon reduction mode. The balanced optimization scenario reduces estimated AI cost by about 20% and estimated CO₂e by about 16%, while keeping quality risk low to medium.
 
 Finally, we generate an evidence pack.
 
 The evidence pack shows the source telemetry, trace IDs, calculation formula, emission factors, assumptions, methodology version, confidence level, before-and-after comparison, estimated cost saved, and estimated CO₂e reduced.
 
-That is the proof layer. TRACE gives leaders a way to govern AI delivery with the same seriousness they apply to cost, security, and quality.
+That is the proof layer. RECPT gives leaders a way to govern AI delivery with the same seriousness they apply to cost, security, and quality.
 
-The bigger vision is that TRACE can start by ingesting from the tools clients already have, but over time it becomes the cross-cloud, cross-model control layer for AI workload observability, GreenOps, FinOps, and SDLC sustainability.
+The bigger vision is that RECPT can start by ingesting from the tools clients already have, but over time it becomes the cross-cloud, cross-model control layer for AI workload observability, GreenOps, FinOps, and SDLC sustainability.
 
-TRACE helps enterprises build with AI faster, while proving they are controlling the cost and carbon impact of that AI.
+RECPT helps enterprises build with AI faster, while proving they are controlling the cost and carbon impact of that AI.
 ```
 
 ---
@@ -1020,7 +1020,7 @@ TRACE helps enterprises build with AI faster, while proving they are controlling
 # 14. Demo flow checklist
 
 1. Start with empty or partially configured workspace.
-2. Open **TRACE Connect**.
+2. Open **RECPT Connect**.
 3. Show connected systems table with API/static status.
 4. Click **Connect New System**.
 5. Select **Cloudability Export** or **LLM Trace Export**.
@@ -1049,7 +1049,7 @@ TRACE helps enterprises build with AI faster, while proving they are controlling
 | 0:00–0:20 | Set up Streamlit app, folder structure, sample data folder | App runs locally |
 | 0:20–0:50 | Create/generate synthetic CSV/JSON data | Sample data available |
 | 0:50–1:30 | Implement loader + connector state model | Connector table works |
-| 1:30–2:15 | Implement field mapping and normalization | Shared TRACE schema table |
+| 1:30–2:15 | Implement field mapping and normalization | Shared RECPT schema table |
 | 2:15–3:00 | Implement carbon/cost calculator | Numbers render |
 | 3:00–3:45 | Build dashboard KPIs and breakdowns | Observe view works |
 | 3:45–4:30 | Build trace detail / agent graph | Trace view works |
@@ -1064,7 +1064,7 @@ TRACE helps enterprises build with AI faster, while proving they are controlling
 ## Folder structure
 
 ```text
-TRACE/
+RECPT/
   app.py
   requirements.txt
   README.md
@@ -1147,9 +1147,9 @@ last_failed_sync
 The MVP is done when:
 
 - `streamlit run app.py` launches without network dependencies.
-- TRACE Connect shows all supported systems with status and connection type.
+- RECPT Connect shows all supported systems with status and connection type.
 - At least 3 sample sources can be loaded or are bundled as loaded.
-- Data can be normalized into the TRACE shared schema.
+- Data can be normalized into the RECPT shared schema.
 - Dashboard shows cost + carbon together.
 - Trace view shows agent steps with tokens, cost, CO₂e, latency, retry count, and eval score.
 - Recommendation engine shows at least 4 recommendations.
@@ -1157,4 +1157,4 @@ The MVP is done when:
 - What-if scenario table shows Current vs Optimized states.
 - Evidence pack shows source data, formula, assumptions, methodology version, confidence, and before/after results.
 - Demo can be completed in ≤5 minutes.
-- Written submission can describe TRACE as a tool-led, repeatable AI GreenOps service.
+- Written submission can describe RECPT as a tool-led, repeatable AI GreenOps service.

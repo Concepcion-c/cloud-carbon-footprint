@@ -1,4 +1,4 @@
-# TRACE UX Audit & Implementation Plan
+# RECPT UX Audit & Implementation Plan
 
 **Date:** 2026-06-10  
 **Source material:** Cognitive walkthrough (`docs/notes/6:10:26_12-31-cognitive walkthrough v1.rtf`) + full `app.py` code inspection + all data files  
@@ -43,19 +43,19 @@
 
 | Page | User question / confusion | Plain-English answer | UX fix | Priority | Effort |
 |---|---|---|---|---|---|
-| Connect | "Is the assessment authorization file active or roadmap?" | It is a future capability — TRACE does not currently have SSO/auth at MVP | Remove or add "Coming Soon" label to any auth-related UI | Must fix | Small |
+| Connect | "Is the assessment authorization file active or roadmap?" | It is a future capability — RECPT does not currently have SSO/auth at MVP | Remove or add "Coming Soon" label to any auth-related UI | Must fix | Small |
 | Connect | "I want to get rid of AI/Works, LLM Observability spin-ups" | MVP should only show the 7 already-connected sources; the drawer is for adding more | Streamline the source type buttons to only the 3 demo-relevant types (LLM Observability, FinOps/Cloud Cost, Cloud Monitoring) | Must fix | Small |
 | Connect | "OpenTelemetry collector doesn't seem to work / Webhook doesn't seem to work" | Both are planned connectors, not implemented in MVP | Replace those two radio options with `Coming soon — contact team to set up` text | Must fix | Small |
-| Connect | "Prompt content storage — I don't know what that is. Store full prompt and response, store metadata only, store redacted" | This controls what TRACE saves when it ingests your AI logs. Full = keeps the actual words sent/received (privacy risk). Metadata only = keeps counts and scores, no text (safer). Redacted = keeps structure, blanks sensitive content. | Add a `ℹ️` inline below each option with 1-sentence explanation; add a note that `metadata only` is the default for privacy | Must fix | Small |
-| Connect | "Tell me what file I should be uploading" | The FinOps upload expects a Cloudability CSV export matching the TRACE schema. A sample file lives at `docs/sample-data/finops_cloud_export.csv` | Add a `📎 Download sample file` link button in the FinOps upload drawer step | Must fix | Small |
-| Connect | "Normalization — please explain how that works" | Normalization = TRACE reads each row of the uploaded data and checks if all required fields (app name, region, token count) match TRACE's schema. Rows that match are ready to use; rows that don't are flagged as unmapped | Add a 2-sentence explainer above the field mapping table | Must fix | Small |
+| Connect | "Prompt content storage — I don't know what that is. Store full prompt and response, store metadata only, store redacted" | This controls what RECPT saves when it ingests your AI logs. Full = keeps the actual words sent/received (privacy risk). Metadata only = keeps counts and scores, no text (safer). Redacted = keeps structure, blanks sensitive content. | Add a `ℹ️` inline below each option with 1-sentence explanation; add a note that `metadata only` is the default for privacy | Must fix | Small |
+| Connect | "Tell me what file I should be uploading" | The FinOps upload expects a Cloudability CSV export matching the RECPT schema. A sample file lives at `docs/sample-data/finops_cloud_export.csv` | Add a `📎 Download sample file` link button in the FinOps upload drawer step | Must fix | Small |
+| Connect | "Normalization — please explain how that works" | Normalization = RECPT reads each row of the uploaded data and checks if all required fields (app name, region, token count) match RECPT's schema. Rows that match are ready to use; rows that don't are flagged as unmapped | Add a 2-sentence explainer above the field mapping table | Must fix | Small |
 | Connect | "I don't know if I like the Owner column" | Owner = the team responsible for this data source (so the right person knows if it goes stale) | Add a column tooltip: `The team responsible for keeping this source healthy. Shown in alerts when data goes stale.` | Should fix | Small |
-| Connect | "Run Sync, Norm Log, Blend Log — those don't work" | In the MVP, these are UI affordances showing what a production tool would offer. They are not wired up to real sync jobs | Disable all 3 with `disabled=True` and add `help="In production TRACE: triggers a live re-sync of this source."` | Must fix | Small |
+| Connect | "Run Sync, Norm Log, Blend Log — those don't work" | In the MVP, these are UI affordances showing what a production tool would offer. They are not wired up to real sync jobs | Disable all 3 with `disabled=True` and add `help="In production RECPT: triggers a live re-sync of this source."` | Must fix | Small |
 | Connect | "Action links (View/Sync, Fix Mapping) — do those work?" | They are currently plain text rendered inside an HTML table, not real Streamlit buttons | Either convert to disabled `st.button` elements or replace with static badges labeled "Simulated" | Must fix | Small |
 | Observe — Dashboard | "I'd like to see a date toggle — daily, last 30 days, monthly" | The data covers May 2026 (30 days). A toggle is feasible but adds complexity. At minimum, make the period prominent. | Add a period indicator at the top: `📅 Period: May 2026 (30 days) · All figures month-to-date` | Should fix | Medium |
 | Observe — Dashboard | "What is 'total footprint'?" | The combined cost, carbon, energy, and water of all AI inference + cloud infrastructure in your data | Add subtitle to "Total Footprint" section header: `"AI inference + cloud infrastructure combined, for the selected period"` | Must fix | Small |
 | Observe — Dashboard | "What's the difference between AI inference and cloud infrastructure?" | AI inference = the cost and carbon of calling AI models (Claude, GPT-4) token by token. Cloud infrastructure = the servers, databases, and storage that your apps run on. | Add a collapsible `ℹ️ What's the difference between AI inference and cloud?` info block at the top of the Dashboard tab | Must fix | Small |
-| Observe — Dashboard | "What is kWh and why does it matter?" | A kilowatt-hour (kWh) is the unit of electricity consumption. TRACE uses it as the bridge between token counts and carbon — tokens → kWh → kg CO₂e | Add `sub` text to the Energy KPI: `"electricity consumed by AI inference"` | Should fix | Small |
+| Observe — Dashboard | "What is kWh and why does it matter?" | A kilowatt-hour (kWh) is the unit of electricity consumption. RECPT uses it as the bridge between token counts and carbon — tokens → kWh → kg CO₂e | Add `sub` text to the Energy KPI: `"electricity consumed by AI inference"` | Should fix | Small |
 | AI Detail | "Why is Support-Bot the top offender?" | Support-Bot uses a large model (the most energy-intensive class) AND runs in ap-south (Mumbai), which has the dirtiest electricity grid in the dataset (630 gCO₂e/kWh vs 210 for Oregon). Large model + dirty grid = high carbon. | Expand the warning banner: `"Support-Bot uses a large model in ap-south (630 gCO₂e/kWh — India's grid) — 3× dirtier than Oregon. Large model × dirty grid × high WUE = the top optimization target."` | Must fix | Small |
 | AI Detail | "I don't understand what the region charts show" | Each bar is a cloud region. Taller = more carbon/energy/water used in that region. The bar color shows the grid intensity — red = dirty electricity. | Add subtitle to each region chart: `"Bars show total AI carbon by region. Color = grid carbon intensity. Red = dirtiest electricity."` | Must fix | Small |
 | AI Detail | "Why is ap-south high for water too?" | Mumbai data centres consume 1.8 litres of cooling water per kWh of compute (high WUE), partly due to climate and cooling technology. Oregon uses only 0.8 L/kWh. | Add a caption below the region water chart: `"Mumbai (ap-south) has WUE 1.8 L/kWh — 2× more water-intensive than Oregon. Shifting to us-west cuts both carbon and water."` | Must fix | Small |
@@ -72,11 +72,11 @@
 | Optimize | "Is Apply simulated or real?" | Apply is a live what-if simulation — it recalculates all KPIs as if the recommendation were in production. It does not change any real infrastructure. | Add a caption below the Apply button explaining it is a simulation | Must fix | Small |
 | Optimize | "Cost unchanged but carbon drops — why?" | The Analytics-Agent recommendation moves a workload to a cleaner electricity grid (Oregon) but keeps the same model and volume. The provider charges the same per token regardless of region. | Add this explanation to the second recommendation rationale | Must fix | Small |
 | Optimize | Where do the What-if table percentage multipliers come from? | Balanced = both recommendations at stated fractions. Aggressive = + illustrative batch shift. Both are illustrative projections. | Add a footnote beneath the What-If table | Should fix | Small |
-| Prove/Evidence Pack | "Normalization percentage — it doesn't tell me. I don't see any question marks or explanations" | Normalization % = the proportion of records successfully mapped to TRACE's schema. | Replace `title=` hover tooltip with a visible `ℹ️` expander | Must fix | Small |
+| Prove/Evidence Pack | "Normalization percentage — it doesn't tell me. I don't see any question marks or explanations" | Normalization % = the proportion of records successfully mapped to RECPT's schema. | Replace `title=` hover tooltip with a visible `ℹ️` expander | Must fix | Small |
 | Prove/Evidence Pack | "Where does it say Medium confidence?" | Medium confidence label is in the Calculation Summary blocks but is easy to miss | Add a prominent `st.info()` callout at the top of the Evidence Pack | Must fix | Small |
-| Prove/Evidence Pack | "Can this be taken to a sustainability team or auditor?" | The methodology is auditable; the demo uses synthetic data. Production TRACE with live connectors produces a fully traceable evidence pack. | Add an explicit audit readiness note | Should fix | Small |
+| Prove/Evidence Pack | "Can this be taken to a sustainability team or auditor?" | The methodology is auditable; the demo uses synthetic data. Production RECPT with live connectors produces a fully traceable evidence pack. | Add an explicit audit readiness note | Should fix | Small |
 | Methodology | "I need to know where the model coefficients come from" | Derived from: NVIDIA A100 TDP, MLPerf benchmark throughput, server overhead multiplier, PUE | Add a `How these coefficients were derived` expander with the 5-step derivation chain | Must fix | Small |
-| Methodology | "Standards alignment table feels decorative" | The table exists but the "How TRACE uses it" column is too brief — a judge can't learn from it | Expand each row to 2–3 sentences; add a short plain-English intro before the table | Should fix | Medium |
+| Methodology | "Standards alignment table feels decorative" | The table exists but the "How RECPT uses it" column is too brief — a judge can't learn from it | Expand each row to 2–3 sentences; add a short plain-English intro before the table | Should fix | Medium |
 | Global | "I don't really see any question mark, no explanation anywhere" | Most jargon terms have no hover tooltip or expander in the current app | Systematic tooltip pass: add `help=` text to all `st.metric`/`st.button` calls | Must fix | Medium |
 | Sidebar | `Prove` is called `Methodology` in nav but the page inside is called `Evidence Pack` | Naming inconsistency creates confusion | Rename sidebar nav item to `Prove` | Must fix | Small |
 
@@ -115,8 +115,8 @@
 - Action text links → disabled buttons
 
 **Tooltips / helper text to add**
-- Inline below section header: `"TRACE connects to your existing AI and cloud data sources. No new instrumentation required."`
-- Each dead-end toolbar button: `disabled=True, help="In production TRACE, this triggers a live re-sync. Simulated in this MVP."`
+- Inline below section header: `"RECPT connects to your existing AI and cloud data sources. No new instrumentation required."`
+- Each dead-end toolbar button: `disabled=True, help="In production RECPT, this triggers a live re-sync. Simulated in this MVP."`
 - Prompt content storage: inline explanation per option
 - Sample file download link in FinOps upload flow
 
@@ -290,7 +290,7 @@
 
 **What is confusing**
 - Formula code block shows raw formulas with no plain-English explanation alongside them
-- Standards Alignment "How TRACE uses it" column is too brief (1 phrase each)
+- Standards Alignment "How RECPT uses it" column is too brief (1 phrase each)
 - Model Coefficients `kWh / 1M tokens` values have no derivation explanation
 - "Illustrative · blended from public GPU benchmarks" caption is too brief
 - The page doesn't directly answer: "Can I trust these numbers?"
@@ -397,7 +397,7 @@ Inside each box:
 
 ⚠️ Retries = wasted compute.
 A step that retried 3 times consumed up to 4× the expected tokens, cost, and carbon.
-Retries are invisible in billing dashboards — TRACE surfaces them so you can fix the prompt.
+Retries are invisible in billing dashboards — RECPT surfaces them so you can fix the prompt.
 ```
 
 ### Energy Debt explainer info box (P0-6)
@@ -441,7 +441,7 @@ exactly where to focus first — not "fix everything," but "start here."
   entirely from the model swap (large → small = 30× cheaper per token for the 70% 
   shifted). Region shift alone would not affect cost.
 
-• These are estimates. Production TRACE would validate these assumptions with the 
+• These are estimates. Production RECPT would validate these assumptions with the 
   engineering team before applying changes.
 ```
 
@@ -513,7 +513,7 @@ Step 5 — Blended estimate
 
 Why "Medium confidence"?
   No AI provider publishes per-call energy data. These are benchmarked estimates.
-  When providers publish real data, TRACE can replace these with measured values.
+  When providers publish real data, RECPT can replace these with measured values.
   Until then, the estimates are documented, reproducible, and challengeable.
 ```
 
@@ -552,7 +552,7 @@ but the energy conversion is a calibrated estimate, not a power-meter reading.
 
 This is a stronger basis than most sustainability reporting, which uses 
 Scope 2 market-based estimates that can be offset to near-zero.
-TRACE uses location-based accounting — no offsets, just physics.
+RECPT uses location-based accounting — no offsets, just physics.
 ```
 
 ### Evidence Pack — Audit readiness note (P1-6)
@@ -566,9 +566,9 @@ What you CAN take to a sustainability team:
   ✓ The before/after comparison showing optimization impact
   ✓ The standards alignment (SCI-for-AI, ISO 21031, GHG Protocol)
 
-What requires production TRACE (live data):
+What requires production RECPT (live data):
   ⚠️ This demo uses synthetic Northstar Bank data — not real usage logs
-  ⚠️ Production TRACE with live connectors produces a fully traceable 
+  ⚠️ Production RECPT with live connectors produces a fully traceable 
      evidence pack with actual token counts, timestamps, and model names
 
 A production audit pack carries the same methodology with real data,
@@ -579,17 +579,17 @@ making it defensible to a GHG Protocol-aligned sustainability audit.
 
 ```
 Store full prompt / response
-  TRACE saves the complete text of every AI request and response.
+  RECPT saves the complete text of every AI request and response.
   ⚠️ Only use this if prompt content is non-sensitive and your data 
   governance policy permits it.
 
 Store metadata only  (default — recommended)
-  TRACE saves token counts, model, latency, cost, and eval scores — 
+  RECPT saves token counts, model, latency, cost, and eval scores — 
   but NOT the actual text. All carbon and cost calculations work with 
   metadata only. Best choice for most teams.
 
 Store redacted prompt / response
-  TRACE saves the text with PII automatically removed (names, 
+  RECPT saves the text with PII automatically removed (names, 
   account numbers, etc.). Requires a redaction filter to be configured.
 ```
 

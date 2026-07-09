@@ -1,11 +1,11 @@
-# Demo script — TRACE (≤5 min video, Round 1)
+# Demo script — RECPT (≤5 min video, Round 1)
 
 > **Status:** Draft v1 · **Last updated:** 2026-06-10
 > For the MVP in `../prd/hackathon-mvp-prd-v2.md`, on the synthetic data in `../sample-data/`.
 > Target: ≤5:00. One screen, one wow moment. Numbers below are pre-verified from the dataset.
 
 ## One-liner
-**TRACE — carbon beside cost for cloud + AI, with optimizations that cut both. CCF, evolved for
+**RECPT — carbon beside cost for cloud + AI, with optimizations that cut both. CCF, evolved for
 the AI era. A tool clients buy and keep.**
 
 ## Setup before recording
@@ -17,12 +17,12 @@ the AI era. A tool clients buy and keep.**
 **0:00–0:30 — Hook (the AI energy shock).**
 > "AI data-centre electricity use jumped ~50% in 2025. Every token your agents burn has a cost
 > *and* a carbon footprint — and today that carbon is invisible. Cloud carbon tools, including
-> the one Thoughtworks open-sourced, CCF, measure infrastructure — not AI inference. TRACE closes
+> the one Thoughtworks open-sourced, CCF, measure infrastructure — not AI inference. RECPT closes
 > that gap."
 
 **0:30–1:00 — Load a client export (reuse, not rebuild).**
 - Click "Upload client export" → loads the synthetic Langfuse-style LLM usage + CCF-style cloud usage.
-> "TRACE ingests what clients already have — LLM usage from a gateway like LiteLLM or an
+> "RECPT ingests what clients already have — LLM usage from a gateway like LiteLLM or an
 > observability tool like Langfuse, and cloud billing the way CCF does. No new instrumentation."
 
 **1:00–1:45 — Cost beside carbon.**
@@ -34,7 +34,7 @@ the AI era. A tool clients buy and keep.**
 
 **1:45–2:30 — Assess: which app to fix first.**
 - Show the Assess ranking (carbon + Semgrep code-risk). Support-Bot on top.
-> "TRACE doesn't just measure — it ranks **energy debt**. It blends runtime carbon with a code scan
+> "RECPT doesn't just measure — it ranks **energy debt**. It blends runtime carbon with a code scan
 > (here, Semgrep) so you know *which app to modernize first* for the biggest cost-and-carbon return.
 > That's the prioritization a consultancy can act on."
 
@@ -55,10 +55,10 @@ the AI era. A tool clients buy and keep.**
 
 **4:15–5:00 — The Thoughtworks wedge + roadmap.**
 > "Thoughtworks co-founded the Green Software Foundation and created CCF — but its AI flagship has no
-> sustainability story. TRACE is that story. We use **AI:works as client zero** to build greener
+> sustainability story. RECPT is that story. We use **AI:works as client zero** to build greener
 > software and prove the before/after — then sell the *measurement and the proof*, not the platform.
 > Production plugs into CCF's ingestion, Langfuse, LiteLLM, and OpenTelemetry. **You can't manage what
-> you can't measure — TRACE makes AI's cost and carbon, finally, measurable.**"
+> you can't measure — RECPT makes AI's cost and carbon, finally, measurable.**"
 
 ## Mapping to judging criteria
 - **Innovation (30%)** — open-method AI-carbon + energy-debt Assess + carbon-aware optimization (not "carbon next to cost").

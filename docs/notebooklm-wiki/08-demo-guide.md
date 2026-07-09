@@ -1,19 +1,19 @@
 # 08 — Demo Guide
 
-> **Summary:** How to present TRACE in a five-minute live demo. Includes the recommended walkthrough, key talking points, the wow moment, likely questions from judges or stakeholders, and suggested answers.
+> **Summary:** How to present RECPT in a five-minute live demo. Includes the recommended walkthrough, key talking points, the wow moment, likely questions from judges or stakeholders, and suggested answers.
 
 ---
 
 ## The one-sentence pitch
 
-*"TRACE shows the carbon and cost of your AI tools side by side — and then tells you exactly what to change to cut both."*
+*"RECPT shows the carbon and cost of your AI tools side by side — and then tells you exactly what to change to cut both."*
 
 ---
 
 ## Before the demo: setup
 
 1. Run `streamlit run app.py` and open the app full-screen in a browser
-2. Confirm the sidebar shows: **🌿 TRACE / AI GREENOPS DASHBOARD / 📁 Northstar Bank**
+2. Confirm the sidebar shows: **🌿 RECPT / AI GREENOPS DASHBOARD / 📁 Northstar Bank**
 3. Confirm the app opens on the **Connect** page
 4. Make sure no recommendations are applied (no green banner, no ↩ Reset all button visible)
 5. Have the **Cloudability CSV file** ready at `docs/sample-data/finops_cloud_export.csv` in case you want to demo the file upload flow
@@ -25,7 +25,7 @@
 ### Opening hook (0:00–0:30)
 
 **What to say:**
-> "AI data-centre electricity consumption grew by approximately 50% in 2025. Every token your AI tools process has a carbon footprint — but today, that carbon is completely invisible. Cloud carbon tools measure your servers. AI billing tools measure your spend. Nobody shows you both in one place. TRACE closes that gap."
+> "AI data-centre electricity consumption grew by approximately 50% in 2025. Every token your AI tools process has a carbon footprint — but today, that carbon is completely invisible. Cloud carbon tools measure your servers. AI billing tools measure your spend. Nobody shows you both in one place. RECPT closes that gap."
 
 **What to show:** Nothing yet — this is the hook delivered to camera or audience.
 
@@ -36,7 +36,7 @@
 **Action:** Land on the Connect page (it is the default).
 
 **What to say:**
-> "This is Northstar Bank's data estate as TRACE sees it today. Seven sources are already connected — live APIs from Langfuse, AI/Works, and Google Cloud Monitoring syncing every 15 minutes; static exports from Cloudability and CCF Factors. Two warnings tell us where the data is stale or partially mapped. Everything is visible, nothing is hidden."
+> "This is Northstar Bank's data estate as RECPT sees it today. Seven sources are already connected — live APIs from Langfuse, AI/Works, and Google Cloud Monitoring syncing every 15 minutes; static exports from Cloudability and CCF Factors. Two warnings tell us where the data is stale or partially mapped. Everything is visible, nothing is hidden."
 
 **Optional — show the drawer:**
 
@@ -46,7 +46,7 @@ Click **＋ Connect New System**, then click **LLM Observability**, then select 
 
 Close the drawer.
 
-**Key point to land:** *TRACE plugs into what clients already have — no new instrumentation required.*
+**Key point to land:** *RECPT plugs into what clients already have — no new instrumentation required.*
 
 ---
 
@@ -91,7 +91,7 @@ Close the drawer.
 **Action:** Click the **⚡ Energy Debt** tab.
 
 **What to say:**
-> "TRACE doesn't just measure — it prioritises. The Energy Debt score combines runtime carbon with code-level inefficiency findings. Support-Bot scores highest on both. If you had to tell an engineering team which app to modernise first for the best return, this is the answer."
+> "RECPT doesn't just measure — it prioritises. The Energy Debt score combines runtime carbon with code-level inefficiency findings. Support-Bot scores highest on both. If you had to tell an engineering team which app to modernise first for the best return, this is the answer."
 
 ---
 
@@ -102,7 +102,7 @@ Close the drawer.
 **Pause. Let the audience read the first recommendation card.**
 
 **What to say:**
-> "TRACE found that 70% of Support-Bot's traffic is routine summarisation — the kind of work a smaller, cheaper model handles just as well. Shift that 70% to a small model and move it to Oregon. The 30% of complex queries stays on the large model, in-region, to protect quality. That trade-off is stated explicitly — TRACE doesn't do blanket downgrades."
+> "RECPT found that 70% of Support-Bot's traffic is routine summarisation — the kind of work a smaller, cheaper model handles just as well. Shift that 70% to a small model and move it to Oregon. The 30% of complex queries stays on the large model, in-region, to protect quality. That trade-off is stated explicitly — RECPT doesn't do blanket downgrades."
 
 **Action:** Click **⚡ Apply** on the Support-Bot card.
 
@@ -124,7 +124,7 @@ Close the drawer.
 **Action:** Click **Prove** in the sidebar.
 
 **What to say:**
-> "The Prove page is what TRACE produces for the client's sustainability team or auditor. Every number traces back to a source. The formula is here. The data sources are here. The confidence level is honest — Medium, because we're working from hardware benchmarks, not a power meter. This isn't a black box. Clients can challenge any number, and we can defend every one."
+> "The Prove page is what RECPT produces for the client's sustainability team or auditor. Every number traces back to a source. The formula is here. The data sources are here. The confidence level is honest — Medium, because we're working from hardware benchmarks, not a power meter. This isn't a black box. Clients can challenge any number, and we can defend every one."
 
 **What to point to:** The Before/After Comparison table (with green deltas). The Calculation Summary evidence blocks with the formula and confidence level.
 
@@ -139,7 +139,7 @@ Close the drawer.
 ### Close (4:45–5:00)
 
 **What to say:**
-> "AI is the new forcing function. It is driving energy, cost, and the urgent need to measure and control both. Thoughtworks created Cloud Carbon Footprint, helped write the Green Software Foundation standards, and built TRACE — a product that any client can buy and keep, that shows their AI footprint in plain numbers, and that tells them what to do about it. You can't manage what you can't measure. TRACE makes AI's cost and carbon, finally, measurable."
+> "AI is the new forcing function. It is driving energy, cost, and the urgent need to measure and control both. Thoughtworks created Cloud Carbon Footprint, helped write the Green Software Foundation standards, and built RECPT — a product that any client can buy and keep, that shows their AI footprint in plain numbers, and that tells them what to do about it. You can't manage what you can't measure. RECPT makes AI's cost and carbon, finally, measurable."
 
 ---
 
@@ -164,7 +164,7 @@ Close the drawer.
 
 ### "Is this data real?"
 
-*"No — all the data in this demo is synthetic, generated specifically for the hackathon. The numbers are shaped to look like real Langfuse, CCF, and billing exports, and the relationships between them are realistic. The yellow banner in the Observe page says so explicitly. In a real deployment, TRACE would ingest the client's own data."*
+*"No — all the data in this demo is synthetic, generated specifically for the hackathon. The numbers are shaped to look like real Langfuse, CCF, and billing exports, and the relationships between them are realistic. The yellow banner in the Observe page says so explicitly. In a real deployment, RECPT would ingest the client's own data."*
 
 ### "How accurate is the carbon estimate?"
 
@@ -174,17 +174,17 @@ Close the drawer.
 
 *"They are derived from publicly available hardware specs — specifically NVIDIA A100 and H100 GPU power ratings, combined with token throughput benchmarks from MLPerf. We also cite Luccioni et al. (2023), a peer-reviewed paper that benchmarked inference energy for various model sizes. The derivation is documented in full in our methodology notes. These are estimates, not vendor measurements — we are transparent about that."*
 
-### "Why doesn't TRACE use carbon offsets?"
+### "Why doesn't RECPT use carbon offsets?"
 
-*"TRACE follows the ISO 21031 standard, which requires location-based accounting. This means we use the actual carbon content of the electricity grid where the computation runs. Market-based offsets — like renewable energy certificates — don't change the physical electricity that powers a data centre. Claiming them would reduce the reported number without reducing the actual impact. We believe the honest number is the useful number."*
+*"RECPT follows the ISO 21031 standard, which requires location-based accounting. This means we use the actual carbon content of the electricity grid where the computation runs. Market-based offsets — like renewable energy certificates — don't change the physical electricity that powers a data centre. Claiming them would reduce the reported number without reducing the actual impact. We believe the honest number is the useful number."*
 
 ### "How is this different from Cloud Carbon Footprint?"
 
-*"CCF measures cloud infrastructure — servers, storage, networking. It does not measure AI inference at all. When you call the Claude or GPT API, CCF sees nothing. TRACE fills that gap by adding an AI inference measurement layer using token counts and model-class energy coefficients. It also adds water consumption tracking, agent-level trace visibility, and a recommendation engine — none of which exist in CCF today."*
+*"CCF measures cloud infrastructure — servers, storage, networking. It does not measure AI inference at all. When you call the Claude or GPT API, CCF sees nothing. RECPT fills that gap by adding an AI inference measurement layer using token counts and model-class energy coefficients. It also adds water consumption tracking, agent-level trace visibility, and a recommendation engine — none of which exist in CCF today."*
 
 ### "Could this work with a real client's data?"
 
-*"Yes — and the architecture is designed for it. In a real deployment, TRACE would connect to the client's cloud billing exports (AWS CUR, GCP BigQuery billing, Azure cost export) and their LLM usage data (from an AI gateway like LiteLLM or an observability tool like Langfuse). The Connect page shows exactly what those connectors would look like. For the hackathon, we used synthetic data shaped like those exports."*
+*"Yes — and the architecture is designed for it. In a real deployment, RECPT would connect to the client's cloud billing exports (AWS CUR, GCP BigQuery billing, Azure cost export) and their LLM usage data (from an AI gateway like LiteLLM or an observability tool like Langfuse). The Connect page shows exactly what those connectors would look like. For the hackathon, we used synthetic data shaped like those exports."*
 
 ### "What would it take to make this production-ready?"
 
@@ -192,7 +192,7 @@ Close the drawer.
 
 ### "Why Thoughtworks? What's the competitive advantage?"
 
-*"Three things: we co-created CCF (so we know this domain deeply), we co-founded the Green Software Foundation (so we helped write the SCI-for-AI standard this product is built on), and we have AI:works (so we can demonstrate carbon-aware AI delivery, not just measure it). We can use AI:works as client zero — build greener software using it, then prove the before-and-after carbon reduction with TRACE. That combination — build it green and prove it — is something no other firm can offer today."*
+*"Three things: we co-created CCF (so we know this domain deeply), we co-founded the Green Software Foundation (so we helped write the SCI-for-AI standard this product is built on), and we have AI:works (so we can demonstrate carbon-aware AI delivery, not just measure it). We can use AI:works as client zero — build greener software using it, then prove the before-and-after carbon reduction with RECPT. That combination — build it green and prove it — is something no other firm can offer today."*
 
 ---
 
@@ -211,7 +211,7 @@ Close the drawer.
 ## Key takeaways
 
 - The wow moment is on the Optimize page — clicking Apply and watching both numbers drop ~50% is the single most memorable moment in the demo
-- Frame TRACE as a product the client buys and keeps — not a consulting deliverable, not a platform dependency
+- Frame RECPT as a product the client buys and keeps — not a consulting deliverable, not a platform dependency
 - Lead with the AI energy shock (50% growth in 2025) before opening the app — the hook needs to land before the numbers
 - Be honest about what is synthetic and what is estimated — the transparency is part of the value proposition
 - The Support-Bot story (76% of carbon from one app, in one region, fixable with one recommendation) is the narrative spine of the entire demo
