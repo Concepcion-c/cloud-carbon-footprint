@@ -1,12 +1,12 @@
 # 04 — Architecture
 
-> **Summary:** How the TRACE app is built, how it runs, what files matter, and how data flows from raw files to the dashboard. Written for non-technical readers with technical detail available for anyone who needs it.
+> **Summary:** How the RECPT app is built, how it runs, what files matter, and how data flows from raw files to the dashboard. Written for non-technical readers with technical detail available for anyone who needs it.
 
 ---
 
 ## The simple version
 
-TRACE is a **single Python file** (`app.py`) that reads data from a folder of CSV and JSON files, does some calculations, and displays the results as an interactive web dashboard.
+RECPT is a **single Python file** (`app.py`) that reads data from a folder of CSV and JSON files, does some calculations, and displays the results as an interactive web dashboard.
 
 There is no database. There is no server running in the background. There are no live connections to external services. When you run the app, everything happens locally on your computer.
 
@@ -19,7 +19,7 @@ There is no database. There is no server running in the background. There are no
 streamlit run app.py
 ```
 
-This opens a web browser (or a browser tab) showing the TRACE dashboard. The app loads all data files at startup and holds everything in memory. Page changes happen instantly because there is no round-trip to a server.
+This opens a web browser (or a browser tab) showing the RECPT dashboard. The app loads all data files at startup and holds everything in memory. Page changes happen instantly because there is no round-trip to a server.
 
 **Dependencies** (from `requirements.txt`):
 - `streamlit` — the web framework that handles the dashboard layout, navigation, and interactive widgets
@@ -136,9 +136,9 @@ Applied recommendations are stored in `st.session_state.applied_recs` — a Pyth
 
 ## The CCF codebase (present but not active)
 
-Because TRACE is built from a **fork of the Cloud Carbon Footprint repository**, the full CCF TypeScript codebase (`packages/` directory) is also present in the project folder. This contains approximately 82,500 lines of TypeScript across 742 source files — the original CCF API server, AWS/Azure/GCP connectors, React dashboard, and CLI.
+Because RECPT is built from a **fork of the Cloud Carbon Footprint repository**, the full CCF TypeScript codebase (`packages/` directory) is also present in the project folder. This contains approximately 82,500 lines of TypeScript across 742 source files — the original CCF API server, AWS/Azure/GCP connectors, React dashboard, and CLI.
 
-**None of this code runs when you run `streamlit run app.py`.** The Python app and the TypeScript codebase are completely separate. The CCF code is the inherited starting point from the fork; the TRACE MVP is a new, independent Python application.
+**None of this code runs when you run `streamlit run app.py`.** The Python app and the TypeScript codebase are completely separate. The CCF code is the inherited starting point from the fork; the RECPT MVP is a new, independent Python application.
 
 See `05-ccf-integration.md` for a full explanation of this relationship.
 
@@ -146,7 +146,7 @@ See `05-ccf-integration.md` for a full explanation of this relationship.
 
 ## Session state (how the app remembers things)
 
-Streamlit does not keep variables in memory between page interactions the way a traditional web app does. Instead, TRACE uses `st.session_state` — a dictionary that Streamlit preserves across re-renders.
+Streamlit does not keep variables in memory between page interactions the way a traditional web app does. Instead, RECPT uses `st.session_state` — a dictionary that Streamlit preserves across re-renders.
 
 The key session state variables are:
 
@@ -227,8 +227,8 @@ Note: `recommendations.json` and the JSON export files are hand-authored and mus
 
 ## Key takeaways
 
-- TRACE is a single Python file + a folder of data files — there is very little infrastructure to understand
+- RECPT is a single Python file + a folder of data files — there is very little infrastructure to understand
 - Everything runs locally; no cloud deployment is required for the demo
 - The CCF TypeScript codebase is present in the repo but completely separate from the running app
-- Streamlit handles all the web UI complexity; the TRACE team only wrote calculation and data logic
+- Streamlit handles all the web UI complexity; the RECPT team only wrote calculation and data logic
 - Regenerating the data is a single command (`python3 generate.py`); the output is deterministic (same seed, same data every time)

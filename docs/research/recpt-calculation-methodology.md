@@ -1,12 +1,12 @@
-# How TRACE Calculates Energy, Cost, Carbon, and Water
+# How RECPT Calculates Energy, Cost, Carbon, and Water
 
-This document explains how TRACE calculates AI inference energy, AI inference carbon, AI inference cost, cloud infrastructure carbon, and water consumption.
+This document explains how RECPT calculates AI inference energy, AI inference carbon, AI inference cost, cloud infrastructure carbon, and water consumption.
 
 The current implementation uses a lightweight estimation model based on token counts, model coefficients, regional grid intensity, regional WUE, and cloud usage data.
 
 ---
 
-## 1. Core TRACE Formulas
+## 1. Core RECPT Formulas
 
 The core formulas come from `app.py`.
 
@@ -30,7 +30,7 @@ ai_carbon_kg = ai_energy_kWh × grid_intensity_gCO₂e_per_kWh / 1000
 
 This converts AI inference energy into carbon emissions. The division by 1,000 converts grams of CO₂e into kilograms of CO₂e.
 
-**Source:** SCI-for-AI (Green Software Foundation); Electricity Maps; EPA eGRID; ENTSO-E. TRACE uses location-based grid intensity — no market-based RECs or offsets applied. This is intentional and aligned to ISO 21031.
+**Source:** SCI-for-AI (Green Software Foundation); Electricity Maps; EPA eGRID; ENTSO-E. RECPT uses location-based grid intensity — no market-based RECs or offsets applied. This is intentional and aligned to ISO 21031.
 
 ---
 
@@ -52,7 +52,7 @@ This estimates the cost of AI inference based on token volume and the model's pr
 cloud_carbon_kg = usage_kWh × grid_intensity_gCO₂e_per_kWh / 1000
 ```
 
-This converts cloud infrastructure energy use into carbon emissions. The cloud energy value (`usage_kWh`) comes directly from the billing export. The AI energy value is estimated from token counts because LLM providers generally do not expose per-call energy readings — TRACE backs into that energy usage from hardware and inference benchmarks.
+This converts cloud infrastructure energy use into carbon emissions. The cloud energy value (`usage_kWh`) comes directly from the billing export. The AI energy value is estimated from token counts because LLM providers generally do not expose per-call energy readings — RECPT backs into that energy usage from hardware and inference benchmarks.
 
 **Source:** Cloud Carbon Footprint methodology; Electricity Maps; EPA eGRID.
 
@@ -82,7 +82,7 @@ The same WUE lookup applies to cloud infrastructure energy. Calculated per row i
 
 ## 2. The Two Lookup Tables That Do the Work
 
-TRACE relies on two main lookup tables: `model_coefficients.csv` and `grid_intensity.csv`. Together, these convert token usage into energy, cost, carbon, and water.
+RECPT relies on two main lookup tables: `model_coefficients.csv` and `grid_intensity.csv`. Together, these convert token usage into energy, cost, carbon, and water.
 
 ---
 
@@ -257,7 +257,7 @@ Hyperscalers operate with PUE values around 1.1–1.2. Applying PUE = 1.2:
 0.6 × 1.2 = 0.72 kWh / 1M tokens  (full facility, mid-tier)
 ```
 
-TRACE uses **0.6 kWh / 1M tokens** for mid-tier models — this is the server-level estimate without separate PUE multiplication, because PUE is already folded into the coefficient (see Section 6).
+RECPT uses **0.6 kWh / 1M tokens** for mid-tier models — this is the server-level estimate without separate PUE multiplication, because PUE is already folded into the coefficient (see Section 6).
 
 ### Final Coefficients
 
@@ -275,7 +275,7 @@ The `large` coefficient (1.2) is a conservative upper-bound for Opus/GPT-4-class
 
 The `kWh_per_1M_tokens` coefficient **already includes PUE**.
 
-TRACE does not separately multiply AI inference energy by PUE at runtime. The formula:
+RECPT does not separately multiply AI inference energy by PUE at runtime. The formula:
 
 ```
 tokens × kWh_per_1M_tokens
@@ -286,11 +286,11 @@ already includes:
 - Server overhead
 - Data center overhead (PUE ≈ 1.2)
 
-This is similar to the Greenpixie approach, but TRACE folds PUE into the per-token coefficient because TRACE does not have measured IT energy as an input.
+This is similar to the Greenpixie approach, but RECPT folds PUE into the per-token coefficient because RECPT does not have measured IT energy as an input.
 
 ---
 
-## 7. What Greenpixie Does vs. What TRACE Does
+## 7. What Greenpixie Does vs. What RECPT Does
 
 Silvia is right that Greenpixie also does not ingest actual power consumption.
 
@@ -301,14 +301,14 @@ total_facility_energy = IT_energy × PUE
 carbon = total_facility_energy × grid_intensity
 ```
 
-TRACE's approach is equivalent but starts from the token side:
+RECPT's approach is equivalent but starts from the token side:
 
 ```
 IT_energy = tokens × kWh_per_1M_tokens
 carbon = IT_energy × grid_intensity
 ```
 
-| Dimension                        | Greenpixie                              | TRACE                                      |
+| Dimension                        | Greenpixie                              | RECPT                                      |
 |----------------------------------|-----------------------------------------|--------------------------------------------|
 | Starting point                   | Measured or estimated IT energy         | Token counts                               |
 | PUE handling                     | Explicit multiplier at runtime          | Folded into per-token coefficient          |
@@ -322,7 +322,7 @@ Neither system reads an actual power meter. Both use estimation models.
 
 ## 8. Water Consumption: Implemented
 
-Water consumption is built into TRACE. The formula:
+Water consumption is built into RECPT. The formula:
 
 ```
 water_liters = energy_kWh × WUE_liters_per_kWh
@@ -390,7 +390,7 @@ Water confidence tracks carbon confidence:
 - **Medium** — region-level estimate from industry averages; AWS does not publish region-level WUE with full transparency
 - **Low** — region missing; fallback WUE = 1.0 L/kWh (global average) is applied
 
-In production, TRACE would support client-approved WUE factors and provider-specific values (Google, Microsoft, and others publish facility-level WUE; AWS publishes less granularly).
+In production, RECPT would support client-approved WUE factors and provider-specific values (Google, Microsoft, and others publish facility-level WUE; AWS publishes less granularly).
 
 ---
 
@@ -423,6 +423,6 @@ carbon = energy × grid_intensity
 water  = energy × WUE
 ```
 
-The harder part is choosing the right WUE by cloud provider and region, since AWS does not publish region-level WUE as transparently as Google. TRACE uses region-level estimates with a Medium confidence label, consistent with how it handles grid intensity.
+The harder part is choosing the right WUE by cloud provider and region, since AWS does not publish region-level WUE as transparently as Google. RECPT uses region-level estimates with a Medium confidence label, consistent with how it handles grid intensity.
 
 Both carbon and water go down when you shift workloads to cleaner, lower-WUE regions — the optimization lever is the same for both metrics.

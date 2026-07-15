@@ -102,7 +102,7 @@ spacing:
 ---
 
 ## Brand & Style
-The design system is engineered for **GlobalHack-TRACE**, an AI GreenOps dashboard tailored for executive oversight and engineering accountability. The brand personality is **authoritative, analytical, and environmentally conscious**. It balances the clinical precision of a developer tool with the high-level clarity required by leadership.
+The design system is engineered for **GlobalHack-RECPT**, an AI GreenOps dashboard tailored for executive oversight and engineering accountability. The brand personality is **authoritative, analytical, and environmentally conscious**. It balances the clinical precision of a developer tool with the high-level clarity required by leadership.
 
 The aesthetic follows a **Corporate Modern** style with **Tonal Layering**. It utilizes a "Split Personality" layout: a deep, technical sidebar representing the power of AI, contrasted against a clean, white-to-light-gray main staging area that prioritizes data legibility. Visual metaphors should evoke "efficiency" and "traceability"—using crisp lines, ample negative space, and high-fidelity data visualizations.
 

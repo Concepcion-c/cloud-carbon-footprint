@@ -1,9 +1,20 @@
-# CHANGELOG — TRACE decision log
+# CHANGELOG — RECPT decision log
 
-A running log of meaningful decisions for the TRACE project. Newest first.
+A running log of meaningful decisions for the RECPT project. Newest first.
 Format: `## YYYY-MM-DD` → `- **Decision** — why / context.`
 
 After any notable decision (scope, architecture, tooling, naming), add an entry here.
+
+## 2026-07-09
+
+- **Renamed the product from TRACE to RECPT** — updated `app.py`, `CLAUDE.md`, and all `docs/`
+  content/filenames that referenced the old brand name (`trace-prd.md` → `recpt-prd.md`,
+  `trace-calculation-methodology.md` → `recpt-calculation-methodology.md`,
+  `hackathon-mvp-CHAT-prd-v3-trace.md` → `hackathon-mvp-CHAT-prd-v3-recpt.md`). Generic
+  telemetry/tracing terminology (Agent Traces, `trace_id`, `llm_trace_export.json`, CSS/JS
+  identifiers like `.trace-arrow`, `load_trace_data()`) was left untouched — it refers to
+  LLM/agent tracing, not the product name. The private GitHub repo (`Concepcion-c/TRACE`) and
+  the local project folder were **not** renamed. _Why: RECPT is the name going forward._
 
 ## 2026-06-10
 
@@ -18,7 +29,7 @@ the MVP for Round 1 (video + written form due **2026-06-12**).
   CAST-like energy-debt Assess) the client buys and keeps — *not* an AI:works-embedded module.
   AI:works = "client zero" + build accelerator only.
 - **Anchor on run-time carbon** (the delivered app's ongoing footprint), not build-time.
-- **Build stack = Streamlit + pandas (+ optional DuckDB) + a custom TRACE calculator + synthetic
+- **Build stack = Streamlit + pandas (+ optional DuckDB) + a custom RECPT calculator + synthetic
   CSVs.** Reuse OSS (CCF, Langfuse, LiteLLM, SCI-for-AI, OpenTelemetry GenAI, Semgrep) by *adopting
   their data shapes and showing the integration path*, not hosting them live. Trivy cut.
 - **Methodology = SCI-for-AI / ISO 21031, open & auditable** (location-based grid intensity, no offsets).
@@ -50,7 +61,7 @@ the MVP for Round 1 (video + written form due **2026-06-12**).
 - **Committed & pushed the batch to the private repo** (commit `04a6ad0c` on `trunk`) — strategy v2,
   both PRDs, feasibility one-pager, synthetic data package, demo script. Extracted the Stitch UI export
   to `docs/design/stitch-dashboard/` (screen mockups + `DESIGN.md` tokens) and git-ignored the original
-  `.zip`. Verified no `TRACE_Documents/` leak and that the CCF `.gitignore` `*.csv` rule did not drop
+  `.zip`. Verified no `RECPT_Documents/` leak and that the CCF `.gitignore` `*.csv` rule did not drop
   the sample data. _Why: keep the private workspace current and design assets browsable._
 - **Generated the synthetic data package + demo script** — `docs/sample-data/` now has a deterministic
   `generate.py` (seed 42) producing Langfuse-shaped `llm_usage.csv`, CCF-shaped `cloud_usage.csv`,
@@ -63,11 +74,11 @@ the MVP for Round 1 (video + written form due **2026-06-12**).
   Decision: reuse mature open-source tools (CCF, Langfuse, LiteLLM, SCI-for-AI, OpenTelemetry GenAI,
   Semgrep) by **adopting their data shapes and showing the integration path — not hosting/integrating
   them live** during the 6-hour build (which would cost more time + credits, not less). Decided build
-  stack: **Streamlit + pandas (+ optional DuckDB) + a custom TRACE calculator + synthetic CSVs shaped
+  stack: **Streamlit + pandas (+ optional DuckDB) + a custom RECPT calculator + synthetic CSVs shaped
   on Langfuse/CCF/SCI**. Cut Trivy; demoted LiteLLM/OTel/Trivy to roadmap-slide only. _Why: spend the
   fewest AI credits by writing only the unique carbon-for-AI logic and reusing everything else as
   schema/lineage._
-- **Wrote two PRDs** — the full product PRD (`docs/prd/trace-prd.md`, derived from strategy §7) and
+- **Wrote two PRDs** — the full product PRD (`docs/prd/recpt-prd.md`, derived from strategy §7) and
   a ruthlessly-scoped **6-hour hackathon MVP PRD** (`docs/prd/hackathon-mvp-prd.md`): a single-screen,
   no-backend dashboard ingesting synthetic client data, showing carbon beside cost + an
   apply-a-recommendation interaction, with an hour-by-hour plan, synthetic data spec + coefficient
@@ -96,10 +107,10 @@ the MVP for Round 1 (video + written form due **2026-06-12**).
   consistent, referenceable structure._
 - **Retired the interim `hackathon/` folder and `HACKATHON.md`** — their content (publish
   workflow, remotes model) now lives in `CLAUDE.md`. _Why: one clean home, no duplication._
-- **Organized & protected `TRACE_Documents/`** — reference library sorted into themed folders
+- **Organized & protected `RECPT_Documents/`** — reference library sorted into themed folders
   (hackathon-admin, ccf-product, aiworks-platform, gsf-greenops, market-research, governance,
   claude-code-workshop); most sensitive items quarantined in `_confidential/`. Added
-  `/TRACE_Documents/` to `.gitignore`. _Why: keep confidential/PII reference material local —
+  `/RECPT_Documents/` to `.gitignore`. _Why: keep confidential/PII reference material local —
   it must never reach git or the public fork._
 - **Created private workspace `Concepcion-c/TRACE`** — seeded from the public CCF fork; wired
   remotes `origin` (private), `public` (fork = publish target), `upstream` (org). Commits use

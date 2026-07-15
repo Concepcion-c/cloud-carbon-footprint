@@ -1,5 +1,5 @@
 {
-  "_comment": "SYNTHETIC sample shaped like a real `semgrep --json` export, for the TRACE Assess layer (stretch S2). Feeds a per-app 'code-risk' signal that blends with carbon for the energy-debt ranking. Not a real scan.",
+  "_comment": "SYNTHETIC sample shaped like a real `semgrep --json` export, for the RECPT Assess layer (stretch S2). Feeds a per-app 'code-risk' signal that blends with carbon for the energy-debt ranking. Not a real scan.",
   "version": "1.96.0",
   "results": [
     {"check_id": "python.lang.performance.list-modification-in-loop", "path": "services/support-bot/handler.py", "start": {"line": 88}, "extra": {"severity": "WARNING", "message": "Repeated full re-summarization per turn (no cache) — high token/energy waste.", "metadata": {"category": "performance", "impact": "energy-debt"}}},

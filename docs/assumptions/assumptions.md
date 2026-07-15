@@ -1,4 +1,4 @@
-# Assumptions & open questions — TRACE
+# Assumptions & open questions — RECPT
 
 > **Status:** Living doc · **Last updated:** 2026-06-10
 > Capture what we're assuming (so it can be challenged) and what's still unresolved.

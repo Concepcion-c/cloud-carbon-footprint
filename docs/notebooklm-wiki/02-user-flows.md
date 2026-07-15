@@ -1,12 +1,12 @@
 # 02 — User Flows
 
-> **Summary:** A plain-English, screen-by-screen walkthrough of everything a user can do in the TRACE app. This document explains what you see, what you can click, and what happens at each step.
+> **Summary:** A plain-English, screen-by-screen walkthrough of everything a user can do in the RECPT app. This document explains what you see, what you can click, and what happens at each step.
 
 ---
 
 ## Overview of the app
 
-The TRACE app has four pages, accessible from the left-hand sidebar:
+The RECPT app has four pages, accessible from the left-hand sidebar:
 
 | Page | Purpose |
 |---|---|
@@ -25,7 +25,7 @@ Users move through the app in a natural left-to-right story: connect data → ob
 
 ### What this page is for
 
-The Connect page shows all the external systems that TRACE is drawing data from. It also lets you simulate adding a new data source — demonstrating how a real deployment would onboard a client's tools.
+The Connect page shows all the external systems that RECPT is drawing data from. It also lets you simulate adding a new data source — demonstrating how a real deployment would onboard a client's tools.
 
 ### What you see when you land on Connect
 
@@ -79,8 +79,8 @@ Clicking **＋ Connect New System** opens a step-by-step drawer:
 - Click FinOps / Cloud Cost → File upload
 - A form appears showing the expected fields
 - Upload a CSV file
-- TRACE validates the file, shows record count, flags missing fields
-- A field mapping table appears showing how source fields map to the TRACE schema
+- RECPT validates the file, shows record count, flags missing fields
+- A field mapping table appears showing how source fields map to the RECPT schema
 - Click Save Mapping, then Run Normalization
 
 **Available connectors (roadmap):** A collapsible section shows nine more connectors marked "Coming Soon": LangSmith, New Relic, CloudHealth, Flexera, Vantage, Finout, OpenTelemetry Collector, LiteLLM Gateway, Webhooks.
@@ -95,7 +95,7 @@ An expandable legend explains what each status badge means.
 
 ### What this page is for
 
-Observe is the main analytics dashboard. It shows everything TRACE knows about the client's AI and cloud footprint, broken down in multiple ways. It has four tabs.
+Observe is the main analytics dashboard. It shows everything RECPT knows about the client's AI and cloud footprint, broken down in multiple ways. It has four tabs.
 
 ### Tab 1: Dashboard
 
@@ -155,11 +155,11 @@ A caption reads: *"Dirtiest grids drive carbon; hottest/driest regions drive wat
 
 **Span Details table:** A full breakdown of every agent step with all metrics in a sortable table.
 
-**Why this matters:** Agent retries are invisible in billing dashboards. Every retry burns extra tokens, energy, and carbon. TRACE surfaces them and quantifies the waste.
+**Why this matters:** Agent retries are invisible in billing dashboards. Every retry burns extra tokens, energy, and carbon. RECPT surfaces them and quantifies the waste.
 
 ### Tab 4: Energy Debt
 
-**What this tab is for:** Energy Debt ranks the client's applications by a combined score of runtime carbon waste and code-level inefficiency. It is TRACE's version of a "which app should we fix first?" prioritisation tool.
+**What this tab is for:** Energy Debt ranks the client's applications by a combined score of runtime carbon waste and code-level inefficiency. It is RECPT's version of a "which app should we fix first?" prioritisation tool.
 
 **The Energy Debt Score formula:**
 > Score = 60% × runtime carbon rank + 40% × code-risk findings rank
@@ -177,7 +177,7 @@ This tab answers the question: "If we had to modernise one app this quarter to g
 
 ### What this page is for
 
-Optimize is where TRACE turns observations into actions. It shows specific recommendations and lets you apply them — with the dashboard updating live to show the impact.
+Optimize is where RECPT turns observations into actions. It shows specific recommendations and lets you apply them — with the dashboard updating live to show the impact.
 
 ### What you see before applying anything
 
@@ -211,7 +211,7 @@ Optimize is where TRACE turns observations into actions. It shows specific recom
    - The applied card turns green with a ✅ icon
    - The Apply button changes to an **↩ Undo** button
 
-**What changes across the app:** Because the app recalculates all metrics when a recommendation is applied, the Observe Dashboard and Prove pages also update to reflect the new numbers. This shows that TRACE is not just showing static projections — it is recomputing the entire footprint with the optimisation applied.
+**What changes across the app:** Because the app recalculates all metrics when a recommendation is applied, the Observe Dashboard and Prove pages also update to reflect the new numbers. This shows that RECPT is not just showing static projections — it is recomputing the entire footprint with the optimisation applied.
 
 **Undoing:** Clicking ↩ Undo on any card reverses its effect. The **↩ Reset all** button in the sidebar resets everything to the baseline in one click.
 
@@ -248,7 +248,7 @@ Cloud carbon = usage_kWh × grid_gCO₂e_per_kWh
 Energy Debt Score = 0.6 × carbon_rank + 0.4 × code_risk_rank
 ```
 
-**Left column — Standards Alignment table:** Shows six standards TRACE aligns to (SCI-for-AI, ISO 21031, OpenTelemetry GenAI, Langfuse trace schema, CCF output schema, Semgrep JSON).
+**Left column — Standards Alignment table:** Shows six standards RECPT aligns to (SCI-for-AI, ISO 21031, OpenTelemetry GenAI, Langfuse trace schema, CCF output schema, Semgrep JSON).
 
 **Left column — Honest Caveats:** A bulleted list acknowledging what is estimated, what is approximate, and what would be different in a production deployment.
 

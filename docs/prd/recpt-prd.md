@@ -1,4 +1,4 @@
-# PRD: TRACE — carbon beside cost + optimization for AI
+# PRD: RECPT — carbon beside cost + optimization for AI
 
 > **Status:** Draft v1 · **Owner:** Concepcion-c · **Last updated:** 2026-06-10
 > Derived from `../strategy/sustainability-strategy-analysis.md` (§7, v2) and

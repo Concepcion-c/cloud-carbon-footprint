@@ -1,6 +1,14 @@
 fileignoreconfig:
+- filename: CLAUDE.md
+  checksum: 5e34145334b16b72f16ba4d6f691e178086ce98254ae85431151fd56e2d41590
+- filename: docs/research/README.md
+  checksum: 0fd17528a8512e1aeb895be645affca3e9614c7fd051e83864979836572bad38
+- filename: docs/notebooklm-wiki/08-demo-guide.md
+  checksum: 10a62afddd067d553d6704b91df9041b433b8382cc372833393fb919a6f1bc71
+- filename: docs/notebooklm-wiki/notebooklm-upload-index.md
+  checksum: 78db4014ee673e446e7e77a5eeeea9178efcfe78ad3c625b968b26afb9e118c4
 - filename: app.py
-  checksum: cced0753374262f26ce045caf5b705b7c1221e9e2f06c5c9b4fd8e7ceca8e94e
+  checksum: 73aa1706563eacaf6bb772a2528be0f6fb3d632e91025793efd7c8a6aaff74f7
 - filename: .changeset/big-experts-kick.md
   checksum: 74d451296b12b20492767a90f35ec464016a6eca3593c13a672b40d0fd8f8b06
 - filename: .changeset/breezy-singers-own.md

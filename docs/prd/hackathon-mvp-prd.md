@@ -1,9 +1,9 @@
-# PRD: TRACE — 6-hour Hackathon MVP
+# PRD: RECPT — 6-hour Hackathon MVP
 
 > **⚠️ SUPERSEDED by `./hackathon-mvp-prd-v2.md`** (open-source-tool-leveraged stack). Kept for history.
 
 > **Status:** Draft v1 (superseded) · **Owner:** Concepcion-c · **Last updated:** 2026-06-10
-> Scoped slice of `./trace-prd.md` for a **single ~6-hour build**. Optimized for a
+> Scoped slice of `./recpt-prd.md` for a **single ~6-hour build**. Optimized for a
 > **≤5-min video demo** + the written form (Round 1 due 2026-06-12). PM / semi-technical
 > friendly. No real client or AI:works data — **synthetic only**.
 
@@ -50,7 +50,7 @@ static code analysis (Assess uses pre-scored synthetic data). These live in the 
 - **All math client-side** from a transparent coefficient table (below).
 - **Vibe-code it** with an AI coding tool; keep one screen; style to read like a CCF / control-
   plane dashboard. Robustness for the *recording* beats feature count.
-- Build in `~/projects/TRACE` (e.g. a `mvp/` or `packages/` subfolder); synthetic data spec
+- Build in `~/projects/RECPT` (e.g. a `mvp/` or `packages/` subfolder); synthetic data spec
   belongs in `../sample-data/`.
 
 ## 7. Synthetic data spec (illustrative; derive from public benchmarks — label as synthetic)
@@ -107,4 +107,4 @@ client zero, gain-share pricing). One screen, one wow moment.
 
 ## 12. Definition of done
 A browser-openable dashboard meeting all §8 acceptance criteria, a recorded ≤5-min demo, and a
-drafted written submission — committed to `~/projects/TRACE` (private).
+drafted written submission — committed to `~/projects/RECPT` (private).
