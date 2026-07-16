@@ -5,6 +5,19 @@ Format: `## YYYY-MM-DD` → `- **Decision** — why / context.`
 
 After any notable decision (scope, architecture, tooling, naming), add an entry here.
 
+## 2026-07-16
+
+- **Scenario Planner table: fixed CO₂e/Water period labels and scope mismatch** — the "Total
+  CO₂e" and "AI Water" columns showed no time-period qualifier (only "Monthly AI Cost" did),
+  even though all three figures are computed over the same monthly window. "Total CO₂e" also
+  mixed in `base_cloud_carbon` while Cost and Water stayed AI-only. Renamed all three headers
+  to "AI {Cost,CO₂e,Water}/mo" (matching the existing "/mo" convention used on the Energy Debt
+  tab) and dropped the cloud-carbon addition so all three columns
+  share the same AI-only scope, matching what the recommendations actually affect (cloud is
+  unchanged by any of them). Org-wide (AI+cloud) totals remain visible in the KPI header
+  elsewhere on the page. _Why: the mixed scope made the −16.1%/−26.5% deltas not match the
+  displayed kg values; AI-only-everywhere keeps the table internally consistent._
+
 ## 2026-07-09
 
 - **Renamed the product from TRACE to RECPT** — updated `app.py`, `CLAUDE.md`, and all `docs/`

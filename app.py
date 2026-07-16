@@ -143,7 +143,7 @@ def _nav_icon_js() -> str:
     p.document.querySelectorAll('[data-testid="stHorizontalBlock"]').forEach(function(hb){{
       var bt=Array.from(hb.querySelectorAll('button')).map(function(b){{return b.textContent.trim();}});
       if(bt.indexOf('＋ Connect New System')>=0&&bt.indexOf('Run Sync')>=0&&
-         bt.indexOf('↑ Upload File')>=0&&bt.indexOf('Norm Log')>=0){{
+         bt.indexOf('Norm Log')>=0){{
         hb.setAttribute('data-conn-btn-row','1');
       }}
     }});
@@ -882,55 +882,55 @@ CONNECTOR_STATE = [
         "system": "OpenAI API", "category": "AI Model Provider",
         "type": "API", "status": "Connected", "last_sync": "2 min ago",
         "records": "3,241", "norm_pct": "96%", "owner": "AI Engineering",
-        "action": "View / Sync",
+        "action": "See More",
     },
     {
         "system": "Anthropic Claude API", "category": "AI Model Provider",
         "type": "API", "status": "Connected", "last_sync": "5 min ago",
         "records": "1,847", "norm_pct": "97%", "owner": "AI Engineering",
-        "action": "View / Sync",
+        "action": "See More",
     },
     {
         "system": "Google Gemini / Vertex AI", "category": "AI Model Provider",
         "type": "API", "status": "Warning", "last_sync": "45 min ago",
         "records": "892", "norm_pct": "84%", "owner": "AI Engineering",
-        "action": "Fix Mapping",
+        "action": "See More",
     },
     {
         "system": "AWS Bedrock", "category": "AI Model Provider",
         "type": "API", "status": "Warning", "last_sync": "2 hr ago",
         "records": "421", "norm_pct": "79%", "owner": "Cloud Platform",
-        "action": "Fix Mapping",
+        "action": "See More",
     },
     {
         "system": "Azure OpenAI Service", "category": "AI Model Provider",
         "type": "API", "status": "Connected", "last_sync": "8 min ago",
         "records": "1,102", "norm_pct": "93%", "owner": "AI Engineering",
-        "action": "View / Sync",
+        "action": "See More",
     },
     {
         "system": "Langfuse", "category": "LLM observability",
         "type": "API", "status": "Connected", "last_sync": "18 min ago",
         "records": "842", "norm_pct": "94%", "owner": "AI Engineering",
-        "action": "View / Sync",
+        "action": "See More",
     },
     {
         "system": "Datadog APM", "category": "Observability",
         "type": "API", "status": "Warning", "last_sync": "1 hr ago",
         "records": "493", "norm_pct": "81%", "owner": "SRE",
-        "action": "Fix Mapping",
+        "action": "See More",
     },
     {
         "system": "Cloudability Export", "category": "FinOps",
         "type": "Static CSV", "status": "Uploaded", "last_sync": "Jun 10",
         "records": "2,104", "norm_pct": "89%", "owner": "FinOps",
-        "action": "Replace File",
+        "action": "See More",
     },
     {
         "system": "Google Cloud Monitoring", "category": "Cloud monitoring",
         "type": "API", "status": "Connected", "last_sync": "20 min ago",
         "records": "1,876", "norm_pct": "92%", "owner": "Cloud Team",
-        "action": "View / Sync",
+        "action": "See More",
     },
 ]
 
@@ -1129,7 +1129,7 @@ _components.html(
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
-    st.markdown("## Connected Data Sources")
+    st.markdown("## Data Sources")
     st.markdown(
         '<div style="font-size:13px;color:#374151;background:#F0F4FF;border-left:3px solid #6366f1;'
         'padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;line-height:1.6;">'
@@ -1182,7 +1182,7 @@ if page == "Connect":
     )
 
     # ── Action buttons ──
-    col_btn1, col_btn2, col_btn3, col_btn4 = st.columns([2, 1, 1, 1])
+    col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 1])
     with col_btn1:
         if st.button("＋ Connect New System", type="primary", use_container_width=True):
             st.session_state.show_drawer   = not st.session_state.show_drawer
@@ -1195,9 +1195,6 @@ if page == "Connect":
         st.button("Run Sync", use_container_width=True, disabled=True,
                   help="In production RECPT: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
     with col_btn3:
-        st.button("↑ Upload File", use_container_width=True, disabled=True,
-                  help="Use '＋ Connect New System' to upload a new data source file.")
-    with col_btn4:
         st.button("Norm Log", use_container_width=True, disabled=True,
                   help="In production RECPT: shows the normalization history — which records mapped successfully and which were flagged. Simulated in this demo.")
 
@@ -1865,9 +1862,9 @@ elif page == "Optimize":
   <thead>
     <tr>
       <th>Scenario</th>
-      <th>Monthly AI Cost</th>
-      <th>Total CO₂e</th>
-      <th>AI Water</th>
+      <th>AI Cost/mo</th>
+      <th>AI CO₂e/mo</th>
+      <th>AI Water/mo</th>
       <th>Avg Latency</th>
       <th>Quality Risk</th>
       <th>Actions</th>
@@ -1877,7 +1874,7 @@ elif page == "Optimize":
     <tr class="current">
       <td><b>Current state</b></td>
       <td>${base_ai_cost:,.0f}</td>
-      <td>{base_ai_carbon + base_cloud_carbon:,.1f} kg</td>
+      <td>{base_ai_carbon:,.1f} kg</td>
       <td>{base_ai_water:,.0f} L</td>
       <td>12.8s</td>
       <td>Low</td>
@@ -1886,7 +1883,7 @@ elif page == "Optimize":
     <tr class="balanced">
       <td><b>Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
       <td>${ai_cost_bal:,.0f} <span style="color:#166534;font-size:11px;">−20.5%</span></td>
-      <td>{ai_co2_bal + base_cloud_carbon:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
+      <td>{ai_co2_bal:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
       <td>{ai_water_bal:,.0f} L <span style="color:#166534;font-size:11px;">−16.1%</span></td>
       <td>11.9s</td>
       <td>Low-medium</td>
@@ -1895,7 +1892,7 @@ elif page == "Optimize":
     <tr class="aggressive">
       <td><b>Aggressive carbon mode</b></td>
       <td>${ai_cost_agg:,.0f} <span style="color:#166534;font-size:11px;">−28.0%</span></td>
-      <td>{ai_co2_agg + base_cloud_carbon:,.1f} kg <span style="color:#166534;font-size:11px;">−26.5%</span></td>
+      <td>{ai_co2_agg:,.1f} kg <span style="color:#166534;font-size:11px;">−26.5%</span></td>
       <td>{ai_water_agg:,.0f} L <span style="color:#166534;font-size:11px;">−28.0%</span></td>
       <td>14.2s</td>
       <td>Medium</td>
@@ -1904,7 +1901,8 @@ elif page == "Optimize":
   </tbody>
 </table>
 <div style="font-size:11px;color:#9ca3af;margin-top:8px;">
-  Projections apply all recommendations in the chosen scenario to the current AI workload. Cloud cost and carbon unchanged.
+  Projections apply all recommendations in the chosen scenario to the current AI workload. Cost, CO₂e, and Water above are AI-only —
+  these recommendations don't change cloud infrastructure. Org-wide totals (AI + cloud) are shown in the KPI header above.
   Water = AI energy × regional WUE. Latency estimates are illustrative. Quality risk is subjective — review each recommendation before applying.
 </div>
 """
