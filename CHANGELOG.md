@@ -7,6 +7,29 @@ After any notable decision (scope, architecture, tooling, naming), add an entry 
 
 ## 2026-07-16
 
+- **Connect New System is now a real modal; connectors persist for the session; detail
+  pages got a Settings menu (Update Data / Delete Source)** — replaced the inline `.drawer`
+  panel with an `st.dialog` (first use of Streamlit's native modal in this app; no existing
+  React-style "modal component" exists here since this is a single-file Streamlit prototype).
+  Added System Name / Owner fields with a select-existing-or-type-new pattern, and a unified
+  "Basic Template" CSV (AI-usage + cloud-usage shapes, `system_type` discriminator column)
+  for any system without its own dedicated sample file — real ingestion via
+  `classify_basic_template_upload()`/`calc_basic_template_upload()`, running through the same
+  `calc_ai_named()`/`calc_cloud()` paths as everything else. New/updated/deleted connectors
+  now genuinely persist within a session via `st.session_state` (`custom_connectors`,
+  `connector_overrides`, `deleted_connector_systems`), merged through a new
+  `get_visible_connectors()` that every read site (table, summary tiles, detail dispatch,
+  Prove page's evidence list) now goes through — `CONNECTOR_STATE` itself is rebuilt from
+  scratch every Streamlit rerun and can't hold state on its own. Caught two bugs the literal
+  ask would've introduced: a new connector's "See More" crashing with `KeyError` in
+  `fabricate_connector_records()` (no fallback for an unseeded name), and Basic-Template
+  cloud rows silently getting zero carbon/water because their AWS-style region codes
+  (`us-west-2`) don't match `grid_intensity.csv`'s abstract names — extended the existing
+  Cloudability region-map adapter to cover both. _Why: user asked to refactor the Connect
+  flow into a modal with real data-management actions; the app had no existing modal
+  convention to reuse, so `st.dialog` was the correct native tool rather than extending the
+  static, non-interactive `.sref-*` overlay._
+
 - **Scenario Planner table: fixed CO₂e/Water period labels and scope mismatch** — the "Total
   CO₂e" and "AI Water" columns showed no time-period qualifier (only "Monthly AI Cost" did),
   even though all three figures are computed over the same monthly window. "Total CO₂e" also
