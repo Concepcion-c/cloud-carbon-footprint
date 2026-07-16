@@ -2490,6 +2490,73 @@ elif page == "Optimize":
     st.markdown("## Recommendations")
     st.caption("Apply a recommendation — watch AI cost and carbon drop live")
 
+    # ── What-if scenario table ──
+    st.markdown('<div class="sh">Scenario Planner</div>', unsafe_allow_html=True)
+    st.caption("Compare current state to optimization scenarios before committing changes")
+
+    ai_cost_bal  = base_ai_cost * 0.795
+    ai_co2_bal   = base_ai_carbon * 0.839
+    ai_water_bal = base_ai_water * 0.839
+    ai_cost_agg  = base_ai_cost * 0.720
+    ai_co2_agg   = base_ai_carbon * 0.735
+    ai_water_agg = base_ai_water * 0.720
+
+    total_cost_bal = ai_cost_bal + base_cloud_cost
+    total_co2_bal  = ai_co2_bal  + base_cloud_carbon
+    total_cost_agg = ai_cost_agg + base_cloud_cost
+    total_co2_agg  = ai_co2_agg  + base_cloud_carbon
+
+    whatif_html = f"""
+<table class="whatif-table">
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>AI Cost/mo</th>
+      <th>AI CO₂e/mo</th>
+      <th>AI Water/mo</th>
+      <th>Avg Latency</th>
+      <th>Quality Risk</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="current">
+      <td><b>Current state</b></td>
+      <td>${base_ai_cost:,.0f}</td>
+      <td>{base_ai_carbon:,.1f} kg</td>
+      <td>{base_ai_water:,.0f} L</td>
+      <td>12.8s</td>
+      <td>Low</td>
+      <td><span style="color:#6b7280;font-size:12px;">Baseline</span></td>
+    </tr>
+    <tr class="balanced">
+      <td><b>Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
+      <td>${ai_cost_bal:,.0f} <span style="color:#166534;font-size:11px;">−20.5%</span></td>
+      <td>{ai_co2_bal:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
+      <td>{ai_water_bal:,.0f} L <span style="color:#166534;font-size:11px;">−16.1%</span></td>
+      <td>11.9s</td>
+      <td>Low-medium</td>
+      <td><span style="color:#166534;font-size:12px;">Model swap + region shift</span></td>
+    </tr>
+    <tr class="aggressive">
+      <td><b>Aggressive carbon mode</b></td>
+      <td>${ai_cost_agg:,.0f} <span style="color:#166534;font-size:11px;">−28.0%</span></td>
+      <td>{ai_co2_agg:,.1f} kg <span style="color:#166534;font-size:11px;">−26.5%</span></td>
+      <td>{ai_water_agg:,.0f} L <span style="color:#166534;font-size:11px;">−28.0%</span></td>
+      <td>14.2s</td>
+      <td>Medium</td>
+      <td><span style="color:#92400e;font-size:12px;">All optimizations + batch shift</span></td>
+    </tr>
+  </tbody>
+</table>
+<div style="font-size:11px;color:#9ca3af;margin-top:8px;">
+  Projections apply all recommendations in the chosen scenario to the current AI workload. Cost, CO₂e, and Water above are AI-only —
+  these recommendations don't change cloud infrastructure. Org-wide totals (AI + cloud) are shown in the KPI header above.
+  Water = AI energy × regional WUE. Latency estimates are illustrative. Quality risk is subjective — review each recommendation before applying.
+</div>
+"""
+    st.markdown(whatif_html, unsafe_allow_html=True)
+
     tab_energy_debt, tab_ai_workload = st.tabs(["Energy Debt", "AI Workload"])
 
     with tab_energy_debt:
@@ -2591,73 +2658,6 @@ elif page == "Optimize":
 
     with tab_ai_workload:
         any_applied = bool(st.session_state.applied_recs)
-
-        # ── What-if scenario table ──
-        st.markdown('<div class="sh">Scenario Planner</div>', unsafe_allow_html=True)
-        st.caption("Compare current state to optimization scenarios before committing changes")
-
-        ai_cost_bal  = base_ai_cost * 0.795
-        ai_co2_bal   = base_ai_carbon * 0.839
-        ai_water_bal = base_ai_water * 0.839
-        ai_cost_agg  = base_ai_cost * 0.720
-        ai_co2_agg   = base_ai_carbon * 0.735
-        ai_water_agg = base_ai_water * 0.720
-
-        total_cost_bal = ai_cost_bal + base_cloud_cost
-        total_co2_bal  = ai_co2_bal  + base_cloud_carbon
-        total_cost_agg = ai_cost_agg + base_cloud_cost
-        total_co2_agg  = ai_co2_agg  + base_cloud_carbon
-
-        whatif_html = f"""
-<table class="whatif-table">
-  <thead>
-    <tr>
-      <th>Scenario</th>
-      <th>AI Cost/mo</th>
-      <th>AI CO₂e/mo</th>
-      <th>AI Water/mo</th>
-      <th>Avg Latency</th>
-      <th>Quality Risk</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr class="current">
-      <td><b>Current state</b></td>
-      <td>${base_ai_cost:,.0f}</td>
-      <td>{base_ai_carbon:,.1f} kg</td>
-      <td>{base_ai_water:,.0f} L</td>
-      <td>12.8s</td>
-      <td>Low</td>
-      <td><span style="color:#6b7280;font-size:12px;">Baseline</span></td>
-    </tr>
-    <tr class="balanced">
-      <td><b>Balanced optimization</b> <span class="rec-tag">Recommended</span></td>
-      <td>${ai_cost_bal:,.0f} <span style="color:#166534;font-size:11px;">−20.5%</span></td>
-      <td>{ai_co2_bal:,.1f} kg <span style="color:#166534;font-size:11px;">−16.1%</span></td>
-      <td>{ai_water_bal:,.0f} L <span style="color:#166534;font-size:11px;">−16.1%</span></td>
-      <td>11.9s</td>
-      <td>Low-medium</td>
-      <td><span style="color:#166534;font-size:12px;">Model swap + region shift</span></td>
-    </tr>
-    <tr class="aggressive">
-      <td><b>Aggressive carbon mode</b></td>
-      <td>${ai_cost_agg:,.0f} <span style="color:#166534;font-size:11px;">−28.0%</span></td>
-      <td>{ai_co2_agg:,.1f} kg <span style="color:#166534;font-size:11px;">−26.5%</span></td>
-      <td>{ai_water_agg:,.0f} L <span style="color:#166534;font-size:11px;">−28.0%</span></td>
-      <td>14.2s</td>
-      <td>Medium</td>
-      <td><span style="color:#92400e;font-size:12px;">All optimizations + batch shift</span></td>
-    </tr>
-  </tbody>
-</table>
-<div style="font-size:11px;color:#9ca3af;margin-top:8px;">
-  Projections apply all recommendations in the chosen scenario to the current AI workload. Cost, CO₂e, and Water above are AI-only —
-  these recommendations don't change cloud infrastructure. Org-wide totals (AI + cloud) are shown in the KPI header above.
-  Water = AI energy × regional WUE. Latency estimates are illustrative. Quality risk is subjective — review each recommendation before applying.
-</div>
-"""
-        st.markdown(whatif_html, unsafe_allow_html=True)
 
         if any_applied:
             cost_d   = curr_ai_cost - base_ai_cost
