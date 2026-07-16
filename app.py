@@ -2563,7 +2563,7 @@ elif page == "Optimize":
 
     with tab_energy_debt:
         # ── Energy Debt ──
-        st.markdown('<div class="sh">Energy Debt</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sh">Energy Debt Score</div>', unsafe_allow_html=True)
         st.caption("Apps ranked by blended score: 60% runtime carbon + 40% code-risk")
         st.markdown(
             '<details class="info-disc">'
