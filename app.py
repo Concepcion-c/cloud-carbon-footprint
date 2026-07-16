@@ -129,6 +129,12 @@ def _nav_icon_js() -> str:
         btn.style.setProperty('border','1px solid #d1d5db','important');
         btn.style.setProperty('color','#9ca3af','important');
         btn.style.setProperty('background','transparent','important');
+      }}else if(btn.closest('[class*="st-key-conn_row_"]')){{
+        // Connector table active buttons (e.g. Anthropic's) — outline, not solid-filled,
+        // so they read as secondary and match the other rows' disabled buttons visually.
+        btn.style.setProperty('border','1px solid #6A5DD4','important');
+        btn.style.setProperty('color','#6A5DD4','important');
+        btn.style.setProperty('background','transparent','important');
       }}else{{
         btn.style.setProperty('border','1px solid #6A5DD4','important');
         btn.style.setProperty('color','#ffffff','important');
@@ -1626,7 +1632,7 @@ if page == "Connect":
             unsafe_allow_html=True,
         )
         with st.container(key="anthropic_back_link"):
-            if st.button("Back to Connected Data Sources"):
+            if st.button("Back to Data Sources"):
                 del st.query_params["view"]
                 st.rerun()
 
@@ -1740,7 +1746,7 @@ if page == "Connect":
 
         st.stop()
 
-    st.markdown("## Connected Data Sources")
+    st.markdown("## Data Sources")
     st.markdown(
         '<div style="font-size:13px;color:#374151;background:#F0F4FF;border-left:3px solid #6366f1;'
         'padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;line-height:1.6;">'
@@ -1874,6 +1880,27 @@ if page == "Connect":
             font-size: 12px !important;
             font-weight: 500 !important;
             white-space: nowrap !important;
+        }
+        /* Active action buttons (e.g. Anthropic's "See More") read as outline/secondary,
+           not the app-wide solid-purple secondary fill — consistent with the disabled
+           buttons on every other row, just enabled instead of grayed out. */
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"]:not([disabled]) {
+            background: transparent !important;
+            border: 1px solid #6A5DD4 !important;
+            color: #6A5DD4 !important;
+        }
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"]:not([disabled]):hover {
+            background: #F5F3FF !important;
+            border-color: #6A5DD4 !important;
+            color: #6A5DD4 !important;
+        }
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"]:not([disabled]):active {
+            background: #EDE9FE !important;
+        }
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"][disabled] {
+            border-color: #d1d5db !important;
+            color: #9ca3af !important;
+            background: transparent !important;
         }
         div[class*="st-key-conn_table_wrap"] {
             gap: 0 !important;
