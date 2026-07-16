@@ -1,0 +1,12 @@
+model_name,provider,usd_per_1m_input,usd_per_1m_output,kwh_per_1m_input,kwh_per_1m_output,kwh_per_1m_cache_read,g_co2e_per_kwh_default,notes_confidence
+claude-haiku-4-5,anthropic,0.8,4.0,0.182,1.039,0.0182,385,Medium - energy extrapolated by model-size proxy (no public Anthropic energy disclosure); cost anchored to published Haiku-tier pricing
+claude-sonnet-4-6,anthropic,3.0,15.0,0.494,2.961,0.0494,385,Medium - energy derived from Jegham et al. 2025 measured per-query energies; cost anchored to published Sonnet-tier pricing
+claude-opus-4-8,anthropic,15.0,75.0,1.039,6.234,0.1039,385,Medium - energy extrapolated by model-size proxy (no public Anthropic energy disclosure); cost anchored to published Opus-tier pricing
+claude-3-haiku,anthropic,0.25,1.25,0.182,1.039,0.0182,385,Medium - real published Haiku-tier pricing; energy reused from claude-haiku-4-5's same-tier proxy (no model-specific disclosure)
+claude-3-5-haiku,anthropic,0.8,4.0,0.182,1.039,0.0182,385,Medium - real published Haiku-tier pricing; energy reused from claude-haiku-4-5's same-tier proxy (no model-specific disclosure)
+claude-3-5-sonnet,anthropic,3.0,15.0,0.494,2.961,0.0494,385,Medium - real published Sonnet-tier pricing; energy reused from claude-sonnet-4-6's same-tier proxy (no model-specific disclosure)
+claude-3-7-sonnet,anthropic,3.0,15.0,0.494,2.961,0.0494,385,Medium - real published Sonnet-tier pricing; energy reused from claude-sonnet-4-6's same-tier proxy (no model-specific disclosure)
+claude-sonnet-4,anthropic,3.0,15.0,0.494,2.961,0.0494,385,Medium - real published Sonnet-tier pricing; energy reused from claude-sonnet-4-6's same-tier proxy (no model-specific disclosure)
+claude-sonnet-4-5,anthropic,3.0,15.0,0.494,2.961,0.0494,385,Medium - real published Sonnet-tier pricing; energy reused from claude-sonnet-4-6's same-tier proxy (no model-specific disclosure)
+claude-3-opus,anthropic,15.0,75.0,1.039,6.234,0.1039,385,Medium - real published Opus-tier pricing; energy reused from claude-opus-4-8's same-tier proxy (no model-specific disclosure)
+claude-opus-4,anthropic,15.0,75.0,1.039,6.234,0.1039,385,Medium - real published Opus-tier pricing (covers Opus 4 and Opus 4.1 at the same rate); energy reused from claude-opus-4-8's same-tier proxy (no model-specific disclosure)

@@ -23,14 +23,16 @@ Every number in the dashboard comes from `generate.py` — a deterministic rando
 **Impact:** Cannot be used for actual emissions reporting. All numbers are illustrative only.
 
 ### 2. No live connectors
-The Connected Systems table on the Connect page shows seven data sources. None of them are live in the MVP. The status values ("12 min ago"), record counts, and normalization percentages are all hard-coded. Clicking "Run Sync" or "View" has no effect.
+The Connected Systems table on the Connect page shows seven data sources. None of them are live in the MVP. The status values ("12 min ago"), record counts, and normalization percentages are all hard-coded. Clicking "Run Sync" or "View" has no effect. This is unchanged by the AI/Works upload work below — that flow is file-upload-and-normalize, not a live API sync.
 
 **Impact:** The Connect page demonstrates what the onboarding flow would look like, but no actual data ingestion occurs.
 
-### 3. File upload is simulated
-The file upload flow in the Connect drawer reads and validates an uploaded CSV (using pandas), but the Run Normalization step does not actually process the file into the dashboard metrics.
+### 3. File upload is simulated — except for AI/Works, which is now real
+For six of the seven sources, the file upload flow in the Connect drawer reads and validates an uploaded CSV (using pandas), but the Run Normalization step does not actually process the file into the dashboard metrics.
 
-**Impact:** You can upload a file and see validation results, but the dashboard numbers do not change.
+**The AI/Works source is an exception.** Uploading a CSV shaped like an Anthropic Console/Admin-API usage export (tolerant to common header variants — see `docs/sample-data/anthropic_console_export_sample.csv`) and clicking Run Normalization now genuinely estimates cost/energy/carbon/water via `calc_ai_named()` and surfaces the result on Observe → "Anthropic (Real Data)", replacing the bundled `aiworks_usage_export.json` sample for the rest of the session. Cost is taken directly from the file when it reports one; energy/carbon/water are still estimates (see `06-calculations-and-methodology.md`, formulas 1b–3b). The user must pick an assumed inference region, since the export doesn't disclose one.
+
+**Impact:** For AI/Works specifically, the dashboard numbers now do change on upload. For the other six sources, they still don't — extending this pattern to them is future work, not done here.
 
 ### 4. Four pages only (not five)
 The v3 PRD describes a five-screen product including a dedicated Normalize page. The current app has four pages — Connect, Observe, Optimize, Prove. The Normalize functionality (field mapping, schema normalization, run history) is partially represented in the Connect drawer, but not as a standalone page.
@@ -67,10 +69,10 @@ The kWh/1M token values (0.3, 0.6, 1.2 for small/mid/large model classes) are de
 
 **Consequence:** The AI carbon and energy figures carry Medium confidence. They are directionally correct and better than no measurement, but they are not precision measurements.
 
-### 2. Coefficient granularity is low
-RECPT uses three model classes (large, mid, small). A production system would have per-model coefficients for every named model across every provider. Models within the same class can vary significantly in actual energy use.
+### 2. Coefficient granularity is low, except for three named Claude models
+The synthetic demo (`llm_usage.csv`) still uses three model classes (large, mid, small). For real Anthropic usage, `docs/sample-data/model_coefficients_named.csv` now has per-named-model coefficients (Haiku/Sonnet/Opus) with a split input/output/cache-read rate — but that's still only three models from one provider. A production system would need per-model coefficients for every named model across every provider (OpenAI, Google, etc. are not covered by the named table at all).
 
-**Consequence:** Energy estimates for specific models (e.g., GPT-4o vs Claude Opus) are approximated by class membership, not measured per model.
+**Consequence:** Energy estimates for specific Claude models are now per-model, not per-class — an improvement — but any non-Anthropic model, or an unrecognized future Claude model, still falls back to a class-level or Sonnet-proxy estimate, not a measured per-model figure.
 
 ### 3. No hardware or embodied emissions
 RECPT measures operational emissions only (the energy used during inference). It does not measure embodied emissions — the carbon produced during manufacturing of servers and GPUs. Boavizta (a third-party API for embodied emissions) is referenced in the project documentation as a future integration but is not implemented.
@@ -144,10 +146,12 @@ All formulas, coefficients, and assumptions are documented in the Prove > Method
 Based on `docs/prd/recpt-prd.md` and `docs/strategy/sustainability-strategy-analysis.md`:
 
 ### Short term (post-hackathon to production MVP)
+- ✅ **Named model coefficient table** — done (`model_coefficients_named.csv`, split input/output/cache-read, see `06-calculations-and-methodology.md` formulas 1b–3b)
+- ✅ **AI/Works file-upload → real carbon estimate** — done (Connect → AI/Works → File upload → Run Normalization now genuinely computes cost/energy/carbon/water via `calc_ai_named()`, surfaced on Observe → "Anthropic (Real Data)")
 - Live Langfuse connector
 - Live cloud billing connector (AWS CUR first)
 - Real data pipeline replacing static CSV
-- Named model coefficient table
+- Cache-tier attribution beyond Anthropic (other providers' equivalents, if/when they publish a comparable field)
 - Dynamic recommendation generation
 - Per-client deployment
 
@@ -156,7 +160,7 @@ Based on `docs/prd/recpt-prd.md` and `docs/strategy/sustainability-strategy-anal
 - Multi-cloud support (Azure OpenAI, GCP Vertex)
 - Boavizta embodied emissions integration
 - Evidence Pack PDF
-- AI:works Control Plane carbon telemetry connector
+- **AI:works Control Plane *live* carbon telemetry connector** — the file-upload path is done (short term, above); this item is specifically the live-sync/API-polling version, still not built and not planned as part of that work
 
 ### Long term
 - Full CCF extension (all four phases)

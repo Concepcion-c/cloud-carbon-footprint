@@ -32,6 +32,7 @@ def _svg(name: str, size: int = 16, color: str = "currentColor") -> str:
         "landmark":       '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
         "layers":         '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
         "upload":         '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+        "arrow-left":     '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     }
     inner = _PATHS.get(name, "")
     return (
@@ -120,7 +121,10 @@ def _nav_icon_js() -> str:
       if(n)n.style.setProperty('display','none','important');
     }});
     // Secondary buttons — purple border + transparent bg (beats emotion !important via inline)
+    // Skip buttons explicitly styled as plain links (e.g. the Anthropic detail nav) —
+    // those opt out via a `.st-key-*_link` ancestor container.
     p.document.querySelectorAll('button[data-testid="stBaseButton-secondary"]').forEach(function(btn){{
+      if(btn.closest('.st-key-anthropic_back_link'))return;
       if(btn.disabled){{
         btn.style.setProperty('border','1px solid #d1d5db','important');
         btn.style.setProperty('color','#9ca3af','important');
@@ -503,19 +507,19 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 
 /* ── Status badges ────────────────────────────────────────────────────────── */
 .status-connected  { background:var(--trace-success-bg); color:var(--trace-success-fg); border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-uploaded   { background:var(--trace-neutral-bg); color:var(--trace-neutral-fg); border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-active     { background:var(--trace-success-bg); color:var(--trace-success-fg); border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-warning    { background:var(--trace-warning-bg); color:var(--trace-warning-fg); border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-failed     { background:var(--trace-danger-bg);  color:var(--trace-danger-fg);  border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-coming_soon { background:var(--trace-muted-bg); color:var(--trace-muted-fg); border-radius:99px;
-                      padding:4px 8px; font-size:11px; font-weight:600; }
+                      padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 .status-paused     { background:var(--trace-muted-bg); color:var(--trace-muted-fg); border-radius:99px;
-                     padding:4px 8px; font-size:11px; font-weight:600; }
+                     padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 
 .drawer { background:#f8fafb; border:1px solid #e5e7eb; border-radius:10px;
           padding:20px 24px; margin-top:12px; }
@@ -766,6 +770,11 @@ REGION_CARBON_KG = {
     "us-central-1": 0.355,
     "ap-south-1": 0.630, "ap-south": 0.630,
 }
+# NOTE: this blended (input+output combined) rate table powers the agent-trace
+# visualization only (load_trace_data, below). It is intentionally NOT replaced by
+# docs/sample-data/model_coefficients_named.csv's split input/output rates, to avoid
+# silently changing the existing trace-page numbers. Keep the two roughly in sync by
+# hand (values here ≈ a token-weighted blend of that CSV's input/output columns).
 MODEL_KWH_PER_1M = {
     "claude-sonnet-4-6": 0.6, "claude-opus-4-8": 1.2,
     "claude-haiku-4-5": 0.3, "gpt-4.1": 0.5, "gpt-4o": 0.6,
@@ -818,6 +827,22 @@ def load_aiworks_data():
         return json.load(fh)
 
 
+def flatten_aiworks_records(aiworks_data):
+    """Flatten the AI/Works control-plane export's nested `records` list into a
+    DataFrame shaped for calc_ai_named() (model_name, region, input_tokens,
+    output_tokens, provider). Adds a zero-filled `cache_read_input_tokens`
+    column since this export shape doesn't report cache usage."""
+    df = pd.DataFrame(aiworks_data["records"])
+    df["provider"] = df["model_provider"].str.lower()
+    df["cache_read_input_tokens"] = 0
+    return df
+
+
+@st.cache_data
+def load_named_coefficients():
+    return pd.read_csv(DATA_DIR / "model_coefficients_named.csv")
+
+
 @st.cache_data
 def load_code_findings():
     with open(DATA_DIR / "code_scan_findings.json") as fh:
@@ -835,6 +860,386 @@ def calc_ai(llm_df, coeffs_df, grid_df):
     df["ai_carbon_kg"]   = df["ai_energy_kwh"] * df["g_co2e_per_kwh"] / 1000
     df["ai_water_liters"] = df["ai_energy_kwh"] * df["wue_liters_per_kwh"]
     return df
+
+
+def calc_ai_named(usage_df, coeffs_df):
+    """AI-carbon calculator for named-model usage rows (e.g. a flattened AI/Works
+    export or an uploaded Anthropic Console/Admin-API-shaped CSV) — mirrors
+    calc_ai()'s merge-and-multiply shape, but keyed on real model names with split
+    input/output/cache-read rates instead of a large/mid/small bucket.
+
+    Falls back to the Sonnet/mid-tier row's coefficients for any model not present
+    in `coeffs_df` (e.g. an unrecognized or future model name), and reuses the same
+    REGION_CARBON_KG / REGION_WUE lookup dicts as load_trace_data() for region
+    intensity, since real-world usage exports use region strings (e.g. "us-east-1")
+    that don't match the coarser 4-region grid_intensity.csv used by calc_ai().
+    Expects `usage_df` to have: model_name, region, input_tokens, output_tokens,
+    cache_read_input_tokens.
+    """
+    coeff_cols = [
+        "model_name", "usd_per_1m_input", "usd_per_1m_output",
+        "kwh_per_1m_input", "kwh_per_1m_output", "kwh_per_1m_cache_read",
+        "g_co2e_per_kwh_default",
+    ]
+    fallback = coeffs_df.loc[coeffs_df["model_name"] == "claude-sonnet-4-6", coeff_cols].iloc[0]
+
+    df = usage_df.merge(coeffs_df[coeff_cols], on="model_name", how="left")
+    for col in coeff_cols[1:]:
+        df[col] = df[col].fillna(fallback[col])
+
+    df["carbon_kg_per_kwh"]  = df["region"].map(REGION_CARBON_KG).fillna(df["g_co2e_per_kwh_default"] / 1000)
+    df["wue_liters_per_kwh"] = df["region"].map(REGION_WUE).fillna(1.0)
+
+    df["ai_cost_usd"] = (
+        (df["input_tokens"]  / 1e6) * df["usd_per_1m_input"]
+        + (df["output_tokens"] / 1e6) * df["usd_per_1m_output"]
+    )
+    df["ai_energy_kwh"] = (
+        (df["input_tokens"]              / 1e6) * df["kwh_per_1m_input"]
+        + (df["output_tokens"]             / 1e6) * df["kwh_per_1m_output"]
+        + (df["cache_read_input_tokens"]   / 1e6) * df["kwh_per_1m_cache_read"]
+    )
+    df["ai_carbon_kg"]    = df["ai_energy_kwh"] * df["carbon_kg_per_kwh"]
+    df["ai_water_liters"] = df["ai_energy_kwh"] * df["wue_liters_per_kwh"]
+    return df
+
+
+ANTHROPIC_CSV_ALIASES = {
+    "model_name": "model", "model_id": "model",
+    "total_cost_usd": "cost_usd", "cost": "cost_usd",
+    "workspace_id": "workspace", "workspace_name": "workspace",
+    "uncached_input_tokens": "input_tokens",
+    "cache_read_tokens": "cache_read_input_tokens",
+}
+
+
+def normalize_anthropic_upload(df, region):
+    """Tolerant header mapping for an Anthropic Console/Admin-API-shaped usage
+    export: renames common column-name variants onto TRACE's import schema
+    (date, model, workspace, input_tokens, cache_read_input_tokens, output_tokens,
+    cost_usd), fills in optional columns that may be absent, and stamps every row
+    with a single assumed inference `region` — the Console export doesn't disclose
+    which region served each request, so (per the same convention used for the
+    AI/Works aggregate estimate) TRACE asks the user which region to assume rather
+    than silently guessing."""
+    out = df.rename(columns={k: v for k, v in ANTHROPIC_CSV_ALIASES.items() if k in df.columns})
+    if "cache_read_input_tokens" not in out.columns:
+        out["cache_read_input_tokens"] = 0
+    if "cost_usd" not in out.columns:
+        out["cost_usd"] = None
+    if "workspace" not in out.columns:
+        out["workspace"] = "default"
+    out["model_name"] = out["model"]
+    out["region"] = region
+    return out
+
+
+# Real Anthropic Console export model identifiers, both naming schemes seen in
+# practice, mapped onto the canonical `model_name` values in
+# model_coefficients_named.csv. This is a maintained lookup, not a
+# pattern/regex — Anthropic's dated version slugs aren't mechanically
+# derivable from the Cost report's display names. New model releases need a
+# new entry added by hand; anything missing here falls back the same way
+# calc_ai_named() already handles an unrecognized model_name (silently to the
+# Sonnet row), surfaced explicitly in the upload-validation summary instead.
+ANTHROPIC_REAL_MODEL_MAP = {
+    # Cost report (display names)
+    "Claude Opus 3": "claude-3-opus",
+    "Claude Opus 4": "claude-opus-4",
+    "Claude Sonnet 3.5 2024-06-20": "claude-3-5-sonnet",
+    "Claude Sonnet 3.5 2024-10-22": "claude-3-5-sonnet",
+    "Claude Sonnet 3.7": "claude-3-7-sonnet",
+    "Claude Sonnet 4": "claude-sonnet-4",
+    "Claude Haiku 3": "claude-3-haiku",
+    "Claude Haiku 3.5": "claude-3-5-haiku",
+    # Token-usage report (dated version slugs)
+    "claude-opus-4-1-20250805": "claude-opus-4",
+    "claude-sonnet-4-20250514": "claude-sonnet-4",
+    "claude-sonnet-4-5-20250929": "claude-sonnet-4-5",
+    "claude-3-7-sonnet-20250219": "claude-3-7-sonnet",
+    "claude-3-5-haiku-20241022": "claude-3-5-haiku",
+    "claude-3-5-sonnet-20240620": "claude-3-5-sonnet",
+}
+
+# Every real Anthropic model identifier — Cost-report display name or
+# Token-usage report dated slug — has always contained its tier as a literal
+# substring ("claude-opus-4-1-20250805", "Claude Sonnet 3.7", etc.). Used as a
+# safety net below so a model released after ANTHROPIC_REAL_MODEL_MAP was last
+# updated still resolves to a real coefficient row instead of going unmapped.
+# Excludes the 3 fictional bundled-sample rows (claude-haiku-4-5,
+# claude-sonnet-4-6, claude-opus-4-8) — those belong to the synthetic
+# Support-Bot demo dataset, not real uploads.
+ANTHROPIC_TIER_FALLBACK = {
+    "opus": "claude-opus-4",
+    "sonnet": "claude-sonnet-4-5",
+    "haiku": "claude-3-5-haiku",
+}
+
+
+def map_anthropic_model_name(raw_name):
+    """Translate a real Anthropic model identifier to one of the canonical
+    names in model_coefficients_named.csv. Known identifiers use the exact
+    ANTHROPIC_REAL_MODEL_MAP lookup; anything else falls back to the latest
+    real coefficient row for its tier, inferred from "opus"/"sonnet"/"haiku"
+    always appearing in Anthropic's own naming. A name matching neither is
+    left unchanged, same as before, so it's still visibly flagged as
+    unmapped rather than silently mis-tiered."""
+    if raw_name in ANTHROPIC_REAL_MODEL_MAP:
+        return ANTHROPIC_REAL_MODEL_MAP[raw_name]
+    lowered = raw_name.lower()
+    for tier, fallback_name in ANTHROPIC_TIER_FALLBACK.items():
+        if tier in lowered:
+            return fallback_name
+    return raw_name
+
+
+# Anthropic's usage exports never disclose which region served a request
+# (inference_geo is always "not_available" in every real export sampled this
+# session) — so unlike the Cloudability/FinOps path, where region genuinely
+# is in the source data, there's nothing to read here. Per this project's own
+# source methodology docs (genai-carbon-integration-report.html: "Default
+# grid factor 0.385 kgCO₂e/kWh (US-avg, per Jegham), region-configurable"),
+# the documented answer for "region unknown" isn't to ask the user to guess —
+# it's a specific, named default. calc_ai_named() already falls back to
+# exactly this figure (model_coefficients_named.csv's g_co2e_per_kwh_default
+# column is 385 for every row) whenever `region` doesn't map to a known
+# REGION_CARBON_KG key; this label is how the UI selects that path instead of
+# forcing a real region every time.
+ANTHROPIC_REGION_UNKNOWN_LABEL = (
+    "Not disclosed (use documented US-average default — 0.385 kgCO₂e/kWh, Jegham et al. 2025)"
+)
+
+
+def anthropic_region_selectbox(key):
+    """Render the "Assumed inference region" selectbox shared by the Connect
+    drawer's uploader and the Anthropic detail page's "Add more usage files"
+    control. Defaults to ANTHROPIC_REGION_UNKNOWN_LABEL (region=None, which
+    triggers calc_ai_named()'s existing documented-default fallback) rather
+    than an arbitrary real region — a specific region is an opt-in override
+    for users who actually know their traffic is pinned to one, not the
+    assumed default. Returns None or a real REGION_CARBON_KG key."""
+    options = [ANTHROPIC_REGION_UNKNOWN_LABEL] + list(REGION_CARBON_KG.keys())
+    current = st.session_state.anthropic_region_choice
+    default_label = current if current in REGION_CARBON_KG else ANTHROPIC_REGION_UNKNOWN_LABEL
+    chosen_label = st.selectbox(
+        "Assumed inference region",
+        options,
+        index=options.index(default_label),
+        key=key,
+        help="Anthropic's usage exports don't disclose which region served each "
+             "request, so this defaults to the documented US-average grid factor "
+             "(0.385 kgCO₂e/kWh, per Jegham et al. 2025) used throughout this "
+             "project's methodology for exactly this case. Pick a specific region "
+             "only if you know your traffic is pinned to one.",
+    )
+    return None if chosen_label == ANTHROPIC_REGION_UNKNOWN_LABEL else chosen_label
+
+
+def classify_anthropic_export_file(df):
+    """Classify an uploaded Anthropic usage file by column shape, not
+    filename (filenames aren't guaranteed): a real Cost report has a
+    `token_type` column, a real Token-usage report has a `model_version`
+    column, and TRACE's own simplified sample schema already has an
+    `input_tokens` column (directly, or via ANTHROPIC_CSV_ALIASES). Checked
+    in that order since a simplified-schema file could coincidentally satisfy
+    a later, looser check. Returns "cost", "tokens", "simplified", or None if
+    no shape is recognized."""
+    if "token_type" in df.columns:
+        return "cost"
+    if "model_version" in df.columns:
+        return "tokens"
+    aliased_cols = df.rename(columns={k: v for k, v in ANTHROPIC_CSV_ALIASES.items() if k in df.columns}).columns
+    if "input_tokens" in aliased_cols:
+        return "simplified"
+    return None
+
+
+def ingest_anthropic_files(uploaded_files):
+    """Read and classify each newly uploaded file, appending it to the
+    matching session-state accumulation list (cost/tokens/simplified) so
+    repeated uploads — from the Connect drawer or the Anthropic detail page's
+    "Add more usage files" control — add to what's already there instead of
+    replacing it. Returns the list of filenames that matched no recognized
+    shape."""
+    unrecognized = []
+    for f in uploaded_files:
+        f_df = pd.read_csv(f)
+        kind = classify_anthropic_export_file(f_df)
+        if kind == "cost":
+            st.session_state.anthropic_raw_cost_frames.append(f_df)
+        elif kind == "tokens":
+            st.session_state.anthropic_raw_tokens_frames.append(f_df)
+        elif kind == "simplified":
+            st.session_state.anthropic_raw_simplified_frames.append(f_df)
+        else:
+            unrecognized.append(f.name)
+    return unrecognized
+
+
+def recompute_anthropic_upload(region):
+    """Rebuild st.session_state.anthropic_upload_df from whatever raw files
+    have accumulated so far across the three classification buckets. Called
+    after every upload so files accumulate rather than replace each other.
+    Never lets a malformed file crash the page — problems are collected into
+    the returned stats dict's "errors" list for the caller to display, and
+    any file(s) that can't be processed are simply excluded from the result
+    rather than raising. Returns a stats dict for rendering a validation
+    summary; does not render anything itself."""
+    cost_frames       = st.session_state.anthropic_raw_cost_frames
+    tokens_frames     = st.session_state.anthropic_raw_tokens_frames
+    simplified_frames = st.session_state.anthropic_raw_simplified_frames
+
+    normalized_parts = []
+    n_cost_matched = 0
+    errors = []
+
+    if tokens_frames:
+        try:
+            cost_df   = pd.concat(cost_frames, ignore_index=True) if cost_frames else None
+            tokens_df = pd.concat(tokens_frames, ignore_index=True)
+            real_export = normalize_anthropic_real_export(cost_df, tokens_df, region)
+            n_cost_matched += int(real_export["cost_usd"].notna().sum())
+            normalized_parts.append(real_export)
+        except (KeyError, ValueError) as exc:
+            errors.append(f"Couldn't process Cost/Token-usage file(s): {exc}")
+
+    if simplified_frames:
+        try:
+            simplified_df = pd.concat(simplified_frames, ignore_index=True)
+            aliased_cols = simplified_df.rename(
+                columns={k: v for k, v in ANTHROPIC_CSV_ALIASES.items() if k in simplified_df.columns}
+            ).columns
+            missing = [c for c in ("model", "input_tokens", "output_tokens") if c not in aliased_cols]
+            if missing:
+                errors.append(f"Simplified-schema file(s) missing required column(s): {', '.join(missing)}")
+            else:
+                simple_normalized = normalize_anthropic_upload(simplified_df, region)
+                if "cost_usd" in simple_normalized.columns:
+                    n_cost_matched += int(simple_normalized["cost_usd"].notna().sum())
+                normalized_parts.append(simple_normalized)
+        except (KeyError, ValueError) as exc:
+            errors.append(f"Couldn't process simplified-schema file(s): {exc}")
+
+    combined = pd.concat(normalized_parts, ignore_index=True) if normalized_parts else None
+    st.session_state.anthropic_upload_df = combined
+
+    unmapped = []
+    if combined is not None and "model_name" in combined.columns:
+        unmapped = sorted(set(
+            combined.loc[~combined["model_name"].isin(coeffs_named["model_name"]), "model_name"]
+        ))
+
+    return {
+        "n_total": len(combined) if combined is not None else 0,
+        "n_cost_matched": n_cost_matched,
+        "unmapped": unmapped,
+        "errors": errors,
+        "cost_only_no_tokens": bool(cost_frames) and not bool(tokens_frames),
+    }
+
+
+def render_anthropic_upload_summary(stats, unrecognized, cta="Proceed to field mapping?"):
+    """Render the validation summary/warnings for an Anthropic upload from
+    recompute_anthropic_upload()'s stats dict — shared by the Connect
+    drawer's uploader and the Anthropic detail page's "Add more usage files"
+    control, so both present results the same way. `cta` differs between the
+    two callers since each has a different next step to point at."""
+    for err in stats["errors"]:
+        st.error(f"⚠ {err}")
+    if stats["cost_only_no_tokens"]:
+        st.warning(
+            "Only Cost report file(s) recognized so far (need a `model_version` "
+            "column from a Token-usage report too). Token counts are required to "
+            "compute energy/carbon/water — cost alone isn't enough."
+        )
+    if unrecognized:
+        st.warning(
+            f"{len(unrecognized)} file(s) not recognized as a Cost report, "
+            f"Token-usage report, or simplified-schema file: {', '.join(unrecognized)}"
+        )
+    if stats["n_total"] > 0:
+        summary = (
+            f"**Files validated.** {stats['n_total']:,} combined rows.\n\n"
+            f"{stats['n_cost_matched']:,} rows matched to a real billed cost; the "
+            f"rest use coefficient-estimated cost.\n\n"
+        )
+        if stats["unmapped"]:
+            summary += (
+                f"⚠ {len(stats['unmapped'])} model name(s) not in the coefficient "
+                f"table, falling back to Sonnet-tier rates: {', '.join(stats['unmapped'])}\n\n"
+            )
+        summary += cta
+        st.success(summary)
+
+
+def finalize_anthropic_calc():
+    """Run calc_ai_named() on the current st.session_state.anthropic_upload_df
+    and store the result as anthropic_upload_calc — the actual carbon/energy/
+    cost frame the Connect/Observe/Prove pages read from (aiworks_calc). Shared
+    by the Connect drawer's "Run Normalization" button and the Anthropic
+    detail page's "Add more usage files" control, since both need to go from
+    "raw normalized upload" to "the frame the rest of the app displays." A
+    no-op if nothing has been uploaded yet."""
+    if st.session_state.anthropic_upload_df is None:
+        return
+    normalized = calc_ai_named(st.session_state.anthropic_upload_df, coeffs_named)
+    if "cost_usd" in normalized.columns:
+        normalized["ai_cost_usd"] = normalized["cost_usd"].fillna(normalized["ai_cost_usd"])
+    st.session_state.anthropic_upload_calc = normalized
+
+
+def normalize_anthropic_real_export(cost_df, tokens_df, region):
+    """Join a real Anthropic Console Cost-report export with a real
+    Token-usage export into one usage-row-per-(date, model, workspace) frame
+    shaped for calc_ai_named(). Cost and Token reports use different model
+    identifiers (display name vs. dated version slug) and different
+    granularity (cost is broken out per token_type; tokens are already one
+    row per date/model), so this does real reshaping rather than a simple
+    rename — unlike normalize_anthropic_upload(), which only renames an
+    already-compatible single-file schema. `cost_df` may be None/empty
+    (tokens-only upload still works; cost stays coefficient-estimated).
+    `cost_df`/`tokens_df` may each span many concatenated monthly files."""
+    tokens = tokens_df.rename(columns={
+        "usage_date_utc": "date",
+        "usage_input_tokens_no_cache": "input_tokens",
+        "usage_input_tokens_cache_read": "cache_read_input_tokens",
+        "usage_output_tokens": "output_tokens",
+    }).copy()
+
+    tokens = tokens[tokens["model_version"].notna() & (tokens["model_version"] != "--")]
+    for numeric_col in ("input_tokens", "cache_read_input_tokens", "output_tokens",
+                        "usage_input_tokens_cache_write_5m", "usage_input_tokens_cache_write_1h"):
+        if numeric_col in tokens.columns:
+            tokens[numeric_col] = pd.to_numeric(tokens[numeric_col], errors="coerce").fillna(0)
+
+    # A cache write still requires the model to process that input in full at
+    # write time, so it's modeled as a normal input read for energy purposes —
+    # calc_ai_named() has no separate cache-write energy term.
+    for write_col in ("usage_input_tokens_cache_write_5m", "usage_input_tokens_cache_write_1h"):
+        if write_col in tokens.columns:
+            tokens["input_tokens"] = tokens["input_tokens"] + tokens[write_col]
+
+    tokens["model_name"] = tokens["model_version"].apply(map_anthropic_model_name)
+    tokens["region"] = region
+    tokens = tokens.drop_duplicates(subset=["date", "model_version", "workspace"])
+
+    if cost_df is not None and len(cost_df) > 0:
+        costs = cost_df[cost_df.get("cost_type", pd.Series(dtype=object)).ne("web_search")].copy()
+        costs = costs.drop_duplicates(subset=["usage_date_utc", "model", "workspace", "token_type"])
+        costs["cost_usd"] = pd.to_numeric(costs["cost_usd"], errors="coerce").fillna(0)
+        cost_totals = (
+            costs.groupby(["usage_date_utc", "model", "workspace"])["cost_usd"]
+            .sum()
+            .reset_index()
+            .rename(columns={"usage_date_utc": "date"})
+        )
+        cost_totals["model_name"] = cost_totals["model"].apply(map_anthropic_model_name)
+        cost_totals = cost_totals.drop(columns=["model"])
+        tokens = tokens.merge(cost_totals, on=["date", "model_name", "workspace"], how="left")
+    else:
+        tokens["cost_usd"] = None
+
+    return tokens
 
 
 def calc_cloud(cloud_df, grid_df):
@@ -879,13 +1284,13 @@ CATEGORY_TOOLTIPS = {
 
 CONNECTOR_STATE = [
     {
-        "system": "OpenAI API", "category": "AI Model Provider",
+        "system": "OpenAI", "category": "AI Model Provider",
         "type": "API", "status": "Connected", "last_sync": "2 min ago",
         "records": "3,241", "norm_pct": "96%", "owner": "AI Engineering",
         "action": "View / Sync",
     },
     {
-        "system": "Anthropic Claude API", "category": "AI Model Provider",
+        "system": "Anthropic", "category": "AI Model Provider",
         "type": "API", "status": "Connected", "last_sync": "5 min ago",
         "records": "1,847", "norm_pct": "97%", "owner": "AI Engineering",
         "action": "View / Sync",
@@ -933,6 +1338,7 @@ CONNECTOR_STATE = [
         "action": "View / Sync",
     },
 ]
+CONNECTOR_STATE.sort(key=lambda c: c["system"].lower())
 
 AVAILABLE_CONNECTORS = [
     "LangSmith", "New Relic", "CloudHealth", "Flexera",
@@ -964,6 +1370,15 @@ for key, default in [
     ("upload_validated", False),
     ("mapping_saved", False),
     ("norm_done", False),
+    ("anthropic_upload_df", None),
+    ("anthropic_upload_calc", None),
+    ("anthropic_raw_cost_frames", []),
+    ("anthropic_raw_tokens_frames", []),
+    ("anthropic_raw_simplified_frames", []),
+    ("anthropic_region_choice", None),
+    ("anthropic_detail_stats", None),
+    ("anthropic_detail_unrecognized", []),
+    ("anthropic_detail_files_committed", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -971,13 +1386,52 @@ for key, default in [
 
 # ── Load & compute baselines ───────────────────────────────────────────────────
 llm_raw, cloud_raw, coeffs, grid, recs, semgrep_results = load_data()
-trace_data   = load_trace_data()
-aiworks_data = load_aiworks_data()
-code_findings = load_code_findings()
+trace_data     = load_trace_data()
+aiworks_data   = load_aiworks_data()
+coeffs_named   = load_named_coefficients()
+code_findings  = load_code_findings()
 
 ai_base    = calc_ai(llm_raw, coeffs, grid)
 cloud_calc = calc_cloud(cloud_raw, grid)
 ai_curr    = apply_all_recs(llm_raw, coeffs, grid, st.session_state.applied_recs, recs)
+
+# Real Anthropic usage (AI/Works export or an uploaded Console/Admin-API CSV),
+# kept separate from ai_base/ai_curr above (the tuned synthetic demo) so the two
+# are additive, not overlapping — see Observe → "Anthropic (Real Data)" tab.
+if st.session_state.anthropic_upload_calc is not None:
+    aiworks_calc        = st.session_state.anthropic_upload_calc
+    aiworks_source_label = f"Uploaded file: `{st.session_state.uploaded_file_name}`"
+else:
+    aiworks_df            = flatten_aiworks_records(aiworks_data)
+    aiworks_anthropic_df  = aiworks_df[aiworks_df["provider"] == "anthropic"].copy()
+    aiworks_calc          = calc_ai_named(aiworks_anthropic_df, coeffs_named)
+    # This export reports real per-call billed cost — prefer it over the
+    # coefficient-estimated cost. Energy/carbon/water still have to be estimated;
+    # Anthropic doesn't disclose those.
+    aiworks_calc["ai_cost_usd"] = aiworks_calc["total_cost_usd"]
+    aiworks_source_label  = "Bundled sample: `aiworks_usage_export.json`"
+
+# Patch the "Anthropic" Connect-page row in place with real numbers
+# from aiworks_calc, instead of the hardcoded demo stats every other AI-provider
+# row still uses. norm_pct is a genuine match rate against coeffs_named (not
+# defaulted to the Sonnet fallback inside calc_ai_named()), not a fabricated one.
+_anthropic_row = next(c for c in CONNECTOR_STATE if c["system"] == "Anthropic")
+if len(aiworks_calc) > 0:
+    pct_matched = aiworks_calc["model_name"].isin(coeffs_named["model_name"]).mean() * 100
+else:
+    pct_matched = 0.0
+_anthropic_row["records"] = f"{len(aiworks_calc):,}"
+_anthropic_row["norm_pct"] = f"{pct_matched:.0f}%"
+if st.session_state.anthropic_upload_calc is not None:
+    _anthropic_row["status"]    = "Uploaded"
+    _anthropic_row["type"]      = "Static CSV"
+    _anthropic_row["last_sync"] = st.session_state.uploaded_file_name
+    _anthropic_row["action"]    = "Replace File"
+else:
+    _anthropic_row["status"]    = "Connected"
+    _anthropic_row["type"]      = "API"
+    _anthropic_row["last_sync"] = "Bundled sample"
+    _anthropic_row["action"]    = "View / Sync"
 
 base_ai_cost      = ai_base["ai_cost_usd"].sum()
 base_ai_carbon    = ai_base["ai_carbon_kg"].sum()
@@ -1093,6 +1547,8 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     page = _NAV[_page_raw]
+    if page != "Connect" and "view" in st.query_params:
+        del st.query_params["view"]
     st.markdown("<hr style='border-color:rgba(206,204,232,0.15);margin:10px 0;'>", unsafe_allow_html=True)
 
     n_applied = len(st.session_state.applied_recs)
@@ -1115,10 +1571,19 @@ with st.sidebar:
 
 # Silently update the browser URL to persist the current page across refreshes.
 # Uses replaceState so the back button is unaffected. Unique timestamp forces
-# React to re-execute the script on every rerun.
+# React to re-execute the script on every rerun. Preserves an existing "view"
+# param (e.g. the Anthropic detail drill-down) instead of unconditionally
+# dropping it — otherwise this always-on rewrite races Streamlit's own
+# official query-param sync and silently bounces the user out of that view
+# on the very next rerun.
 _components.html(
     f"<script>"
-    f"window.parent.history.replaceState(null,'','?page={page}');"
+    f"(function(){{"
+    f"var _p = new URLSearchParams(window.parent.location.search);"
+    f"var _v = _p.get('view');"
+    f"var _qs = 'page={page}' + (_v ? '&view=' + _v : '');"
+    f"window.parent.history.replaceState(null,'','?' + _qs);"
+    f"}})();"
     f"{_nav_icon_js()}"
     f"// {time.time()}"
     f"</script>",
@@ -1129,6 +1594,152 @@ _components.html(
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
+    if st.query_params.get("view") == "anthropic_detail":
+        st.markdown(
+            """
+            <style>
+            .st-key-anthropic_back_link div.stButton > button[data-testid="stBaseButton-secondary"] {
+                background: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                color: #6366f1 !important;
+                font-weight: 500 !important;
+                padding-left: 22px !important;
+                position: relative;
+            }
+            .st-key-anthropic_back_link div.stButton > button[data-testid="stBaseButton-secondary"]:hover,
+            .st-key-anthropic_back_link div.stButton > button[data-testid="stBaseButton-secondary"]:active {
+                background: none !important;
+                color: #6366f1 !important;
+                text-decoration: underline;
+            }
+            .st-key-anthropic_back_link button::before {
+                content: '';
+                position: absolute;
+                left: 0; top: 50%;
+                transform: translateY(-50%);
+                width: 16px; height: 16px;
+                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>') no-repeat center;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        with st.container(key="anthropic_back_link"):
+            if st.button("Back to Connected Data Sources"):
+                del st.query_params["view"]
+                st.rerun()
+
+        st.markdown("## Anthropic — Usage Detail")
+        st.caption(
+            f"{aiworks_source_label} · named-model coefficients (`model_coefficients_named.csv`) · "
+            "additive to the synthetic Support-Bot demo elsewhere in RECPT, not a replacement for it"
+        )
+
+        st.info(
+            "**Cost is real** where the source reports it (billed per-call/per-day cost). "
+            "**Energy, carbon, and water are estimates** — Anthropic does not publish "
+            "per-model energy consumption, so these are derived from named-model "
+            "coefficients (Medium confidence for Claude Sonnet, extrapolated for "
+            "Haiku/Opus — see `docs/notebooklm-wiki/06-calculations-and-methodology.md`)."
+        )
+
+        with st.expander("Add more usage files"):
+            st.markdown(
+                '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
+                'Updating this connection — e.g. adding next month\'s exports? Drop more '
+                'files here; they\'re added to what\'s already connected, not a replacement '
+                'for it. Same rules as the Connect page: any mix of simplified-schema, real '
+                'Cost report, and real Token-usage report files, classified automatically.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            detail_region_choice = anthropic_region_selectbox(key="anthropic_detail_region_select")
+            detail_uploaded_files = st.file_uploader(
+                "Upload more Anthropic usage CSV(s)",
+                type=["csv"], accept_multiple_files=True, key="anthropic_detail_upload",
+            )
+            if detail_uploaded_files:
+                _detail_sig = tuple((f.name, f.size) for f in detail_uploaded_files)
+                if _detail_sig != st.session_state.get("anthropic_detail_last_sig"):
+                    # New file selection: validate/preview only — nothing is
+                    # committed to the connection until the button below is
+                    # clicked, matching the Connect drawer's own two-step
+                    # "validate, then Run Normalization" pattern.
+                    st.session_state.anthropic_detail_last_sig = _detail_sig
+                    st.session_state.anthropic_detail_files_committed = False
+                    unrecognized = ingest_anthropic_files(detail_uploaded_files)
+                    st.session_state.anthropic_detail_unrecognized = unrecognized
+                    st.session_state.anthropic_region_choice = detail_region_choice
+                    st.session_state.anthropic_detail_stats = recompute_anthropic_upload(detail_region_choice)
+
+                if st.session_state.anthropic_detail_stats is not None:
+                    render_anthropic_upload_summary(
+                        st.session_state.anthropic_detail_stats,
+                        st.session_state.anthropic_detail_unrecognized,
+                        cta='Click "Add these files to the connection" below to commit them.',
+                    )
+
+                if st.session_state.anthropic_detail_files_committed:
+                    st.success(
+                        "✓ Added to this connection. Totals below, and the Connect and "
+                        "Prove pages, now reflect these files."
+                    )
+                elif st.button(
+                    "Add these files to the connection",
+                    type="primary",
+                    key="anthropic_detail_commit_btn",
+                ):
+                    st.session_state.anthropic_region_choice = detail_region_choice
+                    recompute_anthropic_upload(detail_region_choice)
+                    finalize_anthropic_calc()
+                    st.session_state.uploaded_file_name = "Multiple uploaded files"
+                    st.session_state.anthropic_detail_files_committed = True
+                    # The sidebar's own nav JS rewrites the browser's visible URL to
+                    # just "?page=Connect" on every render (a pre-existing side effect
+                    # unrelated to this feature), which would otherwise silently drop
+                    # "view" on this rerun and bounce the user back to the plain
+                    # Connect page instead of staying on this detail view.
+                    st.query_params["view"] = "anthropic_detail"
+                    st.rerun()
+
+        if aiworks_calc.empty:
+            st.warning("No Anthropic-provider records found in this data source.")
+        else:
+            n_records     = len(aiworks_calc)
+            total_tokens  = aiworks_calc["input_tokens"].sum() + aiworks_calc["output_tokens"].sum()
+            total_cost    = aiworks_calc["ai_cost_usd"].sum()
+            total_carbon  = aiworks_calc["ai_carbon_kg"].sum()
+            total_energy  = aiworks_calc["ai_energy_kwh"].sum()
+            total_water   = aiworks_calc["ai_water_liters"].sum()
+
+            st.markdown('<div class="sh">Totals</div>', unsafe_allow_html=True)
+            c1, c2, c3, c4, c5 = st.columns(5)
+            with c1: kpi("Records", f"{n_records:,}")
+            with c2: kpi("Tokens", f"{total_tokens/1e6:.2f}M")
+            with c3: kpi("Cost", f"${total_cost:,.2f}")
+            with c4: kpi("Carbon", f"{total_carbon:,.3f} kg CO₂e")
+            with c5: kpi("Energy", f"{total_energy:,.3f} kWh")
+            st.caption(f"Water: {total_water:,.2f} L")
+
+            st.markdown('<div class="sh">By Model</div>', unsafe_allow_html=True)
+            by_model = (aiworks_calc
+                        .groupby("model_name")[["ai_cost_usd", "ai_carbon_kg", "ai_energy_kwh", "ai_water_liters"]]
+                        .sum().sort_values("ai_carbon_kg", ascending=False).reset_index())
+            by_model.columns = ["Model", "Cost (USD)", "Carbon (kg CO₂e)", "Energy (kWh)", "Water (L)"]
+            st.dataframe(by_model, use_container_width=True, hide_index=True)
+
+            st.markdown('<div class="sh">Per-Record Detail</div>', unsafe_allow_html=True)
+            base_cols = ["model_name", "region", "input_tokens", "cache_read_input_tokens",
+                         "output_tokens", "ai_cost_usd", "ai_energy_kwh", "ai_carbon_kg", "ai_water_liters"]
+            optional_cols = [c for c in
+                             ["date", "workspace", "agent_name", "workflow_name", "eval_score", "accepted_output"]
+                             if c in aiworks_calc.columns]
+            detail_cols = [c for c in optional_cols + base_cols if c in aiworks_calc.columns]
+            st.dataframe(aiworks_calc[detail_cols], use_container_width=True, hide_index=True)
+
+        st.stop()
+
     st.markdown("## Connected Data Sources")
     st.markdown(
         '<div style="font-size:13px;color:#374151;background:#F0F4FF;border-left:3px solid #6366f1;'
@@ -1218,7 +1829,7 @@ if page == "Connect":
         ]
     )
     st.markdown(
-        f'<div class="sh" style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;">'
+        f'<div id="conn-systems-title" class="sh" style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;">'
         f'<span>Connected Systems</span>'
         f'<details class="sref-details">'
         f'<summary class="sref-trigger">{_svg("info", 13, "#374151")} Status reference</summary>'
@@ -1233,42 +1844,130 @@ if page == "Connect":
         unsafe_allow_html=True,
     )
 
-    header = (
-        '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        '<thead><tr style="background:#F9F9FB;color:#9ca3af;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">'
-        '<th style="padding:10px 12px;text-align:left;">System</th>'
-        '<th style="padding:10px 12px;text-align:left;">Category</th>'
-        '<th style="padding:10px 12px;text-align:left;">Type</th>'
-        '<th style="padding:10px 12px;text-align:left;">Status</th>'
-        '<th style="padding:10px 12px;text-align:left;">Last Sync</th>'
-        '<th style="padding:10px 12px;text-align:right;">Records</th>'
-        '<th style="padding:10px 12px;text-align:left;">Normalization</th>'
-        '<th style="padding:10px 12px;text-align:left;">Owner</th>'
-        '<th style="padding:10px 12px;text-align:left;">Actions</th>'
-        '</tr></thead><tbody>'
+    _CONN_COL_RATIOS = [2.4, 1.4, 0.7, 1.1, 0.9, 0.7, 1.2, 1.15, 1.15]
+    _CONN_HEADERS = ["System", "Category", "Type", "Status", "Last Sync",
+                      "Records", "Normalization", "Owner", "Actions"]
+
+    st.markdown(
+        """
+        <style>
+        div[class*="st-key-conn_row_"] {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 14px 0;
+            box-sizing: border-box;
+            min-height: 71px !important;
+        }
+        div[class*="st-key-conn_header_row"] {
+            background: #F9F9FB;
+            border-radius: 6px 6px 0 0;
+            padding: 8px 0;
+            box-sizing: border-box;
+            min-height: 34px !important;
+        }
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"],
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"][disabled] {
+            padding: 4px 10px !important;
+            min-height: 0 !important;
+            border-radius: 6px !important;
+            white-space: nowrap !important;
+        }
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"] p,
+        div[class*="st-key-conn_row_"] div.stButton > button[data-testid="stBaseButton-secondary"] div {
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            white-space: nowrap !important;
+        }
+        div[class*="st-key-conn_table_wrap"] {
+            gap: 0 !important;
+        }
+        .stElementContainer:has(#conn-systems-title) {
+            margin-bottom: -18px !important;
+        }
+        div[class*="st-key-conn_row_"] [data-testid="stColumn"]:last-child,
+        div[class*="st-key-conn_header_row"] [data-testid="stColumn"]:last-child {
+            padding-right: 12px !important;
+            box-sizing: border-box !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
 
-    rows = ""
-    for i, c in enumerate(CONNECTOR_STATE):
-        badge = status_badge(c["status"])
-        norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
-        rows += (
-            f'<tr style="background:#fff;border-bottom:1px solid #e5e7eb;">'
-            f'<td style="padding:10px 12px;">'
-            f'<div style="font-weight:600;color:#111827;">{c["system"]}</div>'
-            f'</td>'
-            f'<td style="padding:10px 12px;color:#374151;cursor:help;" title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</td>'
-            f'<td style="padding:10px 12px;font-family:Inter,sans-serif;font-size:12px;color:#374151;">{c["type"]}</td>'
-            f'<td style="padding:10px 12px;">{badge}</td>'
-            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["last_sync"]}</td>'
-            f'<td style="padding:10px 12px;text-align:right;font-family:Inter,sans-serif;font-size:12px;">{c["records"]}</td>'
-            f'<td style="padding:10px 12px;color:{norm_color};font-weight:600;font-size:12px;cursor:help;" title="Normalization: the % of ingested records successfully mapped to RECPT\'s schema (app name, model, region, token counts all present and matched). Unmapped records appear in the Norm Log.">{c["norm_pct"]}</td>'
-            f'<td style="padding:10px 12px;color:#6b7280;font-size:12px;">{c["owner"]}</td>'
-            f'<td style="padding:10px 12px;color:#3b82f6;font-size:12px;cursor:pointer;">{c["action"]}</td>'
-            '</tr>'
-        )
+    conn_table_wrap = st.container(key="conn_table_wrap")
+    with conn_table_wrap:
+        with st.container(key="conn_header_row"):
+            hcols = st.columns(_CONN_COL_RATIOS, gap="small")
+            for hcol, label in zip(hcols, _CONN_HEADERS):
+                align = "right" if label == "Records" else "left"
+                hcol.markdown(
+                    f'<div style="color:#9ca3af;font-size:11px;font-weight:600;text-transform:uppercase;'
+                    f'letter-spacing:.04em;text-align:{align};padding:0 12px;white-space:nowrap;">{label}</div>',
+                    unsafe_allow_html=True,
+                )
 
-    st.markdown(f'<div class="conn-table-wrap">{header}{rows}</tbody></table></div>', unsafe_allow_html=True)
+        for i, c in enumerate(CONNECTOR_STATE):
+            badge = status_badge(c["status"])
+            norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
+            is_anthropic = c["system"] == "Anthropic"
+            if is_anthropic:
+                system_badge = (
+                    '<br><span style="color:#CECCE8;font-size:10px;font-weight:600;white-space:nowrap;'
+                    'display:inline-block;background:#0F0A37;border-radius:99px;padding:2px 8px;margin-top:2px;">'
+                    'Real data</span>'
+                )
+            else:
+                system_badge = (
+                    '<br><span style="cursor:help;color:#9ca3af;font-size:10px;font-weight:600;white-space:nowrap;'
+                    'display:inline-block;background:#F3F4F6;border-radius:99px;padding:2px 8px;margin-top:2px;" '
+                    'title="Demo data — not connected to a live source or a real ingestion '
+                    'pipeline in this prototype.">Demo data</span>'
+                )
+
+            with st.container(key=f"conn_row_{i}"):
+                cols = st.columns(_CONN_COL_RATIOS, gap="small", vertical_alignment="top")
+                cols[0].markdown(
+                    f'<div style="font-weight:600;color:#111827;font-size:13px;padding:0 12px;'
+                    f'word-break:keep-all;overflow-wrap:normal;">{c["system"]}{system_badge}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[1].markdown(
+                    f'<div style="color:#374151;font-size:13px;padding:0 12px;cursor:help;'
+                    f'word-break:keep-all;overflow-wrap:normal;" '
+                    f'title="{CATEGORY_TOOLTIPS.get(c["category"], "")}">{c["category"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[2].markdown(
+                    f'<div style="font-family:Inter,sans-serif;font-size:12px;color:#374151;padding:0 12px;white-space:nowrap;">{c["type"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[3].markdown(f'<div style="padding:0 12px;white-space:nowrap;">{badge}</div>', unsafe_allow_html=True)
+                cols[4].markdown(
+                    f'<div style="color:#6b7280;font-size:12px;padding:0 12px;white-space:nowrap;">{c["last_sync"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[5].markdown(
+                    f'<div style="text-align:right;font-family:Inter,sans-serif;font-size:12px;padding:0 12px;white-space:nowrap;">{c["records"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[6].markdown(
+                    f'<div style="color:{norm_color};font-weight:600;font-size:12px;padding:0 12px;white-space:nowrap;cursor:help;" '
+                    f'title="Normalization: the % of ingested records successfully mapped to RECPT\'s schema '
+                    f'(app name, model, region, token counts all present and matched). Unmapped records appear '
+                    f'in the Norm Log.">{c["norm_pct"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                cols[7].markdown(
+                    f'<div style="color:#6b7280;font-size:12px;padding:0 12px;white-space:nowrap;">{c["owner"]}</div>',
+                    unsafe_allow_html=True,
+                )
+                with cols[8]:
+                    if is_anthropic:
+                        if st.button(c["action"], key=f"conn_action_{i}"):
+                            st.query_params["view"] = "anthropic_detail"
+                            st.rerun()
+                    else:
+                        st.button(c["action"], key=f"conn_action_{i}", disabled=True)
 
     # ── Connect New System Drawer ──
     if st.session_state.show_drawer:
@@ -1349,6 +2048,50 @@ if page == "Connect":
                             f"Proceed to field mapping?"
                         )
 
+                elif src == "AI Model Provider":
+                    st.markdown("**System:** AI/Works Control Plane")
+                    st.markdown(
+                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
+                        'Drop any number of Anthropic usage files at once — TRACE\'s own '
+                        'simplified sample schema, and/or any mix of real Console export '
+                        'monthly <b>Cost reports</b> (identified by a <code>token_type</code> '
+                        'column) and <b>Token-usage reports</b> (identified by a '
+                        '<code>model_version</code> column), covering any date range. '
+                        'Each file is classified by its columns and combined automatically.'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+                    sample_path = DATA_DIR / "anthropic_console_export_sample.csv"
+                    if sample_path.exists():
+                        with open(sample_path, "rb") as f_sample:
+                            st.download_button(
+                                "Download sample file",
+                                data=f_sample,
+                                file_name="anthropic_console_export_sample.csv",
+                                mime="text/csv",
+                                help="Download a sample Anthropic Console/Admin-API-shaped export to see the expected column format",
+                            )
+                    region_choice = anthropic_region_selectbox(key="anthropic_upload_region_select")
+                    uploaded_files = st.file_uploader(
+                        "Upload Anthropic usage CSV(s)",
+                        type=["csv"], accept_multiple_files=True, key="anthropic_bulk_upload",
+                    )
+
+                    if uploaded_files:
+                        _sig = tuple((f.name, f.size) for f in uploaded_files)
+                        if _sig != st.session_state.get("anthropic_drawer_last_sig"):
+                            st.session_state.anthropic_drawer_last_sig = _sig
+                            unrecognized = ingest_anthropic_files(uploaded_files)
+                        else:
+                            unrecognized = []
+
+                        st.session_state.anthropic_region_choice = region_choice
+                        stats = recompute_anthropic_upload(region_choice)
+                        st.session_state.upload_validated   = stats["n_total"] > 0
+                        st.session_state.uploaded_file_name = f"{len(uploaded_files)} file(s) uploaded"
+
+                        render_anthropic_upload_summary(stats, unrecognized)
+
                 else:
                     uploaded = st.file_uploader("Upload file", type=["csv", "json"], key="generic_upload")
                     if uploaded:
@@ -1425,7 +2168,17 @@ Requires a redaction filter to be configured.
                 with cm2:
                     if st.button("Run Normalization", type="primary", use_container_width=True):
                         with st.spinner("Normalizing records…"):
-                            time.sleep(0.8)
+                            if (st.session_state.drawer_source == "AI Model Provider"
+                                    and st.session_state.anthropic_upload_df is not None):
+                                # Real path: actually estimate energy/carbon/water from the
+                                # uploaded usage rows via calc_ai_named(), preferring the
+                                # file's own billed cost over the coefficient-estimated one
+                                # wherever it's present.
+                                finalize_anthropic_calc()
+                            else:
+                                # No real normalization logic exists yet for other source
+                                # types (FinOps, Langfuse, etc.) — simulated, as before.
+                                time.sleep(0.8)
                         st.session_state.norm_done = True
                         st.session_state.show_drawer = False
                         st.rerun()
@@ -1731,8 +2484,6 @@ elif page == "Observe":
             'Confidence: Medium (region and model-class factors available; provider-specific hardware not measured).</div>',
             unsafe_allow_html=True,
         )
-
-
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -2055,10 +2806,23 @@ elif page == "Prove":
                     f"app name, model, region, and token counts all present and matched. "
                     f"Unmapped records are flagged in the Norm Log."
                 )
+                if c["system"] == "Anthropic":
+                    source_badge = (
+                        ' <span style="color:#CECCE8;font-size:10px;font-weight:600;white-space:nowrap;'
+                        'display:inline-block;background:#0F0A37;border-radius:99px;padding:2px 8px;">'
+                        'Real data</span>'
+                    )
+                else:
+                    source_badge = (
+                        ' <span style="cursor:help;color:#9ca3af;font-size:10px;font-weight:600;white-space:nowrap;'
+                        'display:inline-block;background:#F3F4F6;border-radius:99px;padding:2px 8px;" '
+                        'title="Demo data — not connected to a live source or a real ingestion '
+                        'pipeline in this prototype.">Demo data</span>'
+                    )
                 sources_html += (
                     f'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;'
                     f'border-bottom:1px solid #f3f4f6;font-size:13px;">'
-                    f'<span style="display:flex;align-items:center;">{icon}<b>{c["system"]}</b>&nbsp;— {c["type"]}</span>'
+                    f'<span style="display:flex;align-items:center;">{icon}<b>{c["system"]}</b>&nbsp;— {c["type"]}{source_badge}</span>'
                     f'<span style="color:#6b7280;cursor:help;" title="{norm_tip}">{c["records"]} records · {c["norm_pct"]} mapped</span>'
                     f'</div>'
                 )

@@ -108,6 +108,48 @@ energy_debt_score = (0.6 × carbon_rank) + (0.4 × code_risk_rank)
 
 ---
 
+### Formulas 1b–3b: named-model AI inference (real Anthropic usage)
+
+Formulas 1–3 above assume a `large/mid/small` model *class* — appropriate for the synthetic
+demo dataset, but not for a real Anthropic usage export, which reports a real model name and
+separate input/output (and cache-read) token counts. For that shape of data:
+
+```
+ai_energy_kWh = (input_tokens/1e6)  × kWh_per_1M_input
+              + (output_tokens/1e6) × kWh_per_1M_output
+              + (cache_read_tokens/1e6) × kWh_per_1M_cache_read
+
+ai_carbon_kg  = ai_energy_kWh × grid_intensity_kgCO₂e_per_kWh
+
+ai_cost_usd   = the source's own reported billed cost, when present
+              — else (input_tokens/1e6)×usd_per_1M_input + (output_tokens/1e6)×usd_per_1M_output
+```
+
+**Plain English:** input and output tokens are priced and metered separately (output costs
+and consumes several times more than input, per token — decode dominates energy), and a
+cache-read token is cheap to serve (it skips most of the prefill compute), so it gets its own,
+much lower, rate. Cost is preferred straight from the source when the source reports it — a
+real Anthropic invoice already tells you what was billed; there's no reason to re-derive it
+from a coefficient. Energy, carbon, and water are always estimates: Anthropic does not
+disclose either figure.
+
+An unrecognized model name falls back to the Sonnet row's coefficients (the middle tier).
+
+**Source:** same GSF "SCI for AI" framing as formulas 1–3; the input/output split and cache-
+read discount, and the specific Sonnet coefficients, come from Jegham et al. 2025's measured
+per-query energies (Haiku/Opus are extrapolated by model-size proxy — no public measurement
+exists for those tiers either).
+
+**Implemented in:** `calc_ai_named()` in `app.py`, consuming `flatten_aiworks_records()`
+(for the bundled AI/Works export) or `normalize_anthropic_upload()` (for a user-uploaded
+Anthropic Console/Admin-API-shaped CSV). Surfaced on Observe → "Anthropic (Real Data)".
+
+**A gap this doesn't close:** a Console/Admin-API export doesn't disclose which region
+served each request. Rather than silently assuming one, the Connect page's AI/Works upload
+flow asks the user which region to assume, and applies it uniformly to the whole file.
+
+---
+
 ## The lookup tables
 
 ### Model coefficients
@@ -120,7 +162,7 @@ energy_debt_score = (0.6 × carbon_rank) + (0.4 × code_risk_rank)
 
 **File:** `docs/sample-data/model_coefficients.csv`
 
-**Named model equivalents** (used for agent traces):
+**Named model equivalents** (blended input+output rate, used for agent traces only):
 | Model name | kWh / 1M tokens |
 |---|---|
 | claude-opus-4-8 | 1.2 |
@@ -128,6 +170,25 @@ energy_debt_score = (0.6 × carbon_rank) + (0.4 × code_risk_rank)
 | claude-haiku-4-5 | 0.3 |
 | gpt-4.1 | 0.5 |
 | gpt-4o | 0.6 |
+
+**Named model coefficients, split input/output/cache-read** (used for real Anthropic usage —
+`calc_ai_named()`, formulas 1b–3b above):
+
+| Model name | USD/1M in | USD/1M out | kWh/1M in | kWh/1M out | kWh/1M cache-read | Confidence |
+|---|---|---|---|---|---|---|
+| claude-haiku-4-5 | $0.80 | $4.00 | 0.182 | 1.039 | 0.0182 | Medium — extrapolated by model-size proxy |
+| claude-sonnet-4-6 | $3.00 | $15.00 | 0.494 | 2.961 | 0.0494 | Medium — derived from Jegham et al. 2025 |
+| claude-opus-4-8 | $15.00 | $75.00 | 1.039 | 6.234 | 0.1039 | Medium — extrapolated by model-size proxy |
+
+Cache-read kWh = input kWh × 0.1, since a cache hit skips most of the prefill compute — one
+named, auditable constant rather than a second independent estimate. Dollar rates are anchored
+to Anthropic's published per-tier API pricing; energy rates are separately sourced (see above)
+— the two columns are not derived from each other.
+
+**File:** `docs/sample-data/model_coefficients_named.csv` — note this deliberately does **not**
+replace the blended table above (used only by the trace visualization); keeping both avoids
+silently changing the existing trace-page numbers. Keep them in rough sync by hand if you add
+a new named model.
 
 ---
 
@@ -292,9 +353,10 @@ This is why the impact numbers in RECPT are not approximations — they are genu
 | Cloud energy (kWh) | From billing data (direct) | High |
 | Cloud carbon | kWh × grid intensity (grid intensity is sourced, kWh is measured) | High/Medium |
 | Cloud water | kWh × WUE (WUE is estimated for most regions) | Medium |
-| AI cost | Tokens × published price (price is exact; token count from logs) | High |
-| AI energy | Tokens × kWh/1M coefficient (coefficient is blended estimate) | Medium |
-| AI carbon | AI energy × grid intensity | Medium |
+| AI cost (synthetic demo) | Tokens × published price (price is exact; token count from logs) | High |
+| AI cost (real Anthropic usage) | The source's own billed cost, when reported — else tokens × published price | High |
+| AI energy | Tokens × kWh/1M coefficient (coefficient is blended, or split input/output/cache-read, estimate) | Medium |
+| AI carbon | AI energy × grid intensity (region assumed/user-selected for real usage exports — see limitation 6) | Medium |
 | AI water | AI energy × WUE | Medium |
 
 ---
@@ -310,6 +372,10 @@ This is why the impact numbers in RECPT are not approximations — they are genu
 4. **PUE is an industry average.** Hyperscalers report PUE values between 1.1 and 1.2. RECPT uses 1.2 as a conservative estimate. Actual facility PUE varies.
 
 5. **Token-to-energy scaling is approximate.** The relationship between model size and energy per token is not perfectly linear. The large/mid/small coefficient ratios (1.2 / 0.6 / 0.3) are reasonable approximations, not precision measurements.
+
+6. **Real usage exports don't disclose region.** Neither the AI/Works control-plane export nor an Anthropic Console/Admin-API CSV export reports which region served a given request. `calc_ai_named()` requires a region be supplied (per-record region for the bundled AI/Works export; one assumed region, chosen by the user, applied uniformly for an uploaded CSV) — this is a real, disclosed assumption, not a silent default.
+
+7. **Named-model input/output/cache-read coefficients are one further step removed from measurement than the blended large/mid/small ones.** Only the Sonnet row is derived from a measured source (Jegham et al. 2025); Haiku and Opus are extrapolated from it by model-size proxy. Treat named-model AI-carbon figures as order-of-magnitude, same as the rest of this methodology, but with one additional layer of estimation on top.
 
 ---
 
