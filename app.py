@@ -1437,7 +1437,7 @@ else:
     _anthropic_row["status"]    = "Connected"
     _anthropic_row["type"]      = "API"
     _anthropic_row["last_sync"] = "Bundled sample"
-    _anthropic_row["action"]    = "View / Sync"
+    _anthropic_row["action"]    = "See More"
 
 base_ai_cost      = ai_base["ai_cost_usd"].sum()
 base_ai_carbon    = ai_base["ai_carbon_kg"].sum()
