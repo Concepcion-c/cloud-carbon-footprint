@@ -1,0 +1,5 @@
+date,system_type,model_name,region,input_tokens,output_tokens,cache_read_input_tokens,usage_kwh,cost_usd
+2026-06-01,ai,claude-sonnet-4-6,us-east-1,152000,48000,12000,,842.50
+2026-06-02,ai,gpt-4o,eu-west-1,98000,31000,0,,
+2026-06-01,cloud,,us-west-2,,,,184.2,39.61
+2026-06-03,cloud,,ap-south-1,,,,412.7,

@@ -528,10 +528,6 @@ section[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPaddin
 .status-paused     { background:var(--trace-muted-bg); color:var(--trace-muted-fg); border-radius:99px;
                      padding:4px 8px; font-size:11px; font-weight:600; white-space:nowrap; }
 
-.drawer { background:#f8fafb; border:1px solid #e5e7eb; border-radius:10px;
-          padding:20px 24px; margin-top:12px; }
-.drawer-title { font-size:17px; font-weight:700; color:#111827; margin-bottom:14px; }
-
 .trace-wrap { display:flex; align-items:stretch; overflow-x:auto;
               padding:16px; background:#f8fafb; border-radius:12px; gap:0; }
 .trace-node { min-width:148px; max-width:168px; border-radius:10px; padding:12px 10px;
@@ -816,10 +812,15 @@ def load_finops_export():
     return pd.read_csv(DATA_DIR / "finops_cloud_export.csv", parse_dates=["timestamp"])
 
 
-# finops_cloud_export.csv uses real AWS region codes; grid_intensity.csv uses
-# abstract region names. calc_cloud() merges on "region", so without this
-# mapping every row would silently get NaN carbon/water.
-_AWS_REGION_MAP = {"us-east-1": "us-east", "us-west-2": "us-west"}
+# finops_cloud_export.csv (and Basic Template cloud rows) use real AWS
+# region codes; grid_intensity.csv uses abstract region names. calc_cloud()
+# merges on "region", so without this mapping every row would silently get
+# NaN carbon/water.
+_AWS_REGION_MAP = {
+    "us-east-1": "us-east", "us-east-2": "us-east",
+    "us-west-1": "us-west", "us-west-2": "us-west",
+    "eu-west-1": "eu-west", "ap-south-1": "ap-south",
+}
 
 
 @st.cache_data
@@ -1351,6 +1352,67 @@ def calc_cloud(cloud_df, grid_df):
     return df
 
 
+BASIC_TEMPLATE_TYPE_ALIASES = {"ai_usage": "ai", "llm": "ai", "cloud_usage": "cloud", "infra": "cloud"}
+
+
+def classify_basic_template_upload(df):
+    """Splits a unified Basic-Template upload into an AI-shaped frame and a
+    cloud-shaped frame using the `system_type` discriminator column (tolerant
+    of a few common aliases), falling back to populated-field inference only
+    if that column is entirely absent. Returns (ai_df, cloud_df, errors)."""
+    errors = []
+    df = df.copy()
+
+    if "system_type" in df.columns:
+        types = df["system_type"].astype(str).str.lower().map(
+            lambda v: BASIC_TEMPLATE_TYPE_ALIASES.get(v, v)
+        )
+        ai_df    = df[types == "ai"].copy()
+        cloud_df = df[types == "cloud"].copy()
+    else:
+        # No discriminator column — infer from which fields are populated.
+        has_tokens = df.get("input_tokens", pd.Series(dtype=float)).notna()
+        has_kwh    = df.get("usage_kwh", pd.Series(dtype=float)).notna()
+        ai_df    = df[has_tokens].copy()
+        cloud_df = df[has_kwh & ~has_tokens].copy()
+
+    missing_ai = [c for c in ("model_name", "region", "input_tokens", "output_tokens")
+                  if c not in ai_df.columns] if len(ai_df) else []
+    missing_cloud = [c for c in ("region", "usage_kwh")
+                      if c not in cloud_df.columns] if len(cloud_df) else []
+    if missing_ai:
+        errors.append(f"AI rows missing required column(s): {', '.join(missing_ai)}")
+    if missing_cloud:
+        errors.append(f"Cloud rows missing required column(s): {', '.join(missing_cloud)}")
+
+    return ai_df, cloud_df, errors
+
+
+def calc_basic_template_upload(ai_df, cloud_df, coeffs_named_df, grid_df):
+    """Runs calc_ai_named() on the AI rows and calc_cloud() on the cloud rows
+    of a classified Basic-Template upload, returning (ai_calc, cloud_calc) —
+    either may be an empty DataFrame if that shape had no rows."""
+    if len(ai_df):
+        ai_df = ai_df.copy()
+        if "cache_read_input_tokens" not in ai_df.columns:
+            ai_df["cache_read_input_tokens"] = 0
+        ai_df["cache_read_input_tokens"] = ai_df["cache_read_input_tokens"].fillna(0)
+        ai_calc = calc_ai_named(ai_df, coeffs_named_df)
+        if "cost_usd" in ai_calc.columns:
+            ai_calc["ai_cost_usd"] = ai_calc["cost_usd"].fillna(ai_calc["ai_cost_usd"])
+    else:
+        ai_calc = ai_df
+
+    if len(cloud_df):
+        cloud_df = cloud_df.copy()
+        cloud_df["region"] = cloud_df["region"].map(_AWS_REGION_MAP).fillna(cloud_df["region"])
+        cloud_calc = calc_cloud(cloud_df, grid_df)
+    else:
+        cloud_calc = cloud_df
+
+    return ai_calc, cloud_calc
+
+
 def apply_all_recs(llm_df, coeffs_df, grid_df, applied_ids, all_recs):
     modified = llm_df.copy()
     for rec in all_recs:
@@ -1443,6 +1505,20 @@ CONNECTOR_STATE = [
 CONNECTOR_STATE.sort(key=lambda c: c["system"].lower())
 
 
+def get_visible_connectors():
+    """Single source of truth for every render site that reads CONNECTOR_STATE.
+    Merges built-in rows with user-added ones, applies Update-Data overrides,
+    and drops deleted rows — all via session_state, since CONNECTOR_STATE
+    itself is a plain module-level list rebuilt from scratch on every
+    Streamlit rerun and can't hold state across reruns on its own."""
+    merged = []
+    for c in CONNECTOR_STATE + st.session_state.custom_connectors:
+        if c["system"] in st.session_state.deleted_connector_systems:
+            continue
+        merged.append({**c, **st.session_state.connector_overrides.get(c["system"], {})})
+    return merged
+
+
 def _connector_slug(system):
     return system.lower().replace(" / ", "_").replace(" ", "_").replace("/", "_")
 
@@ -1470,7 +1546,6 @@ FIELD_MAPPING = [
 # ── Session state ──────────────────────────────────────────────────────────────
 for key, default in [
     ("applied_recs", set()),
-    ("show_drawer", False),
     ("drawer_source", None),
     ("drawer_method", None),
     ("uploaded_file_name", None),
@@ -1486,6 +1561,15 @@ for key, default in [
     ("anthropic_detail_stats", None),
     ("anthropic_detail_unrecognized", []),
     ("anthropic_detail_files_committed", False),
+    ("custom_connectors", []),
+    ("custom_connector_data", {}),
+    ("deleted_connector_systems", set()),
+    ("connector_overrides", {}),
+    ("show_connect_modal", False),
+    ("show_update_modal", False),
+    ("update_target_system", None),
+    ("show_delete_modal", False),
+    ("delete_target_system", None),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1797,6 +1881,346 @@ def _render_fabricated_detail(row):
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 
+def _render_custom_connector_detail(row):
+    data = st.session_state.custom_connector_data.get(row["system"])
+    ai_calc    = data.get("ai") if data else None
+    cloud_calc = data.get("cloud") if data else None
+    has_ai    = ai_calc is not None and len(ai_calc)
+    has_cloud = cloud_calc is not None and len(cloud_calc)
+
+    if not has_ai and not has_cloud:
+        st.info(
+            "No usage data has been uploaded for this connector yet — connected via "
+            "API, which has no real backing ingestion pipeline in this prototype "
+            "(simulated, same as the built-in connectors' API paths)."
+        )
+        return
+
+    st.info(
+        "**Real data** — uploaded via the Basic Template. Cost/tokens/usage are as "
+        "uploaded; carbon/energy/water are computed the same way as the rest of RECPT."
+    )
+
+    if has_ai:
+        st.markdown('<div class="sh">AI Usage — Totals</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4, c5 = st.columns(5)
+        with c1: kpi("Records", f"{len(ai_calc):,}")
+        with c2: kpi("Tokens", f"{(ai_calc['input_tokens'].sum() + ai_calc['output_tokens'].sum())/1e6:.2f}M")
+        with c3: kpi("Cost", f"${ai_calc['ai_cost_usd'].sum():,.2f}")
+        with c4: kpi("Carbon", f"{ai_calc['ai_carbon_kg'].sum():,.3f} kg CO₂e")
+        with c5: kpi("Energy", f"{ai_calc['ai_energy_kwh'].sum():,.3f} kWh")
+
+        st.markdown('<div class="sh">AI Usage — Per-Record Detail</div>', unsafe_allow_html=True)
+        cols = [c for c in ["model_name", "region", "input_tokens", "output_tokens",
+                             "cache_read_input_tokens", "ai_cost_usd", "ai_energy_kwh",
+                             "ai_carbon_kg", "ai_water_liters"] if c in ai_calc.columns]
+        st.dataframe(ai_calc[cols], use_container_width=True, hide_index=True)
+
+    if has_cloud:
+        st.markdown('<div class="sh">Cloud Usage — Totals</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1: kpi("Records", f"{len(cloud_calc):,}")
+        with c2: kpi("Usage", f"{cloud_calc['usage_kwh'].sum():,.1f} kWh")
+        cost_total = cloud_calc["cost_usd"].sum() if "cost_usd" in cloud_calc.columns and cloud_calc["cost_usd"].notna().any() else None
+        with c3: kpi("Cost", f"${cost_total:,.2f}" if cost_total is not None else "N/A",
+                     sub=None if cost_total is not None else "no cost_usd in upload")
+        with c4: kpi("Carbon", f"{cloud_calc['cloud_carbon_kg'].sum():,.3f} kg CO₂e")
+
+        st.markdown('<div class="sh">Cloud Usage — Per-Record Detail</div>', unsafe_allow_html=True)
+        cols = [c for c in ["region", "usage_kwh", "cost_usd", "cloud_carbon_kg", "cloud_water_liters"]
+                if c in cloud_calc.columns]
+        st.dataframe(cloud_calc[cols], use_container_width=True, hide_index=True)
+
+
+def _offer_basic_template_download():
+    st.markdown(
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
+        'No dedicated template exists for this system yet — use RECPT\'s Basic Template: '
+        'the baseline fields the calculation engine needs (AI usage: model_name, region, '
+        'input_tokens, output_tokens; cloud usage: region, usage_kwh). A '
+        '<code>system_type</code> column (<code>ai</code>/<code>cloud</code>) tells RECPT '
+        'which rows are which.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    sample_path = DATA_DIR / "basic_template_sample.csv"
+    if sample_path.exists():
+        with open(sample_path, "rb") as f_sample:
+            st.download_button(
+                "Download Basic Template",
+                data=f_sample,
+                file_name="basic_template_sample.csv",
+                mime="text/csv",
+                help="Download the baseline CSV template covering both AI-usage and cloud-usage shapes",
+            )
+
+
+def _render_connection_method_fields(system_name, category, method):
+    """The method-specific form fields from the old Connect drawer's Step 3,
+    factored out so both the Connect New System modal and the Update Data
+    modal can share one implementation instead of duplicating the
+    Langfuse/generic-API/generic-upload field blocks."""
+    if method == "File upload":
+        if system_name == "Cloudability Export" or category == "FinOps / Cloud Cost":
+            st.markdown("**System:** Cloudability Export")
+            st.markdown(
+                '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
+                'Expected fields: account · service · region · cost_usd · usage_kwh · '
+                'timestamp · tags_project · tags_workspace · business_unit · environment'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            sample_path = DATA_DIR / "finops_cloud_export.csv"
+            if sample_path.exists():
+                with open(sample_path, "rb") as f_sample:
+                    st.download_button(
+                        "Download sample file",
+                        data=f_sample,
+                        file_name="finops_cloud_export_sample.csv",
+                        mime="text/csv",
+                        help="Download a sample Cloudability export to see the expected column format",
+                        key=f"sample_dl_{system_name}_finops",
+                    )
+            uploaded = st.file_uploader("Upload CSV export", type=["csv"], key=f"upload_{system_name}_finops")
+            if uploaded is not None:
+                df_upload = pd.read_csv(uploaded)
+                st.session_state.upload_validated  = True
+                st.session_state.uploaded_file_name = uploaded.name
+                st.success(f"**File validated.** {len(df_upload):,} records found.")
+
+        elif system_name == "Anthropic" or category == "AI Model Provider":
+            st.markdown(f"**System:** {system_name}")
+            _offer_basic_template_download()
+            uploaded = st.file_uploader(
+                "Upload usage CSV(s)", type=["csv"], accept_multiple_files=True,
+                key=f"upload_{system_name}_ai",
+            )
+            if uploaded:
+                combined = pd.concat([pd.read_csv(f) for f in uploaded], ignore_index=True)
+                ai_df, cloud_df, errors = classify_basic_template_upload(combined)
+                if errors:
+                    for e in errors:
+                        st.error(e)
+                else:
+                    ai_calc, cloud_calc = calc_basic_template_upload(ai_df, cloud_df, coeffs_named, grid)
+                    st.session_state.custom_connector_data[system_name] = {"ai": ai_calc, "cloud": cloud_calc}
+                    st.session_state.upload_validated  = True
+                    st.session_state.uploaded_file_name = f"{len(uploaded)} file(s) uploaded"
+                    st.success(f"**File(s) validated.** {len(combined):,} records found.")
+
+        else:
+            _offer_basic_template_download()
+            uploaded = st.file_uploader("Upload file", type=["csv"], key=f"upload_{system_name}_generic")
+            if uploaded is not None:
+                combined = pd.read_csv(uploaded)
+                ai_df, cloud_df, errors = classify_basic_template_upload(combined)
+                if errors:
+                    for e in errors:
+                        st.error(e)
+                else:
+                    ai_calc, cloud_calc = calc_basic_template_upload(ai_df, cloud_df, coeffs_named, grid)
+                    st.session_state.custom_connector_data[system_name] = {"ai": ai_calc, "cloud": cloud_calc}
+                    st.session_state.upload_validated  = True
+                    st.session_state.uploaded_file_name = uploaded.name
+                    st.success(f"**File validated.** {len(combined):,} records found.")
+
+    elif method == "API connection":
+        if category == "LLM Observability" or system_name == "Langfuse":
+            st.markdown(f"**System:** {system_name}")
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.text_input("Host URL", placeholder="https://cloud.langfuse.com", key=f"api_host_{system_name}")
+                st.text_input("Public Key", placeholder="pk-lf-...", key=f"api_pk_{system_name}")
+            with col_b:
+                st.text_input("Secret Key", placeholder="sk-lf-...", type="password", key=f"api_sk_{system_name}")
+                st.text_input("Project ID", placeholder="proj_...", key=f"api_proj_{system_name}")
+            st.selectbox("Sync frequency", ["Every 15 minutes", "Every 30 minutes", "Hourly"],
+                         key=f"api_freq_{system_name}")
+        else:
+            st.info("Configure API credentials for this system. Simulated in this demo.")
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.text_input("API Base URL", placeholder="https://...", key=f"api_url_{system_name}")
+            with col_b:
+                st.text_input("API Key", type="password", key=f"api_key_{system_name}")
+            st.selectbox("Sync frequency", ["Every 15 minutes", "Every 30 minutes", "Hourly"],
+                         key=f"api_freq2_{system_name}")
+
+
+@st.dialog("Update Data")
+def update_data_dialog():
+    system_name = st.session_state.update_target_system
+    row = next((c for c in get_visible_connectors() if c["system"] == system_name), None)
+    if row is None:
+        st.session_state.show_update_modal = False
+        st.rerun()
+
+    st.caption(
+        f"Transition **{system_name}** between API connection and File upload without "
+        "breaking its existing data associations — the connector's identity (system name, "
+        "owner, category) stays the same; only how it's fed data changes."
+    )
+    method = st.radio("Connection method", ["API connection", "File upload"],
+                       horizontal=True, key="upd_method_radio")
+    _render_connection_method_fields(system_name, row["category"], method)
+
+    if st.button("Save", type="primary", use_container_width=True):
+        st.session_state.connector_overrides[system_name] = {
+            "type": "API" if method == "API connection" else "Static CSV",
+            "status": "Connected" if method == "API connection" else "Uploaded",
+            "last_sync": "just now",
+        }
+        st.session_state.show_update_modal = False
+        st.success(f"**{system_name}** updated.")
+        st.rerun()
+
+
+@st.dialog("Delete Source")
+def delete_source_dialog():
+    system_name = st.session_state.delete_target_system
+    row = next((c for c in get_visible_connectors() if c["system"] == system_name), None)
+    if row is None:
+        st.session_state.show_delete_modal = False
+        st.rerun()
+        return
+
+    n = int(row["records"].replace(",", ""))
+    st.warning(
+        f"Deleting **{system_name}** removes **{n:,} records** from the total-ingested "
+        f"count and summary tiles on the Connect page, and from the Evidence Pack source "
+        f"list on the Prove page. This cannot be undone from within the app."
+    )
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Cancel", use_container_width=True):
+            st.session_state.show_delete_modal = False
+            st.rerun()
+    with c2:
+        if st.button("Yes, delete", type="primary", use_container_width=True):
+            st.session_state.deleted_connector_systems.add(system_name)
+            st.session_state.show_delete_modal = False
+            if "view" in st.query_params:
+                del st.query_params["view"]
+            st.rerun()
+
+
+@st.dialog("Connect New System", width="large")
+def connect_new_system_dialog():
+    visible = get_visible_connectors()
+    existing_systems = sorted({c["system"] for c in visible})
+    existing_owners  = sorted({c["owner"]  for c in visible})
+    NEW_SYSTEM = "+ Add new system…"
+    NEW_OWNER  = "+ Add new owner…"
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        sys_choice = st.selectbox("System Name", existing_systems + [NEW_SYSTEM], key="cnw_system_select")
+        system_name = st.text_input("New system name", key="cnw_system_new") if sys_choice == NEW_SYSTEM else sys_choice
+    with col_b:
+        owner_choice = st.selectbox("Owner", existing_owners + [NEW_OWNER], key="cnw_owner_select")
+        owner_name = st.text_input("New owner / team name", key="cnw_owner_new") if owner_choice == NEW_OWNER else owner_choice
+
+    st.markdown("**Choose source type:**")
+    source_options = ["AI Model Provider", "LLM Observability", "Cloud Monitoring",
+                      "FinOps / Cloud Cost", "Custom Source"]
+    src_cols = st.columns(len(source_options))
+    for i, opt in enumerate(source_options):
+        with src_cols[i]:
+            selected = st.session_state.drawer_source == opt
+            if st.button(opt, key=f"cnw_src_{i}",
+                          type="primary" if selected else "secondary",
+                          use_container_width=True):
+                st.session_state.drawer_source = opt
+                st.session_state.drawer_method = None
+                st.session_state.upload_validated = False
+                st.session_state.mapping_saved    = False
+                st.session_state.norm_done        = False
+                st.rerun()
+
+    if st.session_state.drawer_source and system_name:
+        st.markdown(f"**Source:** `{st.session_state.drawer_source}`")
+
+        st.markdown("**Connection method:**")
+        method = st.radio(
+            "method", ["API connection", "File upload"],
+            label_visibility="collapsed", horizontal=True, key="drawer_method_radio",
+        )
+        st.session_state.drawer_method = method
+
+        if sys_choice == NEW_SYSTEM and method == "File upload":
+            st.caption("New system — no dedicated template exists yet, so here's the Basic Template.")
+
+        _render_connection_method_fields(system_name, st.session_state.drawer_source, method)
+
+        if st.session_state.upload_validated:
+            st.markdown("---")
+            st.markdown("**Map source fields to RECPT schema**")
+
+            mapping_html = (
+                '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                '<thead><tr style="background:#F9F9FB;">'
+                '<th style="padding:7px 10px;text-align:left;">Source field</th>'
+                '<th style="padding:7px 10px;text-align:left;">RECPT field</th>'
+                '<th style="padding:7px 10px;text-align:left;">Status</th>'
+                '</tr></thead><tbody>'
+            )
+            for src_f, trace_f, status in FIELD_MAPPING:
+                color = "#166534" if status == "Mapped" else "#92400e"
+                icon  = "✓" if status == "Mapped" else "↺"
+                mapping_html += (
+                    f'<tr style="border-bottom:1px solid #e5e7eb;">'
+                    f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
+                    f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
+                    f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
+                    '</tr>'
+                )
+            mapping_html += "</tbody></table>"
+            st.markdown(mapping_html, unsafe_allow_html=True)
+
+        cancel_col, save_col, run_col = st.columns([1, 1, 1])
+        with cancel_col:
+            if st.button("Cancel", use_container_width=True):
+                st.session_state.show_connect_modal = False
+                st.rerun()
+        if st.session_state.upload_validated:
+            with save_col:
+                if st.button("Save Mapping", use_container_width=True):
+                    st.session_state.mapping_saved = True
+            with run_col:
+                if st.button("Run Normalization", type="primary", use_container_width=True):
+                    with st.spinner("Normalizing records…"):
+                        if (st.session_state.drawer_source == "AI Model Provider"
+                                and system_name == "Anthropic"
+                                and st.session_state.anthropic_upload_df is not None):
+                            # Real path: re-use the existing Anthropic pipeline unchanged.
+                            finalize_anthropic_calc()
+                            n_records = len(st.session_state.anthropic_upload_calc) \
+                                if st.session_state.anthropic_upload_calc is not None else 0
+                        else:
+                            time.sleep(0.8)
+                            data = st.session_state.custom_connector_data.get(system_name, {})
+                            n_records = len(data.get("ai", [])) + len(data.get("cloud", []))
+                    st.session_state.norm_done = True
+                    if system_name not in existing_systems:
+                        st.session_state.custom_connectors.append({
+                            "system": system_name,
+                            "category": st.session_state.drawer_source,
+                            "type": "API" if method == "API connection" else "Static CSV",
+                            "status": "Connected" if method == "API connection" else "Uploaded",
+                            "last_sync": "just now",
+                            "records": f"{n_records:,}",
+                            "norm_pct": "100%",
+                            "owner": owner_name,
+                            "action": "See More",
+                        })
+                    st.session_state.show_connect_modal = False
+                    st.rerun()
+    else:
+        if st.button("Cancel", use_container_width=True):
+            st.session_state.show_connect_modal = False
+            st.rerun()
+
+
 def render_connector_detail(row):
     st.markdown(
         """
@@ -1828,10 +2252,27 @@ def render_connector_detail(row):
         """,
         unsafe_allow_html=True,
     )
-    with st.container(key="conn_back_link"):
-        if st.button("Back to Data Sources"):
-            del st.query_params["view"]
-            st.rerun()
+    back_col, settings_col = st.columns([6, 1])
+    with back_col:
+        with st.container(key="conn_back_link"):
+            if st.button("Back to Data Sources"):
+                del st.query_params["view"]
+                st.rerun()
+    with settings_col:
+        with st.popover("⚙ Settings", use_container_width=True):
+            if st.button("Update Data", use_container_width=True, key="settings_update_btn"):
+                st.session_state.update_target_system = row["system"]
+                st.session_state.show_update_modal = True
+                st.rerun()
+            if st.button("Delete Source", use_container_width=True, key="settings_delete_btn"):
+                st.session_state.delete_target_system = row["system"]
+                st.session_state.show_delete_modal = True
+                st.rerun()
+
+    if st.session_state.show_update_modal:
+        update_data_dialog()
+    if st.session_state.show_delete_modal:
+        delete_source_dialog()
 
     st.markdown(f"## {row['system']} — Usage Detail")
     st.caption(CATEGORY_TOOLTIPS.get(row["category"], ""))
@@ -1843,6 +2284,8 @@ def render_connector_detail(row):
         _render_cloudability_detail()
     elif system == "OpenAI":
         _render_openai_detail()
+    elif system in {c["system"] for c in st.session_state.custom_connectors}:
+        _render_custom_connector_detail(row)
     else:
         _render_fabricated_detail(row)
 
@@ -1964,10 +2407,27 @@ if page == "Connect":
             """,
             unsafe_allow_html=True,
         )
-        with st.container(key="anthropic_back_link"):
-            if st.button("Back to Data Sources"):
-                del st.query_params["view"]
-                st.rerun()
+        _anthropic_back_col, _anthropic_settings_col = st.columns([6, 1])
+        with _anthropic_back_col:
+            with st.container(key="anthropic_back_link"):
+                if st.button("Back to Data Sources"):
+                    del st.query_params["view"]
+                    st.rerun()
+        with _anthropic_settings_col:
+            with st.popover("⚙ Settings", use_container_width=True):
+                if st.button("Update Data", use_container_width=True, key="anthropic_settings_update_btn"):
+                    st.session_state.update_target_system = "Anthropic"
+                    st.session_state.show_update_modal = True
+                    st.rerun()
+                if st.button("Delete Source", use_container_width=True, key="anthropic_settings_delete_btn"):
+                    st.session_state.delete_target_system = "Anthropic"
+                    st.session_state.show_delete_modal = True
+                    st.rerun()
+
+        if st.session_state.show_update_modal:
+            update_data_dialog()
+        if st.session_state.show_delete_modal:
+            delete_source_dialog()
 
         st.markdown("## Anthropic — Usage Detail")
         st.caption(
@@ -2080,7 +2540,7 @@ if page == "Connect":
         st.stop()
     elif _view and _view.endswith("_detail"):
         _slug = _view[: -len("_detail")]
-        _row = next((c for c in CONNECTOR_STATE if _connector_slug(c["system"]) == _slug), None)
+        _row = next((c for c in get_visible_connectors() if _connector_slug(c["system"]) == _slug), None)
         if _row is not None:
             render_connector_detail(_row)
         st.stop()
@@ -2099,17 +2559,18 @@ if page == "Connect":
     )
 
     # ── Summary stats ──
-    healthy  = sum(1 for c in CONNECTOR_STATE if c["status"] in ("Connected", "Uploaded", "Active"))
-    warnings = sum(1 for c in CONNECTOR_STATE if c["status"] == "Warning")
-    api_live = sum(1 for c in CONNECTOR_STATE if c["type"] == "API")
-    static_f = sum(1 for c in CONNECTOR_STATE if "Static" in c["type"])
+    _visible_connectors = get_visible_connectors()
+    healthy  = sum(1 for c in _visible_connectors if c["status"] in ("Connected", "Uploaded", "Active"))
+    warnings = sum(1 for c in _visible_connectors if c["status"] == "Warning")
+    api_live = sum(1 for c in _visible_connectors if c["type"] == "API")
+    static_f = sum(1 for c in _visible_connectors if "Static" in c["type"])
     total_records = sum(
-        int(c["records"].replace(",", "")) for c in CONNECTOR_STATE
+        int(c["records"].replace(",", "")) for c in _visible_connectors
     )
 
     _summary_cards_html = []
     for num, label, icon, variant in [
-        (len(CONNECTOR_STATE), "Connected systems", "layers",         "neutral"),
+        (len(_visible_connectors), "Connected systems", "layers",     "neutral"),
         (api_live,             "Live API",          "zap",            "neutral"),
         (static_f,             "Static uploads",    "upload",         "neutral"),
         (healthy,              "Healthy",           "check-circle",   "success"),
@@ -2141,12 +2602,13 @@ if page == "Connect":
     col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 1])
     with col_btn1:
         if st.button("＋ Connect New System", type="primary", use_container_width=True):
-            st.session_state.show_drawer   = not st.session_state.show_drawer
+            st.session_state.show_connect_modal = True
             st.session_state.drawer_source = None
             st.session_state.drawer_method = None
             st.session_state.upload_validated = False
             st.session_state.mapping_saved    = False
             st.session_state.norm_done        = False
+            st.rerun()
     with col_btn2:
         st.button("Run Sync", use_container_width=True, disabled=True,
                   help="In production RECPT: triggers a live re-sync of all API-connected sources. Simulated in this demo.")
@@ -2269,7 +2731,7 @@ if page == "Connect":
                     unsafe_allow_html=True,
                 )
 
-        for i, c in enumerate(CONNECTOR_STATE):
+        for i, c in enumerate(_visible_connectors):
             badge = status_badge(c["status"])
             norm_color = "#166534" if int(c["norm_pct"].replace("%", "")) >= 90 else "#92400e"
             is_anthropic = c["system"] == "Anthropic"
@@ -2334,221 +2796,9 @@ if page == "Connect":
                             st.query_params["view"] = f"{_connector_slug(c['system'])}_detail"
                             st.rerun()
 
-    # ── Connect New System Drawer ──
-    if st.session_state.show_drawer:
-        st.markdown('<div class="drawer">', unsafe_allow_html=True)
-        st.markdown('<div class="drawer-title">Connect New System</div>', unsafe_allow_html=True)
-
-        # Step 1: Source type
-        st.markdown("**Choose source type:**")
-        source_options = ["AI Model Provider", "LLM Observability", "Cloud Monitoring",
-                          "FinOps / Cloud Cost", "Custom Source"]
-        src_cols = st.columns(len(source_options))
-        for i, opt in enumerate(source_options):
-            with src_cols[i]:
-                selected = st.session_state.drawer_source == opt
-                if st.button(opt, key=f"src_{i}",
-                              type="primary" if selected else "secondary",
-                              use_container_width=True):
-                    st.session_state.drawer_source = opt
-                    st.session_state.drawer_method = None
-                    st.session_state.upload_validated = False
-                    st.session_state.mapping_saved    = False
-                    st.session_state.norm_done        = False
-                    st.rerun()
-
-        if st.session_state.drawer_source:
-            st.markdown(f"**Source:** `{st.session_state.drawer_source}`")
-
-            # Step 2: Connection method
-            st.markdown("**Connection method:**")
-            method = st.radio(
-                "method",
-                ["API connection", "File upload", "OpenTelemetry collector", "Webhook"],
-                label_visibility="collapsed",
-                horizontal=True,
-                key="drawer_method_radio",
-            )
-            st.session_state.drawer_method = method
-
-            # Step 3: Source-specific form
-            if method == "File upload":
-                src = st.session_state.drawer_source
-
-                if src == "FinOps / Cloud Cost":
-                    st.markdown("**System:** Cloudability Export")
-                    st.markdown(
-                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
-                        'Expected fields: account · service · region · cost_usd · usage_kwh · '
-                        'timestamp · tags_project · tags_workspace · business_unit · environment'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
-                    sample_path = DATA_DIR / "finops_cloud_export.csv"
-                    if sample_path.exists():
-                        with open(sample_path, "rb") as f_sample:
-                            st.download_button(
-                                "Download sample file",
-                                data=f_sample,
-                                file_name="finops_cloud_export_sample.csv",
-                                mime="text/csv",
-                                help="Download a sample Cloudability export to see the expected column format",
-                            )
-                    refresh = st.radio("Refresh cadence", ["One-time upload", "Monthly upload", "Weekly upload"],
-                                       index=1, horizontal=True, key="refresh_cadence")
-                    uploaded = st.file_uploader("Upload CSV export", type=["csv"], key="finops_upload")
-
-                    if uploaded is not None:
-                        df_upload = pd.read_csv(uploaded)
-                        n_total   = len(df_upload)
-                        n_no_region    = int(df_upload["region"].isna().sum()) if "region" in df_upload.columns else 0
-                        n_no_workspace = int(df_upload["tags_workspace"].isna().sum()) if "tags_workspace" in df_upload.columns else 0
-                        st.session_state.upload_validated  = True
-                        st.session_state.uploaded_file_name = uploaded.name
-
-                        st.success(
-                            f"**File validated.** {n_total:,} records found.\n\n"
-                            f"{n_no_region} records missing `region`.\n\n"
-                            f"{n_no_workspace} records missing `tags_workspace`.\n\n"
-                            f"Proceed to field mapping?"
-                        )
-
-                elif src == "AI Model Provider":
-                    st.markdown("**System:** AI/Works Control Plane")
-                    st.markdown(
-                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
-                        'Drop any number of Anthropic usage files at once — TRACE\'s own '
-                        'simplified sample schema, and/or any mix of real Console export '
-                        'monthly <b>Cost reports</b> (identified by a <code>token_type</code> '
-                        'column) and <b>Token-usage reports</b> (identified by a '
-                        '<code>model_version</code> column), covering any date range. '
-                        'Each file is classified by its columns and combined automatically.'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
-                    sample_path = DATA_DIR / "anthropic_console_export_sample.csv"
-                    if sample_path.exists():
-                        with open(sample_path, "rb") as f_sample:
-                            st.download_button(
-                                "Download sample file",
-                                data=f_sample,
-                                file_name="anthropic_console_export_sample.csv",
-                                mime="text/csv",
-                                help="Download a sample Anthropic Console/Admin-API-shaped export to see the expected column format",
-                            )
-                    region_choice = anthropic_region_selectbox(key="anthropic_upload_region_select")
-                    uploaded_files = st.file_uploader(
-                        "Upload Anthropic usage CSV(s)",
-                        type=["csv"], accept_multiple_files=True, key="anthropic_bulk_upload",
-                    )
-
-                    if uploaded_files:
-                        _sig = tuple((f.name, f.size) for f in uploaded_files)
-                        if _sig != st.session_state.get("anthropic_drawer_last_sig"):
-                            st.session_state.anthropic_drawer_last_sig = _sig
-                            unrecognized = ingest_anthropic_files(uploaded_files)
-                        else:
-                            unrecognized = []
-
-                        st.session_state.anthropic_region_choice = region_choice
-                        stats = recompute_anthropic_upload(region_choice)
-                        st.session_state.upload_validated   = stats["n_total"] > 0
-                        st.session_state.uploaded_file_name = f"{len(uploaded_files)} file(s) uploaded"
-
-                        render_anthropic_upload_summary(stats, unrecognized)
-
-                else:
-                    uploaded = st.file_uploader("Upload file", type=["csv", "json"], key="generic_upload")
-                    if uploaded:
-                        st.session_state.upload_validated  = True
-                        st.session_state.uploaded_file_name = uploaded.name
-                        st.success(f"File `{uploaded.name}` uploaded successfully. Proceed to field mapping.")
-
-            elif method == "API connection":
-                src = st.session_state.drawer_source
-                if src == "LLM Observability":
-                    st.markdown("**System:** Langfuse")
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.text_input("Host URL", placeholder="https://cloud.langfuse.com")
-                        st.text_input("Public Key", placeholder="pk-lf-...")
-                    with col_b:
-                        st.text_input("Secret Key", placeholder="sk-lf-...", type="password")
-                        st.text_input("Project ID", placeholder="proj_...")
-                    st.selectbox("Sync frequency", ["Every 15 minutes", "Every 30 minutes", "Hourly"])
-                    st.multiselect("Data to ingest",
-                                   ["Traces", "Token usage", "Cost", "Latency", "Eval scores", "Prompt / response content"],
-                                   default=["Traces", "Token usage", "Cost", "Latency", "Eval scores"])
-                    st.radio("Prompt content storage",
-                             ["Store full prompt/response", "Store metadata only", "Store redacted prompt/response"],
-                             index=1)
-                    st.markdown("""
-<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.7;">
-<b>Store full prompt / response</b> — saves the complete text of every request and response.
-Note: Only use if content is non-sensitive and your data governance policy permits it.<br>
-<b>Store metadata only</b> (default — recommended) — saves token counts, model, latency, cost, and eval scores. No actual text stored.
-All carbon and cost calculations work with metadata only.<br>
-<b>Store redacted prompt / response</b> — saves the text with PII automatically removed (names, account numbers, etc.).
-Requires a redaction filter to be configured.
-</div>""", unsafe_allow_html=True)
-                else:
-                    st.info("Configure API credentials for the selected source.")
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.text_input("API Base URL", placeholder="https://...")
-                    with col_b:
-                        st.text_input("API Key", type="password")
-                    st.selectbox("Sync frequency", ["Every 15 minutes", "Every 30 minutes", "Hourly"])
-
-            # Step 4: Field mapping (shown after upload)
-            if st.session_state.upload_validated:
-                st.markdown("---")
-                st.markdown("**Map source fields to RECPT schema**")
-
-                mapping_html = (
-                    '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-                    '<thead><tr style="background:#F9F9FB;">'
-                    '<th style="padding:7px 10px;text-align:left;">Source field</th>'
-                    '<th style="padding:7px 10px;text-align:left;">RECPT field</th>'
-                    '<th style="padding:7px 10px;text-align:left;">Status</th>'
-                    '</tr></thead><tbody>'
-                )
-                for src_f, trace_f, status in FIELD_MAPPING:
-                    color = "#166534" if status == "Mapped" else "#92400e"
-                    icon  = "✓" if status == "Mapped" else "↺"
-                    mapping_html += (
-                        f'<tr style="border-bottom:1px solid #e5e7eb;">'
-                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
-                        f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
-                        f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
-                        '</tr>'
-                    )
-                mapping_html += "</tbody></table>"
-                st.markdown(mapping_html, unsafe_allow_html=True)
-
-                cm1, cm2 = st.columns([1, 1])
-                with cm1:
-                    if st.button("Save Mapping", use_container_width=True):
-                        st.session_state.mapping_saved = True
-                with cm2:
-                    if st.button("Run Normalization", type="primary", use_container_width=True):
-                        with st.spinner("Normalizing records…"):
-                            if (st.session_state.drawer_source == "AI Model Provider"
-                                    and st.session_state.anthropic_upload_df is not None):
-                                # Real path: actually estimate energy/carbon/water from the
-                                # uploaded usage rows via calc_ai_named(), preferring the
-                                # file's own billed cost over the coefficient-estimated one
-                                # wherever it's present.
-                                finalize_anthropic_calc()
-                            else:
-                                # No real normalization logic exists yet for other source
-                                # types (FinOps, Langfuse, etc.) — simulated, as before.
-                                time.sleep(0.8)
-                        st.session_state.norm_done = True
-                        st.session_state.show_drawer = False
-                        st.rerun()
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    # ── Connect New System modal ──
+    if st.session_state.show_connect_modal:
+        connect_new_system_dialog()
 
     # ── Normalization success ──
     if st.session_state.norm_done:
@@ -3165,7 +3415,7 @@ elif page == "Prove":
                 unsafe_allow_html=True,
             )
             sources_html = ""
-            for c in CONNECTOR_STATE:
+            for c in get_visible_connectors():
                 _dot_color = "#10b981" if c["status"] in ("Connected", "Active") else ("#3b82f6" if c["status"] == "Uploaded" else "#f59e0b")
                 icon = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{_dot_color};flex-shrink:0;margin-right:4px;"></span>'
                 norm_tip = (
