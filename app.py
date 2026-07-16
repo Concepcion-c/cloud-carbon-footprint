@@ -1,6 +1,7 @@
 """RECPT — AI GreenOps Dashboard v3.  Run: streamlit run app.py"""
 
 import json
+import random
 import time
 from pathlib import Path
 
@@ -811,6 +812,17 @@ def load_data():
 
 
 @st.cache_data
+def load_finops_export():
+    return pd.read_csv(DATA_DIR / "finops_cloud_export.csv", parse_dates=["timestamp"])
+
+
+# finops_cloud_export.csv uses real AWS region codes; grid_intensity.csv uses
+# abstract region names. calc_cloud() merges on "region", so without this
+# mapping every row would silently get NaN carbon/water.
+_AWS_REGION_MAP = {"us-east-1": "us-east", "us-west-2": "us-west"}
+
+
+@st.cache_data
 def load_trace_data():
     with open(DATA_DIR / "llm_trace_export.json") as fh:
         data = json.load(fh)
@@ -847,6 +859,90 @@ def flatten_aiworks_records(aiworks_data):
 @st.cache_data
 def load_named_coefficients():
     return pd.read_csv(DATA_DIR / "model_coefficients_named.csv")
+
+
+# Fixed per-connector seeds (not a hash of the name) — simplest possible
+# determinism, no process-randomization pitfall from builtin hash().
+_FABRICATED_SEEDS = {
+    "Google Gemini / Vertex AI": 101,
+    "AWS Bedrock": 102,
+    "Azure OpenAI Service": 103,
+    "Datadog APM": 104,
+    "Google Cloud Monitoring": 105,
+}
+_FABRICATED_MODEL_NAMES = {
+    "Google Gemini / Vertex AI": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash"],
+    "AWS Bedrock": ["anthropic.claude-3-sonnet", "meta.llama3-70b", "amazon.titan-text-express"],
+    "Azure OpenAI Service": ["gpt-4o", "gpt-4o-mini", "gpt-4.1"],
+}
+_FABRICATED_REGIONS = ["us-east-1", "us-west-2", "eu-west-1", "ap-south-1"]
+
+
+@st.cache_data
+def fabricate_connector_records(system, category, n_records):
+    """Deterministic, plausible-looking per-record data for connectors with no
+    real backing sample data in this repo (see _FABRICATED_SEEDS). Cached and
+    seeded per-connector so numbers stay stable across reruns — this is
+    clearly-labeled demo data, not a real ingestion pipeline."""
+    rng = random.Random(_FABRICATED_SEEDS[system])
+    rows = []
+    if category == "AI Model Provider":
+        models = _FABRICATED_MODEL_NAMES.get(system, ["large", "mid", "small"])
+        for _ in range(n_records):
+            model = rng.choice(models)
+            region = rng.choice(_FABRICATED_REGIONS)
+            input_tokens = rng.randint(200, 8000)
+            output_tokens = rng.randint(100, 3000)
+            total_tokens = input_tokens + output_tokens
+            kwh_per_1m = MODEL_KWH_PER_1M.get(model, 0.6)
+            kwh = (total_tokens / 1e6) * kwh_per_1m
+            rows.append({
+                "model_name": model,
+                "region": region,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost_usd": round((total_tokens / 1e6) * rng.uniform(3, 15), 4),
+                "energy_kwh": round(kwh, 4),
+                "carbon_kg": round(kwh * REGION_CARBON_KG.get(region, 0.38), 4),
+                "water_liters": round(kwh * REGION_WUE.get(region, 1.0), 3),
+                "latency_ms": rng.randint(300, 4000),
+                "timestamp": f"2026-06-{rng.randint(1, 30):02d}",
+            })
+    elif category == "Observability":
+        hosts = [f"ip-10-0-{rng.randint(1, 4)}-{n}" for n in range(1, 6)]
+        services = ["api-gateway", "auth-service", "payments-service", "ledger-worker"]
+        for _ in range(n_records):
+            region = rng.choice(_FABRICATED_REGIONS)
+            latency_ms = rng.randint(20, 900)
+            compute_kwh = (latency_ms / 1000) * rng.uniform(0.00005, 0.0002)
+            rows.append({
+                "service_name": rng.choice(services),
+                "host": rng.choice(hosts),
+                "region": region,
+                "cpu_pct": round(rng.uniform(8, 92), 1),
+                "memory_pct": round(rng.uniform(15, 88), 1),
+                "latency_ms": latency_ms,
+                "error_rate_pct": round(rng.uniform(0, 4), 2),
+                "request_count": rng.randint(50, 5000),
+                "carbon_kg": round(compute_kwh * REGION_CARBON_KG.get(region, 0.38), 5),
+                "timestamp": f"2026-06-{rng.randint(1, 30):02d}",
+            })
+    elif category == "Cloud monitoring":
+        services = ["Compute Engine", "Cloud Storage", "BigQuery", "Cloud Run", "Pub/Sub"]
+        for _ in range(n_records):
+            region = rng.choice(_FABRICATED_REGIONS)
+            usage_kwh = round(rng.uniform(0.5, 40), 3)
+            rows.append({
+                "resource_id": f"res-{rng.randint(10000, 99999)}",
+                "service": rng.choice(services),
+                "region": region,
+                "cpu_utilization_pct": round(rng.uniform(5, 95), 1),
+                "usage_kwh": usage_kwh,
+                "cost_usd": round(usage_kwh * rng.uniform(0.08, 0.22), 2),
+                "carbon_kg": round(usage_kwh * REGION_CARBON_KG.get(region, 0.38), 4),
+                "timestamp": f"2026-06-{rng.randint(1, 30):02d}",
+            })
+    return pd.DataFrame(rows)
 
 
 @st.cache_data
@@ -1346,6 +1442,11 @@ CONNECTOR_STATE = [
 ]
 CONNECTOR_STATE.sort(key=lambda c: c["system"].lower())
 
+
+def _connector_slug(system):
+    return system.lower().replace(" / ", "_").replace(" ", "_").replace("/", "_")
+
+
 AVAILABLE_CONNECTORS = [
     "LangSmith", "New Relic", "CloudHealth", "Flexera",
     "Vantage", "Finout", "OpenTelemetry Collector", "LiteLLM Gateway", "Webhooks",
@@ -1395,6 +1496,7 @@ llm_raw, cloud_raw, coeffs, grid, recs, semgrep_results = load_data()
 trace_data     = load_trace_data()
 aiworks_data   = load_aiworks_data()
 coeffs_named   = load_named_coefficients()
+finops_export_df = load_finops_export()
 code_findings  = load_code_findings()
 
 ai_base    = calc_ai(llm_raw, coeffs, grid)
@@ -1432,12 +1534,11 @@ if st.session_state.anthropic_upload_calc is not None:
     _anthropic_row["status"]    = "Uploaded"
     _anthropic_row["type"]      = "Static CSV"
     _anthropic_row["last_sync"] = st.session_state.uploaded_file_name
-    _anthropic_row["action"]    = "Replace File"
 else:
     _anthropic_row["status"]    = "Connected"
     _anthropic_row["type"]      = "API"
     _anthropic_row["last_sync"] = "Bundled sample"
-    _anthropic_row["action"]    = "See More"
+_anthropic_row["action"] = "See More"
 
 base_ai_cost      = ai_base["ai_cost_usd"].sum()
 base_ai_carbon    = ai_base["ai_carbon_kg"].sum()
@@ -1513,6 +1614,237 @@ def render_trace_graph(spans):
     arrow = '<div class="trace-arrow">→</div>'
     joined = arrow.join(boxes)
     return f'<div class="trace-wrap">{joined}</div>'
+
+
+def _render_langfuse_detail():
+    traces = trace_data["traces"]
+    all_spans = [dict(span, workflow_name=t["workflow_name"]) for t in traces for span in t["spans"]]
+    spans_df = pd.DataFrame(all_spans)
+    spans_df["total_tokens"] = spans_df["input_tokens"] + spans_df["output_tokens"]
+
+    st.info(
+        "**Real data**, shaped like a Langfuse trace export (`llm_trace_export.json`). "
+        "Cost and tokens are as reported; energy/carbon/water are estimated the same way "
+        "as the Observe page's Agent Traces view (fallback rate tables for unmatched models)."
+    )
+
+    st.markdown('<div class="sh">Totals</div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: kpi("Traces", f"{len(traces):,}")
+    with c2: kpi("Spans", f"{len(spans_df):,}")
+    with c3: kpi("Cost", f"${spans_df['cost_usd'].sum():,.2f}")
+    with c4: kpi("Carbon", f"{spans_df['co2e_kg'].sum():,.3f} kg CO₂e")
+    with c5: kpi("Tokens", f"{spans_df['total_tokens'].sum()/1e6:.2f}M")
+
+    st.markdown('<div class="sh">By Workflow</div>', unsafe_allow_html=True)
+    by_workflow = (spans_df
+                   .groupby("workflow_name")
+                   .agg(spans=("agent_name", "count"),
+                        cost_usd=("cost_usd", "sum"),
+                        tokens=("total_tokens", "sum"),
+                        avg_eval_score=("eval_score", "mean"))
+                   .reset_index()
+                   .sort_values("cost_usd", ascending=False))
+    by_workflow.columns = ["Workflow", "Spans", "Cost (USD)", "Tokens", "Avg Eval Score"]
+    st.dataframe(by_workflow, use_container_width=True, hide_index=True)
+
+    st.markdown('<div class="sh">Per-Span Detail</div>', unsafe_allow_html=True)
+    detail_cols = ["workflow_name", "agent_name", "model_provider", "model_name", "region",
+                   "input_tokens", "output_tokens", "cost_usd", "latency_ms", "eval_score",
+                   "retry_count", "accepted_output", "timestamp"]
+    detail_cols = [c for c in detail_cols if c in spans_df.columns]
+    st.dataframe(spans_df[detail_cols], use_container_width=True, hide_index=True)
+
+
+def _render_cloudability_detail():
+    df = finops_export_df.copy()
+    df["region"] = df["region"].map(_AWS_REGION_MAP).fillna(df["region"])
+    df = calc_cloud(df, grid)
+
+    st.info(
+        "**Real data** — `finops_cloud_export.csv`, real AWS service-level cost and usage. "
+        "Carbon/water are computed the same way as the rest of RECPT's cloud figures "
+        "(usage kWh × regional grid intensity)."
+    )
+
+    st.markdown('<div class="sh">Totals</div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: kpi("Records", f"{len(df):,}")
+    with c2: kpi("Cost", f"${df['cost_usd'].sum():,.2f}")
+    with c3: kpi("Usage", f"{df['usage_kwh'].sum():,.0f} kWh")
+    with c4: kpi("Services", f"{df['service'].nunique()}")
+    with c5: kpi("Accounts", f"{df['account'].nunique()}")
+
+    st.markdown('<div class="sh">By Service</div>', unsafe_allow_html=True)
+    by_service = (df.groupby("service")
+                  .agg(cost_usd=("cost_usd", "sum"),
+                       usage_kwh=("usage_kwh", "sum"),
+                       records=("cost_usd", "count"))
+                  .reset_index()
+                  .sort_values("cost_usd", ascending=False))
+    by_service.columns = ["Service", "Cost (USD)", "Usage (kWh)", "Records"]
+    st.dataframe(by_service, use_container_width=True, hide_index=True)
+
+    st.markdown('<div class="sh">Per-Record Detail</div>', unsafe_allow_html=True)
+    detail_cols = ["account", "service", "region", "usage_type", "cost_usd", "usage_kwh",
+                   "timestamp", "tags_project", "tags_workspace", "business_unit",
+                   "environment", "cloud_carbon_kg", "cloud_water_liters"]
+    detail_cols = [c for c in detail_cols if c in df.columns]
+    st.dataframe(df[detail_cols], use_container_width=True, hide_index=True)
+
+
+def _render_openai_detail():
+    df = flatten_aiworks_records(aiworks_data)
+    df = df[df["provider"] == "openai"].copy()
+
+    st.info(
+        "**Cost and token counts are real** (billed cost from the AI/Works export). "
+        "**Energy, carbon, and water are not available** for this connector — RECPT's "
+        "coefficient table (`model_coefficients_named.csv`) only covers Anthropic models "
+        "today, so OpenAI usage isn't estimated rather than shown with a fabricated number."
+    )
+
+    if df.empty:
+        st.warning("No OpenAI records found in this data source.")
+        return
+
+    total_tokens = df["input_tokens"].sum() + df["output_tokens"].sum()
+
+    st.markdown('<div class="sh">Totals</div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: kpi("Records", f"{len(df):,}")
+    with c2: kpi("Tokens", f"{total_tokens/1e6:.3f}M")
+    with c3: kpi("Cost", f"${df['total_cost_usd'].sum():,.2f}")
+    with c4: kpi("Carbon", "N/A", sub="no coefficient data for gpt-4.1")
+    with c5: kpi("Energy", "N/A", sub="no coefficient data for gpt-4.1")
+
+    st.markdown('<div class="sh">Per-Record Detail</div>', unsafe_allow_html=True)
+    detail_cols = [c for c in ["model_name", "region", "input_tokens", "output_tokens",
+                                "total_cost_usd", "timestamp"] if c in df.columns]
+    display_df = df[detail_cols].copy()
+    display_df["energy_kwh"] = "—"
+    display_df["carbon_kg"] = "—"
+    display_df["water_liters"] = "—"
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+
+def _render_fabricated_detail(row):
+    n_records = int(row["records"].replace(",", ""))
+    df = fabricate_connector_records(row["system"], row["category"], n_records)
+
+    st.info(
+        "**Demo data** — this connector isn't backed by real ingested records in this "
+        "prototype. The table below is illustrative, deterministically generated to match "
+        "the row count already shown for this connector."
+    )
+
+    if df.empty:
+        st.warning("No demo data available for this connector category.")
+        return
+
+    st.markdown('<div class="sh">Totals</div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1:
+        kpi("Records", f"{len(df):,}")
+
+    if row["category"] == "AI Model Provider":
+        with c2: kpi("Cost", f"${df['cost_usd'].sum():,.2f}")
+        with c3: kpi("Carbon", f"{df['carbon_kg'].sum():,.3f} kg CO₂e")
+        with c4: kpi("Energy", f"{df['energy_kwh'].sum():,.3f} kWh")
+        with c5: kpi("Tokens", f"{(df['input_tokens'].sum() + df['output_tokens'].sum())/1e6:.2f}M")
+        group_col, group_label = "model_name", "Model"
+    elif row["category"] == "Observability":
+        with c2: kpi("Avg Latency", f"{df['latency_ms'].mean():,.0f} ms")
+        with c3: kpi("Avg CPU", f"{df['cpu_pct'].mean():,.1f}%")
+        with c4: kpi("Requests", f"{df['request_count'].sum():,}")
+        with c5: kpi("Carbon", f"{df['carbon_kg'].sum():,.4f} kg CO₂e")
+        group_col, group_label = "service_name", "Service"
+    else:
+        with c2: kpi("Usage", f"{df['usage_kwh'].sum():,.1f} kWh")
+        with c3: kpi("Cost", f"${df['cost_usd'].sum():,.2f}")
+        with c4: kpi("Carbon", f"{df['carbon_kg'].sum():,.3f} kg CO₂e")
+        with c5: kpi("Avg CPU", f"{df['cpu_utilization_pct'].mean():,.1f}%")
+        group_col, group_label = "service", "Service"
+
+    # Percentage/rate columns must be averaged, not summed — summing cpu_pct
+    # etc. across many rows produces meaningless values like "6618%".
+    _AGG_SPECS = {
+        "AI Model Provider": (
+            {"input_tokens": "sum", "output_tokens": "sum", "cost_usd": "sum",
+             "energy_kwh": "sum", "carbon_kg": "sum", "water_liters": "sum",
+             "latency_ms": "mean"},
+            "cost_usd",
+        ),
+        "Observability": (
+            {"cpu_pct": "mean", "memory_pct": "mean", "latency_ms": "mean",
+             "error_rate_pct": "mean", "request_count": "sum", "carbon_kg": "sum"},
+            "request_count",
+        ),
+        "Cloud monitoring": (
+            {"cpu_utilization_pct": "mean", "usage_kwh": "sum",
+             "cost_usd": "sum", "carbon_kg": "sum"},
+            "cost_usd",
+        ),
+    }
+    st.markdown(f'<div class="sh">By {group_label}</div>', unsafe_allow_html=True)
+    agg_map, sort_col = _AGG_SPECS[row["category"]]
+    agg_map = {c: fn for c, fn in agg_map.items() if c in df.columns}
+    by_group = (df.groupby(group_col).agg(agg_map).round(4).reset_index()
+                .sort_values(sort_col, ascending=False))
+    st.dataframe(by_group, use_container_width=True, hide_index=True)
+
+    st.markdown('<div class="sh">Per-Record Detail</div>', unsafe_allow_html=True)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def render_connector_detail(row):
+    st.markdown(
+        """
+        <style>
+        .st-key-conn_back_link div.stButton > button[data-testid="stBaseButton-secondary"] {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #6366f1 !important;
+            font-weight: 500 !important;
+            padding-left: 22px !important;
+            position: relative;
+        }
+        .st-key-conn_back_link div.stButton > button[data-testid="stBaseButton-secondary"]:hover,
+        .st-key-conn_back_link div.stButton > button[data-testid="stBaseButton-secondary"]:active {
+            background: none !important;
+            color: #6366f1 !important;
+            text-decoration: underline;
+        }
+        .st-key-conn_back_link button::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 16px; height: 16px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>') no-repeat center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.container(key="conn_back_link"):
+        if st.button("Back to Data Sources"):
+            del st.query_params["view"]
+            st.rerun()
+
+    st.markdown(f"## {row['system']} — Usage Detail")
+    st.caption(CATEGORY_TOOLTIPS.get(row["category"], ""))
+
+    system = row["system"]
+    if system == "Langfuse":
+        _render_langfuse_detail()
+    elif system == "Cloudability Export":
+        _render_cloudability_detail()
+    elif system == "OpenAI":
+        _render_openai_detail()
+    else:
+        _render_fabricated_detail(row)
 
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -1600,7 +1932,8 @@ _components.html(
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "Connect":
-    if st.query_params.get("view") == "anthropic_detail":
+    _view = st.query_params.get("view")
+    if _view == "anthropic_detail":
         st.markdown(
             """
             <style>
@@ -1744,6 +2077,12 @@ if page == "Connect":
             detail_cols = [c for c in optional_cols + base_cols if c in aiworks_calc.columns]
             st.dataframe(aiworks_calc[detail_cols], use_container_width=True, hide_index=True)
 
+        st.stop()
+    elif _view and _view.endswith("_detail"):
+        _slug = _view[: -len("_detail")]
+        _row = next((c for c in CONNECTOR_STATE if _connector_slug(c["system"]) == _slug), None)
+        if _row is not None:
+            render_connector_detail(_row)
         st.stop()
 
     st.markdown("## Data Sources")
@@ -1991,7 +2330,9 @@ if page == "Connect":
                             st.query_params["view"] = "anthropic_detail"
                             st.rerun()
                     else:
-                        st.button(c["action"], key=f"conn_action_{i}", disabled=True)
+                        if st.button(c["action"], key=f"conn_action_{i}"):
+                            st.query_params["view"] = f"{_connector_slug(c['system'])}_detail"
+                            st.rerun()
 
     # ── Connect New System Drawer ──
     if st.session_state.show_drawer:
