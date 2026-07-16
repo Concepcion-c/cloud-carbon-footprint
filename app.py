@@ -125,7 +125,7 @@ def _nav_icon_js() -> str:
     // Skip buttons explicitly styled as plain links (e.g. the Anthropic detail nav) —
     // those opt out via a `.st-key-*_link` ancestor container.
     p.document.querySelectorAll('button[data-testid="stBaseButton-secondary"]').forEach(function(btn){{
-      if(btn.closest('.st-key-anthropic_back_link'))return;
+      if(btn.closest('[class*="_back_link"]'))return;
       if(btn.disabled){{
         btn.style.setProperty('border','1px solid #d1d5db','important');
         btn.style.setProperty('color','#9ca3af','important');
