@@ -1,0 +1,13 @@
+date,model,workspace,input_tokens,cache_read_input_tokens,output_tokens,cost_usd
+2026-06-01,claude-sonnet-4-6,platform-team,182000,64000,41000,1.16
+2026-06-01,claude-haiku-4-5,platform-team,540000,120000,98000,0.82
+2026-06-02,claude-sonnet-4-6,platform-team,201000,71000,47000,1.31
+2026-06-02,claude-opus-4-8,research,32000,8000,15000,1.61
+2026-06-03,claude-sonnet-4-6,platform-team,175000,58000,39000,1.11
+2026-06-03,claude-haiku-4-5,support,610000,140000,112000,0.94
+2026-06-04,claude-opus-4-8,research,28000,6000,13000,1.40
+2026-06-04,claude-sonnet-4-6,support,264000,90000,58000,1.66
+2026-06-05,claude-haiku-4-5,platform-team,585000,131000,101000,0.87
+2026-06-05,claude-sonnet-4-6,research,148000,49000,33000,0.94
+2026-06-06,claude-opus-4-8,research,35000,9000,17000,1.80
+2026-06-06,claude-haiku-4-5,support,522000,118000,95000,0.80

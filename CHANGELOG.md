@@ -18,6 +18,36 @@ After any notable decision (scope, architecture, tooling, naming), add an entry 
   elsewhere on the page. _Why: the mixed scope made the −16.1%/−26.5% deltas not match the
   displayed kg values; AI-only-everywhere keeps the table internally consistent._
 
+- **Anthropic real-model-name mapping now has a tier-inference fallback, guaranteeing
+  100% of real uploaded rows match a coefficient row** — previously, any model
+  identifier not in the hand-maintained `ANTHROPIC_REAL_MODEL_MAP` (e.g. a model
+  released after that list was last updated) fell through untranslated and was
+  counted as "unmapped," dragging the displayed normalization % below 100% even
+  though the record still got an estimate. Added `map_anthropic_model_name()`
+  (`app.py`, near `ANTHROPIC_REAL_MODEL_MAP`): exact matches still use the precise
+  lookup; anything else is matched by tier via substring ("opus"/"sonnet"/"haiku" —
+  always present in Anthropic's real naming) to the latest real coefficient row for
+  that tier. Deliberately did not hand-enumerate exact historical/future model IDs
+  to avoid inventing date-slug strings that can't be verified. _Why: user asked why
+  their upload showed only 65% normalized and wanted a guarantee of 100%, not a
+  one-off patch for today's specific file._ Verified live with a synthetic
+  never-before-seen model slug (still containing a tier word) — it correctly folded
+  into the matching tier's real coefficient row rather than just suppressing the
+  unmapped warning.
+
+- **Anthropic detail page's "Add more usage files" now requires an explicit commit
+  button** — previously it silently ingested and committed new files the instant they
+  were selected, with no deliberate confirmation step, which read as "there's no way to
+  actually upload." Now matches the Connect drawer's existing two-step pattern: selecting
+  files only validates/previews; a new "Add these files to the connection" button is what
+  actually commits them (calls `finalize_anthropic_calc()`), with a persistent success
+  message afterward instead of a message that flashed for 1.2s before reloading. Verified
+  live that the commit correctly propagates to the Connect page's Anthropic row and the
+  Prove page's Evidence Pack panel. _Why: user-reported confusion that no upload action
+  existed on that page._ Confirmed with the user that uploaded data remains
+  session-only (not persisted across a browser refresh or app restart) — same as the
+  existing Connect-drawer upload; no storage layer was added.
+
 ## 2026-07-09
 
 - **Renamed the product from TRACE to RECPT** — updated `app.py`, `CLAUDE.md`, and all `docs/`
