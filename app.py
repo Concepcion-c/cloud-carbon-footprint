@@ -2557,7 +2557,9 @@ elif page == "Optimize":
 """
     st.markdown(whatif_html, unsafe_allow_html=True)
 
-    tab_energy_debt, tab_ai_workload = st.tabs(["Energy Debt", "AI Workload"])
+    st.markdown('<div style="height:16px;"></div>', unsafe_allow_html=True)
+
+    tab_ai_workload, tab_energy_debt = st.tabs(["AI Workload", "Energy Debt"])
 
     with tab_energy_debt:
         # ── Energy Debt ──
