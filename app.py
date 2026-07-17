@@ -1546,11 +1546,9 @@ FIELD_MAPPING = [
 # ── Session state ──────────────────────────────────────────────────────────────
 for key, default in [
     ("applied_recs", set()),
-    ("drawer_source", None),
     ("drawer_method", None),
     ("uploaded_file_name", None),
     ("upload_validated", False),
-    ("mapping_saved", False),
     ("norm_done", False),
     ("anthropic_upload_df", None),
     ("anthropic_upload_calc", None),
@@ -1961,7 +1959,7 @@ def _render_connection_method_fields(system_name, category, method):
     modal can share one implementation instead of duplicating the
     Langfuse/generic-API/generic-upload field blocks."""
     if method == "File upload":
-        if system_name == "Cloudability Export" or category == "FinOps / Cloud Cost":
+        if system_name == "Cloudability Export" or category == "FinOps":
             st.markdown("**System:** Cloudability Export")
             st.markdown(
                 '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
@@ -2025,7 +2023,7 @@ def _render_connection_method_fields(system_name, category, method):
                     st.success(f"**File validated.** {len(combined):,} records found.")
 
     elif method == "API connection":
-        if category == "LLM Observability" or system_name == "Langfuse":
+        if category == "LLM observability" or system_name == "Langfuse":
             st.markdown(f"**System:** {system_name}")
             col_a, col_b = st.columns(2)
             with col_a:
@@ -2104,53 +2102,49 @@ def delete_source_dialog():
             st.rerun()
 
 
-@st.dialog("Connect New System", width="large")
+@st.dialog("Connect New System", width="small")
 def connect_new_system_dialog():
     visible = get_visible_connectors()
     existing_systems = sorted({c["system"] for c in visible})
     existing_owners  = sorted({c["owner"]  for c in visible})
+    category_by_system = {c["system"]: c["category"] for c in visible}
     NEW_SYSTEM = "+ Add new system…"
     NEW_OWNER  = "+ Add new owner…"
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        sys_choice = st.selectbox("System Name", existing_systems + [NEW_SYSTEM], key="cnw_system_select")
-        system_name = st.text_input("New system name", key="cnw_system_new") if sys_choice == NEW_SYSTEM else sys_choice
-    with col_b:
-        owner_choice = st.selectbox("Owner", existing_owners + [NEW_OWNER], key="cnw_owner_select")
-        owner_name = st.text_input("New owner / team name", key="cnw_owner_new") if owner_choice == NEW_OWNER else owner_choice
+    owner_choice = st.selectbox(
+        "Owner", existing_owners + [NEW_OWNER],
+        index=None, placeholder="Select an owner…", key="cnw_owner_select",
+    )
+    owner_name = (st.text_input("New owner / team name", key="cnw_owner_new")
+                  if owner_choice == NEW_OWNER else owner_choice)
 
-    st.markdown("**Choose source type:**")
-    source_options = ["AI Model Provider", "LLM Observability", "Cloud Monitoring",
-                      "FinOps / Cloud Cost", "Custom Source"]
-    src_cols = st.columns(len(source_options))
-    for i, opt in enumerate(source_options):
-        with src_cols[i]:
-            selected = st.session_state.drawer_source == opt
-            if st.button(opt, key=f"cnw_src_{i}",
-                          type="primary" if selected else "secondary",
-                          use_container_width=True):
-                st.session_state.drawer_source = opt
-                st.session_state.drawer_method = None
-                st.session_state.upload_validated = False
-                st.session_state.mapping_saved    = False
-                st.session_state.norm_done        = False
-                st.rerun()
+    sys_choice = st.selectbox(
+        "System Name", existing_systems + [NEW_SYSTEM],
+        index=None, placeholder="Select a system…", key="cnw_system_select",
+    )
+    system_name = (st.text_input("New system name", key="cnw_system_new")
+                   if sys_choice == NEW_SYSTEM else sys_choice)
 
-    if st.session_state.drawer_source and system_name:
-        st.markdown(f"**Source:** `{st.session_state.drawer_source}`")
+    if sys_choice == NEW_SYSTEM:
+        category = "Custom Source"
+    elif sys_choice is not None:
+        category = category_by_system.get(sys_choice)
+    else:
+        category = None
+
+    if category and system_name and owner_name:
+        st.markdown(f"**Source:** `{category}`")
 
         st.markdown("**Connection method:**")
         method = st.radio(
             "method", ["API connection", "File upload"],
             label_visibility="collapsed", horizontal=True, key="drawer_method_radio",
         )
-        st.session_state.drawer_method = method
 
         if sys_choice == NEW_SYSTEM and method == "File upload":
             st.caption("New system — no dedicated template exists yet, so here's the Basic Template.")
 
-        _render_connection_method_fields(system_name, st.session_state.drawer_source, method)
+        _render_connection_method_fields(system_name, category, method)
 
         if st.session_state.upload_validated:
             st.markdown("---")
@@ -2177,19 +2171,13 @@ def connect_new_system_dialog():
             mapping_html += "</tbody></table>"
             st.markdown(mapping_html, unsafe_allow_html=True)
 
-        cancel_col, save_col, run_col = st.columns([1, 1, 1])
-        with cancel_col:
-            if st.button("Cancel", use_container_width=True):
-                st.session_state.show_connect_modal = False
-                st.rerun()
-        if st.session_state.upload_validated:
+        show_save = (method == "API connection") or st.session_state.upload_validated
+        if show_save:
+            save_col, _spacer = st.columns([1, 3])
             with save_col:
-                if st.button("Save Mapping", use_container_width=True):
-                    st.session_state.mapping_saved = True
-            with run_col:
-                if st.button("Run Normalization", type="primary", use_container_width=True):
+                if st.button("Save", type="primary", use_container_width=True):
                     with st.spinner("Normalizing records…"):
-                        if (st.session_state.drawer_source == "AI Model Provider"
+                        if (category == "AI Model Provider"
                                 and system_name == "Anthropic"
                                 and st.session_state.anthropic_upload_df is not None):
                             # Real path: re-use the existing Anthropic pipeline unchanged.
@@ -2204,7 +2192,7 @@ def connect_new_system_dialog():
                     if system_name not in existing_systems:
                         st.session_state.custom_connectors.append({
                             "system": system_name,
-                            "category": st.session_state.drawer_source,
+                            "category": category,
                             "type": "API" if method == "API connection" else "Static CSV",
                             "status": "Connected" if method == "API connection" else "Uploaded",
                             "last_sync": "just now",
@@ -2215,10 +2203,6 @@ def connect_new_system_dialog():
                         })
                     st.session_state.show_connect_modal = False
                     st.rerun()
-    else:
-        if st.button("Cancel", use_container_width=True):
-            st.session_state.show_connect_modal = False
-            st.rerun()
 
 
 def render_connector_detail(row):
@@ -2603,10 +2587,8 @@ if page == "Connect":
     with col_btn1:
         if st.button("＋ Connect New System", type="primary", use_container_width=True):
             st.session_state.show_connect_modal = True
-            st.session_state.drawer_source = None
             st.session_state.drawer_method = None
             st.session_state.upload_validated = False
-            st.session_state.mapping_saved    = False
             st.session_state.norm_done        = False
             st.rerun()
     with col_btn2:
