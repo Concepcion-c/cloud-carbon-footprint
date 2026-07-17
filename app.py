@@ -1371,8 +1371,13 @@ def classify_basic_template_upload(df):
         cloud_df = df[types == "cloud"].copy()
     else:
         # No discriminator column — infer from which fields are populated.
-        has_tokens = df.get("input_tokens", pd.Series(dtype=float)).notna()
-        has_kwh    = df.get("usage_kwh", pd.Series(dtype=float)).notna()
+        # Build the mask with df's own index (not pd.Series(dtype=float)'s
+        # default empty index) when a column is absent, so boolean indexing
+        # below never hits "Unalignable boolean Series provided as indexer".
+        has_tokens = (df["input_tokens"].notna() if "input_tokens" in df.columns
+                      else pd.Series(False, index=df.index))
+        has_kwh    = (df["usage_kwh"].notna() if "usage_kwh" in df.columns
+                      else pd.Series(False, index=df.index))
         ai_df    = df[has_tokens].copy()
         cloud_df = df[has_kwh & ~has_tokens].copy()
 
@@ -1384,6 +1389,12 @@ def classify_basic_template_upload(df):
         errors.append(f"AI rows missing required column(s): {', '.join(missing_ai)}")
     if missing_cloud:
         errors.append(f"Cloud rows missing required column(s): {', '.join(missing_cloud)}")
+    if not len(ai_df) and not len(cloud_df) and not errors:
+        errors.append(
+            "Couldn't recognize this file's shape — add a `system_type` column "
+            "(`ai`/`cloud`) or match the Basic Template's columns (model_name, region, "
+            "input_tokens, output_tokens for AI usage; region, usage_kwh for cloud usage)."
+        )
 
     return ai_df, cloud_df, errors
 
