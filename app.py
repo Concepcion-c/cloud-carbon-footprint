@@ -1115,8 +1115,8 @@ ANTHROPIC_REGION_UNKNOWN_LABEL = (
 
 def anthropic_region_selectbox(key):
     """Render the "Assumed inference region" selectbox shared by the Connect
-    drawer's uploader and the Anthropic detail page's "Add more usage files"
-    control. Defaults to ANTHROPIC_REGION_UNKNOWN_LABEL (region=None, which
+    New System and Update Data modals' Anthropic upload branch. Defaults to
+    ANTHROPIC_REGION_UNKNOWN_LABEL (region=None, which
     triggers calc_ai_named()'s existing documented-default fallback) rather
     than an arbitrary real region — a specific region is an opt-in override
     for users who actually know their traffic is pinned to one, not the
@@ -1160,8 +1160,8 @@ def classify_anthropic_export_file(df):
 def ingest_anthropic_files(uploaded_files):
     """Read and classify each newly uploaded file, appending it to the
     matching session-state accumulation list (cost/tokens/simplified) so
-    repeated uploads — from the Connect drawer or the Anthropic detail page's
-    "Add more usage files" control — add to what's already there instead of
+    repeated uploads — from the Connect New System or Update Data modal's
+    Anthropic upload branch — add to what's already there instead of
     replacing it. Returns the list of filenames that matched no recognized
     shape."""
     unrecognized = []
@@ -1244,10 +1244,9 @@ def recompute_anthropic_upload(region):
 
 def render_anthropic_upload_summary(stats, unrecognized, cta="Proceed to field mapping?"):
     """Render the validation summary/warnings for an Anthropic upload from
-    recompute_anthropic_upload()'s stats dict — shared by the Connect
-    drawer's uploader and the Anthropic detail page's "Add more usage files"
-    control, so both present results the same way. `cta` differs between the
-    two callers since each has a different next step to point at."""
+    recompute_anthropic_upload()'s stats dict — used by the Connect New
+    System and Update Data modals' Anthropic upload branch so both present
+    results the same way."""
     for err in stats["errors"]:
         st.error(f"⚠ {err}")
     if stats["cost_only_no_tokens"]:
@@ -1280,10 +1279,9 @@ def finalize_anthropic_calc():
     """Run calc_ai_named() on the current st.session_state.anthropic_upload_df
     and store the result as anthropic_upload_calc — the actual carbon/energy/
     cost frame the Connect/Observe/Prove pages read from (aiworks_calc). Shared
-    by the Connect drawer's "Run Normalization" button and the Anthropic
-    detail page's "Add more usage files" control, since both need to go from
-    "raw normalized upload" to "the frame the rest of the app displays." A
-    no-op if nothing has been uploaded yet."""
+    by the Connect New System and Update Data modals' Save buttons, since
+    both need to go from "raw normalized upload" to "the frame the rest of
+    the app displays." A no-op if nothing has been uploaded yet."""
     if st.session_state.anthropic_upload_df is None:
         return
     normalized = calc_ai_named(st.session_state.anthropic_upload_df, coeffs_named)
@@ -1568,9 +1566,6 @@ for key, default in [
     ("anthropic_raw_tokens_frames", []),
     ("anthropic_raw_simplified_frames", []),
     ("anthropic_region_choice", None),
-    ("anthropic_detail_stats", None),
-    ("anthropic_detail_unrecognized", []),
-    ("anthropic_detail_files_committed", False),
     ("custom_connectors", []),
     ("custom_connector_data", {}),
     ("deleted_connector_systems", set()),
@@ -2126,6 +2121,12 @@ def update_data_dialog():
     _render_connection_method_fields(system_name, row["category"], method)
 
     if st.button("Save", type="primary", use_container_width=True):
+        if (row["category"] == "AI Model Provider" and system_name == "Anthropic"
+                and st.session_state.anthropic_upload_df is not None):
+            # Real path: same as Connect New System's Save — actually
+            # recompute energy/carbon/water from the uploaded rows, not
+            # just cosmetically flip the connector's type/status.
+            finalize_anthropic_calc()
         st.session_state.connector_overrides[system_name] = {
             "type": "API" if method == "API connection" else "Static CSV",
             "status": "Connected" if method == "API connection" else "Uploaded",
@@ -2489,65 +2490,6 @@ if page == "Connect":
             "coefficients (Medium confidence for Claude Sonnet, extrapolated for "
             "Haiku/Opus — see `docs/notebooklm-wiki/06-calculations-and-methodology.md`)."
         )
-
-        with st.expander("Add more usage files"):
-            st.markdown(
-                '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
-                'Updating this connection — e.g. adding next month\'s exports? Drop more '
-                'files here; they\'re added to what\'s already connected, not a replacement '
-                'for it. Same rules as the Connect page: any mix of simplified-schema, real '
-                'Cost report, and real Token-usage report files, classified automatically.'
-                '</div>',
-                unsafe_allow_html=True,
-            )
-            detail_region_choice = anthropic_region_selectbox(key="anthropic_detail_region_select")
-            detail_uploaded_files = st.file_uploader(
-                "Upload more Anthropic usage CSV(s)",
-                type=["csv"], accept_multiple_files=True, key="anthropic_detail_upload",
-            )
-            if detail_uploaded_files:
-                _detail_sig = tuple((f.name, f.size) for f in detail_uploaded_files)
-                if _detail_sig != st.session_state.get("anthropic_detail_last_sig"):
-                    # New file selection: validate/preview only — nothing is
-                    # committed to the connection until the button below is
-                    # clicked, matching the Connect drawer's own two-step
-                    # "validate, then Run Normalization" pattern.
-                    st.session_state.anthropic_detail_last_sig = _detail_sig
-                    st.session_state.anthropic_detail_files_committed = False
-                    unrecognized = ingest_anthropic_files(detail_uploaded_files)
-                    st.session_state.anthropic_detail_unrecognized = unrecognized
-                    st.session_state.anthropic_region_choice = detail_region_choice
-                    st.session_state.anthropic_detail_stats = recompute_anthropic_upload(detail_region_choice)
-
-                if st.session_state.anthropic_detail_stats is not None:
-                    render_anthropic_upload_summary(
-                        st.session_state.anthropic_detail_stats,
-                        st.session_state.anthropic_detail_unrecognized,
-                        cta='Click "Add these files to the connection" below to commit them.',
-                    )
-
-                if st.session_state.anthropic_detail_files_committed:
-                    st.success(
-                        "✓ Added to this connection. Totals below, and the Connect and "
-                        "Prove pages, now reflect these files."
-                    )
-                elif st.button(
-                    "Add these files to the connection",
-                    type="primary",
-                    key="anthropic_detail_commit_btn",
-                ):
-                    st.session_state.anthropic_region_choice = detail_region_choice
-                    recompute_anthropic_upload(detail_region_choice)
-                    finalize_anthropic_calc()
-                    st.session_state.uploaded_file_name = "Multiple uploaded files"
-                    st.session_state.anthropic_detail_files_committed = True
-                    # The sidebar's own nav JS rewrites the browser's visible URL to
-                    # just "?page=Connect" on every render (a pre-existing side effect
-                    # unrelated to this feature), which would otherwise silently drop
-                    # "view" on this rerun and bounce the user back to the plain
-                    # Connect page instead of staying on this detail view.
-                    st.query_params["view"] = "anthropic_detail"
-                    st.rerun()
 
         if aiworks_calc.empty:
             st.warning("No Anthropic-provider records found in this data source.")
