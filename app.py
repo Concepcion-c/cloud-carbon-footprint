@@ -1464,12 +1464,6 @@ CONNECTOR_STATE = [
         "action": "See More",
     },
     {
-        "system": "Anthropic", "category": "AI Model Provider",
-        "type": "API", "status": "Connected", "last_sync": "5 min ago",
-        "records": "1,847", "norm_pct": "97%", "owner": "AI Engineering",
-        "action": "See More",
-    },
-    {
         "system": "Google Gemini / Vertex AI", "category": "AI Model Provider",
         "type": "API", "status": "Warning", "last_sync": "45 min ago",
         "records": "892", "norm_pct": "84%", "owner": "AI Engineering",
@@ -1608,26 +1602,37 @@ else:
     aiworks_calc["ai_cost_usd"] = aiworks_calc["total_cost_usd"]
     aiworks_source_label  = "Bundled sample: `aiworks_usage_export.json`"
 
-# Patch the "Anthropic" Connect-page row in place with real numbers
-# from aiworks_calc, instead of the hardcoded demo stats every other AI-provider
-# row still uses. norm_pct is a genuine match rate against coeffs_named (not
-# defaulted to the Sonnet fallback inside calc_ai_named()), not a fabricated one.
-_anthropic_row = next(c for c in CONNECTOR_STATE if c["system"] == "Anthropic")
-if len(aiworks_calc) > 0:
-    pct_matched = aiworks_calc["model_name"].isin(coeffs_named["model_name"]).mean() * 100
-else:
-    pct_matched = 0.0
-_anthropic_row["records"] = f"{len(aiworks_calc):,}"
-_anthropic_row["norm_pct"] = f"{pct_matched:.0f}%"
-if st.session_state.anthropic_upload_calc is not None:
-    _anthropic_row["status"]    = "Uploaded"
-    _anthropic_row["type"]      = "Static CSV"
-    _anthropic_row["last_sync"] = st.session_state.uploaded_file_name
-else:
-    _anthropic_row["status"]    = "Connected"
-    _anthropic_row["type"]      = "API"
-    _anthropic_row["last_sync"] = "Bundled sample"
-_anthropic_row["action"] = "See More"
+# Patch the "Anthropic" Connect-page row with real numbers from aiworks_calc,
+# instead of the hardcoded demo stats every other AI-provider row still uses.
+# norm_pct is a genuine match rate against coeffs_named (not defaulted to the
+# Sonnet fallback inside calc_ai_named()), not a fabricated one. Anthropic has
+# no built-in CONNECTOR_STATE row by default (removed so users connect it
+# themselves via the UI) — only patch if it already exists as a user-added
+# connector; otherwise there's nothing to patch yet. Applied via
+# connector_overrides, not an in-place dict mutation, since a user-added
+# Anthropic row lives in custom_connectors, not the static CONNECTOR_STATE list.
+if any(c["system"] == "Anthropic" for c in get_visible_connectors()):
+    if len(aiworks_calc) > 0:
+        pct_matched = aiworks_calc["model_name"].isin(coeffs_named["model_name"]).mean() * 100
+    else:
+        pct_matched = 0.0
+    _anthropic_override = {
+        "records": f"{len(aiworks_calc):,}",
+        "norm_pct": f"{pct_matched:.0f}%",
+        "action": "See More",
+    }
+    if st.session_state.anthropic_upload_calc is not None:
+        _anthropic_override["status"]    = "Uploaded"
+        _anthropic_override["type"]      = "Static CSV"
+        _anthropic_override["last_sync"] = st.session_state.uploaded_file_name
+    else:
+        _anthropic_override["status"]    = "Connected"
+        _anthropic_override["type"]      = "API"
+        _anthropic_override["last_sync"] = "Bundled sample"
+    st.session_state.connector_overrides["Anthropic"] = {
+        **st.session_state.connector_overrides.get("Anthropic", {}),
+        **_anthropic_override,
+    }
 
 base_ai_cost      = ai_base["ai_cost_usd"].sum()
 base_ai_carbon    = ai_base["ai_carbon_kg"].sum()
@@ -2121,11 +2126,12 @@ def update_data_dialog():
     _render_connection_method_fields(system_name, row["category"], method)
 
     if st.button("Save", type="primary", use_container_width=True):
-        if (row["category"] == "AI Model Provider" and system_name == "Anthropic"
-                and st.session_state.anthropic_upload_df is not None):
+        if system_name == "Anthropic" and st.session_state.anthropic_upload_df is not None:
             # Real path: same as Connect New System's Save — actually
             # recompute energy/carbon/water from the uploaded rows, not
-            # just cosmetically flip the connector's type/status.
+            # just cosmetically flip the connector's type/status. Checked
+            # on system_name alone, not category, since a freshly-reconnected
+            # Anthropic defaults to category "Custom Source" like any new system.
             finalize_anthropic_calc()
         st.session_state.connector_overrides[system_name] = {
             "type": "API" if method == "API connection" else "Static CSV",
@@ -2241,10 +2247,14 @@ def connect_new_system_dialog():
             with save_col:
                 if st.button("Save", type="primary", use_container_width=True):
                     with st.spinner("Normalizing records…"):
-                        if (category == "AI Model Provider"
-                                and system_name == "Anthropic"
+                        if (system_name == "Anthropic"
                                 and st.session_state.anthropic_upload_df is not None):
                             # Real path: re-use the existing Anthropic pipeline unchanged.
+                            # Checked on system_name alone (not category too) since a
+                            # freshly-reconnected Anthropic defaults to category
+                            # "Custom Source" like any new system — see
+                            # _render_connection_method_fields, which uses the same
+                            # system_name-first check for exactly this reason.
                             finalize_anthropic_calc()
                             n_records = len(st.session_state.anthropic_upload_calc) \
                                 if st.session_state.anthropic_upload_calc is not None else 0
