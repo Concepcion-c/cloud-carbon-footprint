@@ -1,4 +1,6 @@
 fileignoreconfig:
+- filename: docs/sample-data/semgrep_findings.json
+  checksum: 3d39ef0d9cae09683ac91a9d03e398904e5f73e72ee274fe4f1fd6e3cfd8892e
 - filename: CLAUDE.md
   checksum: 5e34145334b16b72f16ba4d6f691e178086ce98254ae85431151fd56e2d41590
 - filename: docs/research/README.md
