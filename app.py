@@ -1242,7 +1242,7 @@ def recompute_anthropic_upload(region):
     }
 
 
-def render_anthropic_upload_summary(stats, unrecognized, cta="Proceed to field mapping?"):
+def render_anthropic_upload_summary(stats, unrecognized):
     """Render the validation summary/warnings for an Anthropic upload from
     recompute_anthropic_upload()'s stats dict — used by the Connect New
     System and Update Data modals' Anthropic upload branch so both present
@@ -1271,8 +1271,7 @@ def render_anthropic_upload_summary(stats, unrecognized, cta="Proceed to field m
                 f"⚠ {len(stats['unmapped'])} model name(s) not in the coefficient "
                 f"table, falling back to Sonnet-tier rates: {', '.join(stats['unmapped'])}\n\n"
             )
-        summary += cta
-        st.success(summary)
+        st.success(summary.rstrip())
 
 
 def finalize_anthropic_calc():
@@ -1508,6 +1507,18 @@ CONNECTOR_STATE = [
 ]
 CONNECTOR_STATE.sort(key=lambda c: c["system"].lower())
 
+# Fixed catalog of systems with (present or future) bespoke ingestion,
+# independent of connection state. Connection state is resolved separately
+# via get_visible_connectors() at render time. Anthropic has no
+# CONNECTOR_STATE row but keeps its own ingestion branch in
+# _render_connection_method_fields(), keyed on system_name == "Anthropic" —
+# this literal string must match exactly.
+SYSTEM_CATALOG = sorted(
+    [{"system": c["system"], "category": c["category"]} for c in CONNECTOR_STATE]
+    + [{"system": "Anthropic", "category": "AI Model Provider"}],
+    key=lambda c: c["system"].lower(),
+)
+
 
 def get_visible_connectors():
     """Single source of truth for every render site that reads CONNECTOR_STATE.
@@ -1516,7 +1527,7 @@ def get_visible_connectors():
     itself is a plain module-level list rebuilt from scratch on every
     Streamlit rerun and can't hold state across reruns on its own."""
     merged = []
-    for c in CONNECTOR_STATE + st.session_state.custom_connectors:
+    for c in list(reversed(st.session_state.custom_connectors)) + CONNECTOR_STATE:
         if c["system"] in st.session_state.deleted_connector_systems:
             continue
         merged.append({**c, **st.session_state.connector_overrides.get(c["system"], {})})
@@ -1553,7 +1564,9 @@ for key, default in [
     ("drawer_method", None),
     ("uploaded_file_name", None),
     ("upload_validated", False),
-    ("norm_done", False),
+    ("pending_toast", None),
+    ("cnw_selected_system", None),
+    ("cnw_selected_category", None),
     ("anthropic_upload_df", None),
     ("anthropic_upload_calc", None),
     ("anthropic_raw_cost_frames", []),
@@ -1567,6 +1580,8 @@ for key, default in [
     ("show_connect_modal", False),
     ("show_update_modal", False),
     ("update_target_system", None),
+    ("show_data_log_modal", False),
+    ("data_log_target_system", None),
     ("show_delete_modal", False),
     ("delete_target_system", None),
 ]:
@@ -1622,13 +1637,14 @@ if any(c["system"] == "Anthropic" for c in get_visible_connectors()):
         "action": "See More",
     }
     if st.session_state.anthropic_upload_calc is not None:
-        _anthropic_override["status"]    = "Uploaded"
-        _anthropic_override["type"]      = "Static CSV"
-        _anthropic_override["last_sync"] = st.session_state.uploaded_file_name
+        _anthropic_override["status"] = "Uploaded"
+        _anthropic_override["type"]   = "Static CSV"
     else:
-        _anthropic_override["status"]    = "Connected"
-        _anthropic_override["type"]      = "API"
-        _anthropic_override["last_sync"] = "Bundled sample"
+        _anthropic_override["status"] = "Connected"
+        _anthropic_override["type"]   = "API"
+    # last_sync is deliberately left untouched here — whatever the Save
+    # handler wrote ("just now") stands, matching how every other custom
+    # connector's last_sync behaves (frozen until the next real Save).
     st.session_state.connector_overrides["Anthropic"] = {
         **st.session_state.connector_overrides.get("Anthropic", {}),
         **_anthropic_override,
@@ -2107,8 +2123,71 @@ def _render_connection_method_fields(system_name, category, method):
             st.selectbox("Sync frequency", ["Every 15 minutes", "Every 30 minutes", "Hourly"],
                          key=f"api_freq2_{system_name}")
 
+    elif method == "Webhook":
+        st.info("RECPT will receive push events at this endpoint. Simulated in this demo.")
+        st.text_input(
+            "Webhook endpoint URL",
+            value=f"https://ingest.recpt.dev/webhooks/{_connector_slug(system_name)}",
+            disabled=True, key=f"webhook_url_{system_name}",
+        )
+        st.text_input(
+            "Signing secret", value="whsec_" + "•" * 24,
+            disabled=True, key=f"webhook_secret_{system_name}",
+        )
 
-@st.dialog("Update Data")
+
+def _render_field_mapping_table(show_divider=True):
+    """Shared 'Map source fields to RECPT schema' table, used by Connect New
+    System (right after a file is uploaded and validated) and by the
+    standalone Data Log dialog (on demand, from Settings)."""
+    if show_divider:
+        st.markdown("---")
+    st.markdown("**Map source fields to RECPT schema**")
+
+    mapping_html = (
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        '<thead><tr style="background:#F9F9FB;">'
+        '<th style="padding:7px 10px;text-align:left;">Source field</th>'
+        '<th style="padding:7px 10px;text-align:left;">RECPT field</th>'
+        '<th style="padding:7px 10px;text-align:left;">Status</th>'
+        '</tr></thead><tbody>'
+    )
+    for src_f, trace_f, status in FIELD_MAPPING:
+        color = "#166534" if status == "Mapped" else "#92400e"
+        icon  = "✓" if status == "Mapped" else "↺"
+        mapping_html += (
+            f'<tr style="border-bottom:1px solid #e5e7eb;">'
+            f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
+            f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
+            f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
+            '</tr>'
+        )
+    mapping_html += "</tbody></table>"
+    st.markdown(mapping_html, unsafe_allow_html=True)
+
+
+def _dismiss_update_modal():
+    st.session_state.show_update_modal = False
+
+
+def _dismiss_delete_modal():
+    st.session_state.show_delete_modal = False
+
+
+def _dismiss_connect_modal():
+    st.session_state.show_connect_modal = False
+
+
+def _dismiss_data_log_modal():
+    st.session_state.show_data_log_modal = False
+
+
+@st.dialog("Data Log", on_dismiss=_dismiss_data_log_modal)
+def data_log_dialog():
+    _render_field_mapping_table(show_divider=False)
+
+
+@st.dialog("Update Data", on_dismiss=_dismiss_update_modal)
 def update_data_dialog():
     system_name = st.session_state.update_target_system
     row = next((c for c in get_visible_connectors() if c["system"] == system_name), None)
@@ -2117,33 +2196,55 @@ def update_data_dialog():
         st.rerun()
 
     st.caption(
-        f"Transition **{system_name}** between API connection and File upload without "
-        "breaking its existing data associations — the connector's identity (system name, "
-        "owner, category) stays the same; only how it's fed data changes."
+        f"Transition **{system_name}** between API connection, File upload, and Webhook "
+        "without breaking its existing data associations — the connector's identity "
+        "(system name, owner, category) stays the same; only how it's fed data changes."
     )
-    method = st.radio("Connection method", ["API connection", "File upload"],
+    st.markdown(f"**Source:** `{row['category']}`")
+    method = st.radio("Connection method", ["API connection", "File upload", "Webhook"],
                        horizontal=True, key="upd_method_radio")
     _render_connection_method_fields(system_name, row["category"], method)
 
-    if st.button("Save", type="primary", use_container_width=True):
-        if system_name == "Anthropic" and st.session_state.anthropic_upload_df is not None:
-            # Real path: same as Connect New System's Save — actually
-            # recompute energy/carbon/water from the uploaded rows, not
-            # just cosmetically flip the connector's type/status. Checked
-            # on system_name alone, not category, since a freshly-reconnected
-            # Anthropic defaults to category "Custom Source" like any new system.
-            finalize_anthropic_calc()
-        st.session_state.connector_overrides[system_name] = {
-            "type": "API" if method == "API connection" else "Static CSV",
-            "status": "Connected" if method == "API connection" else "Uploaded",
-            "last_sync": "just now",
-        }
-        st.session_state.show_update_modal = False
-        st.success(f"**{system_name}** updated.")
-        st.rerun()
+    show_save = (method in ("API connection", "Webhook")) or st.session_state.upload_validated
+    if show_save:
+        save_col, _spacer = st.columns([1, 3])
+        with save_col:
+            if st.button("Save", type="primary", use_container_width=True):
+                # n_records stays None unless a real upload was actually
+                # validated (or Anthropic's real recompute ran) this dialog
+                # session — a bare method flip on a pre-seeded connector
+                # must not clobber its real record count with a computed 0.
+                n_records = None
+                if system_name == "Anthropic" and st.session_state.anthropic_upload_df is not None:
+                    with st.spinner("Normalizing records…"):
+                        finalize_anthropic_calc()
+                        n_records = len(st.session_state.anthropic_upload_calc) \
+                            if st.session_state.anthropic_upload_calc is not None else 0
+                elif st.session_state.upload_validated:
+                    with st.spinner("Normalizing records…"):
+                        time.sleep(0.8)
+                        data = st.session_state.custom_connector_data.get(system_name, {})
+                        n_records = len(data.get("ai", [])) + len(data.get("cloud", []))
+
+                override = {
+                    "type": "API" if method == "API connection" else "Webhook" if method == "Webhook" else "Static CSV",
+                    "status": "Connected" if method in ("API connection", "Webhook") else "Uploaded",
+                    "last_sync": "just now",
+                }
+                if n_records is not None:
+                    override["records"]  = f"{n_records:,}"
+                    override["norm_pct"] = "100%"
+
+                st.session_state.connector_overrides[system_name] = {
+                    **st.session_state.connector_overrides.get(system_name, {}),
+                    **override,
+                }
+                st.session_state.pending_toast = f"{system_name} updated."
+                st.session_state.show_update_modal = False
+                st.rerun()
 
 
-@st.dialog("Delete Source")
+@st.dialog("Delete Source", on_dismiss=_dismiss_delete_modal)
 def delete_source_dialog():
     system_name = st.session_state.delete_target_system
     row = next((c for c in get_visible_connectors() if c["system"] == system_name), None)
@@ -2172,14 +2273,16 @@ def delete_source_dialog():
             st.rerun()
 
 
-@st.dialog("Connect New System", width="small")
+OTHER_SYSTEM = "__other__"  # sentinel for the free-text "custom system" path
+
+
+@st.dialog("Connect New System", width="small", on_dismiss=_dismiss_connect_modal)
 def connect_new_system_dialog():
     visible = get_visible_connectors()
-    existing_systems = sorted({c["system"] for c in visible})
-    existing_owners  = sorted({c["owner"]  for c in visible})
-    category_by_system = {c["system"]: c["category"] for c in visible}
-    NEW_SYSTEM = "+ Add new system…"
-    NEW_OWNER  = "+ Add new owner…"
+    existing_systems  = sorted({c["system"] for c in visible})
+    existing_owners   = sorted({c["owner"]  for c in visible})
+    connected_systems = {c["system"] for c in visible}
+    NEW_OWNER = "+ Add new owner…"
 
     owner_choice = st.selectbox(
         "Owner", existing_owners + [NEW_OWNER],
@@ -2188,60 +2291,83 @@ def connect_new_system_dialog():
     owner_name = (st.text_input("New owner / team name", key="cnw_owner_new")
                   if owner_choice == NEW_OWNER else owner_choice)
 
-    sys_choice = st.selectbox(
-        "System Name", existing_systems + [NEW_SYSTEM],
-        index=None, placeholder="Select a system…", key="cnw_system_select",
-    )
-    system_name = (st.text_input("New system name", key="cnw_system_new")
-                   if sys_choice == NEW_SYSTEM else sys_choice)
+    system_name, category = None, None
+    if owner_name:
+        st.markdown("**System Name**")
+        if st.session_state.cnw_selected_system is None:
+            # Specific systems first — each either shows a green "Connected"
+            # badge (already connected, not selectable) or a Select button.
+            for entry in SYSTEM_CATALOG:
+                sys_name, cat = entry["system"], entry["category"]
+                row_l, row_r = st.columns([3, 1], vertical_alignment="center")
+                with row_l:
+                    st.markdown(
+                        f'<div style="font-weight:600;color:#111827;font-size:13px;">{sys_name}'
+                        f'<br><span style="color:#6b7280;font-size:11px;">{cat}</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_r:
+                    if sys_name in connected_systems:
+                        st.markdown(
+                            f'<div style="padding:4px 0;">{status_badge("Connected")}</div>',
+                            unsafe_allow_html=True,
+                        )
+                    elif st.button("Select", key=f"catalog_select_{sys_name}"):
+                        st.session_state.cnw_selected_system   = sys_name
+                        st.session_state.cnw_selected_category = cat
+                        st.rerun()
 
-    if sys_choice == NEW_SYSTEM:
-        category = "Custom Source"
-    elif sys_choice is not None:
-        category = category_by_system.get(sys_choice)
-    else:
-        category = None
+            st.markdown("---")
+            # Generic fallback — kept visually separate from the specific catalog above.
+            other_l, other_r = st.columns([3, 1], vertical_alignment="center")
+            with other_l:
+                st.markdown(
+                    '<div style="font-weight:600;color:#111827;font-size:13px;">Other system'
+                    '<br><span style="color:#6b7280;font-size:11px;">Not listed above — add it manually</span></div>',
+                    unsafe_allow_html=True,
+                )
+            with other_r:
+                if st.button("Select", key="catalog_select_other"):
+                    st.session_state.cnw_selected_system   = OTHER_SYSTEM
+                    st.session_state.cnw_selected_category = None
+                    st.rerun()
+        else:
+            picked = st.session_state.cnw_selected_system
+            change_l, change_r = st.columns([3, 1], vertical_alignment="center")
+            with change_r:
+                if st.button("Change", key="cnw_change_system", use_container_width=True):
+                    st.session_state.cnw_selected_system   = None
+                    st.session_state.cnw_selected_category = None
+                    st.rerun()
+            if picked == OTHER_SYSTEM:
+                with change_l:
+                    st.caption("Other system")
+                system_name = st.text_input("New system name", key="cnw_system_new")
+                category = "Custom Source"
+            else:
+                with change_l:
+                    st.markdown(f"**{picked}**")
+                system_name = picked
+                category = st.session_state.cnw_selected_category
 
     if category and system_name and owner_name:
         st.markdown(f"**Source:** `{category}`")
 
         st.markdown("**Connection method:**")
         method = st.radio(
-            "method", ["API connection", "File upload"],
+            "method", ["API connection", "File upload", "Webhook"],
             label_visibility="collapsed", horizontal=True, key="drawer_method_radio",
         )
 
-        if sys_choice == NEW_SYSTEM and method == "File upload":
+        if st.session_state.cnw_selected_system == OTHER_SYSTEM and method == "File upload":
             st.caption("New system — no dedicated template exists yet, so here's the Basic Template.")
 
         _render_connection_method_fields(system_name, category, method)
 
         if st.session_state.upload_validated:
-            st.markdown("---")
-            st.markdown("**Map source fields to RECPT schema**")
+            _render_field_mapping_table()
 
-            mapping_html = (
-                '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-                '<thead><tr style="background:#F9F9FB;">'
-                '<th style="padding:7px 10px;text-align:left;">Source field</th>'
-                '<th style="padding:7px 10px;text-align:left;">RECPT field</th>'
-                '<th style="padding:7px 10px;text-align:left;">Status</th>'
-                '</tr></thead><tbody>'
-            )
-            for src_f, trace_f, status in FIELD_MAPPING:
-                color = "#166534" if status == "Mapped" else "#92400e"
-                icon  = "✓" if status == "Mapped" else "↺"
-                mapping_html += (
-                    f'<tr style="border-bottom:1px solid #e5e7eb;">'
-                    f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#374151;">{src_f}</td>'
-                    f'<td style="padding:6px 10px;font-family:Inter,sans-serif;color:#111827;">{trace_f}</td>'
-                    f'<td style="padding:6px 10px;color:{color};font-weight:600;">{icon} {status}</td>'
-                    '</tr>'
-                )
-            mapping_html += "</tbody></table>"
-            st.markdown(mapping_html, unsafe_allow_html=True)
-
-        show_save = (method == "API connection") or st.session_state.upload_validated
+        show_save = (method in ("API connection", "Webhook")) or st.session_state.upload_validated
         if show_save:
             save_col, _spacer = st.columns([1, 3])
             with save_col:
@@ -2262,19 +2388,19 @@ def connect_new_system_dialog():
                             time.sleep(0.8)
                             data = st.session_state.custom_connector_data.get(system_name, {})
                             n_records = len(data.get("ai", [])) + len(data.get("cloud", []))
-                    st.session_state.norm_done = True
                     if system_name not in existing_systems:
                         st.session_state.custom_connectors.append({
                             "system": system_name,
                             "category": category,
-                            "type": "API" if method == "API connection" else "Static CSV",
-                            "status": "Connected" if method == "API connection" else "Uploaded",
+                            "type": "API" if method == "API connection" else "Webhook" if method == "Webhook" else "Static CSV",
+                            "status": "Connected" if method in ("API connection", "Webhook") else "Uploaded",
                             "last_sync": "just now",
                             "records": f"{n_records:,}",
                             "norm_pct": "100%",
                             "owner": owner_name,
                             "action": "See More",
                         })
+                    st.session_state.pending_toast = f"{system_name} connected."
                     st.session_state.show_connect_modal = False
                     st.rerun()
 
@@ -2322,6 +2448,10 @@ def render_connector_detail(row):
                 st.session_state.update_target_system = row["system"]
                 st.session_state.show_update_modal = True
                 st.rerun()
+            if st.button("Data Log", use_container_width=True, key="settings_datalog_btn"):
+                st.session_state.data_log_target_system = row["system"]
+                st.session_state.show_data_log_modal = True
+                st.rerun()
             if st.button("Delete Source", use_container_width=True, key="settings_delete_btn"):
                 st.session_state.delete_target_system = row["system"]
                 st.session_state.show_delete_modal = True
@@ -2329,6 +2459,8 @@ def render_connector_detail(row):
 
     if st.session_state.show_update_modal:
         update_data_dialog()
+    if st.session_state.show_data_log_modal:
+        data_log_dialog()
     if st.session_state.show_delete_modal:
         delete_source_dialog()
 
@@ -2429,6 +2561,10 @@ _components.html(
     height=0,
 )
 
+if st.session_state.pending_toast:
+    st.toast(st.session_state.pending_toast)
+    st.session_state.pending_toast = None
+
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE: CONNECT
 # ════════════════════════════════════════════════════════════════════════════════
@@ -2477,6 +2613,10 @@ if page == "Connect":
                     st.session_state.update_target_system = "Anthropic"
                     st.session_state.show_update_modal = True
                     st.rerun()
+                if st.button("Data Log", use_container_width=True, key="anthropic_settings_datalog_btn"):
+                    st.session_state.data_log_target_system = "Anthropic"
+                    st.session_state.show_data_log_modal = True
+                    st.rerun()
                 if st.button("Delete Source", use_container_width=True, key="anthropic_settings_delete_btn"):
                     st.session_state.delete_target_system = "Anthropic"
                     st.session_state.show_delete_modal = True
@@ -2484,6 +2624,8 @@ if page == "Connect":
 
         if st.session_state.show_update_modal:
             update_data_dialog()
+        if st.session_state.show_data_log_modal:
+            data_log_dialog()
         if st.session_state.show_delete_modal:
             delete_source_dialog()
 
@@ -2604,7 +2746,8 @@ if page == "Connect":
             st.session_state.show_connect_modal = True
             st.session_state.drawer_method = None
             st.session_state.upload_validated = False
-            st.session_state.norm_done        = False
+            st.session_state.cnw_selected_system   = None
+            st.session_state.cnw_selected_category = None
             st.rerun()
     with col_btn2:
         st.button("Run Sync", use_container_width=True, disabled=True,
@@ -2796,14 +2939,6 @@ if page == "Connect":
     # ── Connect New System modal ──
     if st.session_state.show_connect_modal:
         connect_new_system_dialog()
-
-    # ── Normalization success ──
-    if st.session_state.norm_done:
-        st.success(
-            f"✓ **Normalization complete.** "
-            f"`{st.session_state.uploaded_file_name}` has been normalized into the RECPT schema. "
-            "Records are now available in the Observe dashboard."
-        )
 
 
 

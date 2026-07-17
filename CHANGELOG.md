@@ -5,6 +5,67 @@ Format: `## YYYY-MM-DD` → `- **Decision** — why / context.`
 
 After any notable decision (scope, architecture, tooling, naming), add an entry here.
 
+## 2026-07-17
+
+- **Follow-up polish on the catalog work above: deferred system picker, top-of-table
+  ordering, a real Anthropic Last Sync bug fix, a new "Data Log" option, and Webhook as a
+  third connection method** — after testing the catalog UI, tightened it per feedback: the
+  System Name row-list now only renders once an Owner is picked (less visual noise up
+  front), and its "Select" buttons dropped `use_container_width=True` for natural,
+  text-sized sizing, since Streamlit has no way to disable individual `st.selectbox` options
+  or badge them, so the row-list (not a native dropdown) is the only way to show the green
+  "Connected" badge next to already-connected systems. `get_visible_connectors()` now puts
+  `custom_connectors` (newest first) ahead of the alphabetized `CONNECTOR_STATE` block, so a
+  freshly-connected system surfaces at the top of the Connected Systems table instead of the
+  bottom. Root-caused and fixed a real pre-existing bug: a per-rerun Anthropic patch block
+  (predating the catalog work, written back when Anthropic had no way to become a visible
+  connector at all) was overwriting Anthropic's Last Sync column with
+  `st.session_state.uploaded_file_name`, which after a multi-file upload literally reads
+  `"2 file(s) uploaded"` — removed those two override lines so Last Sync stays whatever the
+  Save handler wrote ("just now"), matching every other connector. Moved the "Map source
+  fields to RECPT schema" table out of Update Data (not relevant when just changing how an
+  already-connected system is fed data) into a new "Data Log" option in the Settings
+  popover, between "Update Data" and "Delete Source" — deliberately named differently from
+  the page-level, still-unimplemented "Norm Log" placeholder button, which is a distinct,
+  broader concept. Added "Webhook" as a third connection method (alongside API connection
+  and File upload) in both dialogs — it was already promised in the Connect page's own
+  description text ("connect via API, file upload, OpenTelemetry, or webhook") but never
+  actually selectable; follows the same "simulated in this demo" convention as the generic
+  API-connection branch. _Why: user tested the previous round live and asked for these
+  specific adjustments; the Anthropic Last Sync bug was found while investigating the
+  reported "shows file count instead of a timestamp" symptom, not something guessed at._
+
+- **Connect New System now has a specific-systems catalog with connected-state badges;
+  both connector modals are dismiss-safe and reconciled for consistency** — Anthropic had
+  become unreachable through the modal (its `CONNECTOR_STATE` row was removed in a prior
+  change, and the System Name picker only ever listed rows already in
+  `get_visible_connectors()`). Introduced `SYSTEM_CATALOG`, a fixed list of systems
+  independent of connection state, and replaced the System Name `st.selectbox` with a custom
+  row list (`st.columns`-based, no native Streamlit widget supports per-option
+  disable+badge): each catalog system shows the existing green `status_badge("Connected")`
+  pill and no button if already connected, or a "Select" button if not. Anthropic is now
+  catalogued with category "AI Model Provider" (correcting its previous accidental
+  "Custom Source" default), and a generic "Other system" row — visually separated by a
+  divider — covers anything not in the catalog. Separately, root-caused the reported
+  "modal reopens when just navigating around" bug to Streamlit's `st.dialog` defaulting to
+  `on_dismiss="ignore"` (X/outside-click/ESC triggers no rerun at all) combined with two of
+  the three connector dialogs having no Cancel button — so the *only* way to ever reset
+  `show_connect_modal`/`show_update_modal` was clicking Save; any other dismissal left it
+  stuck `True` until the next unrelated rerun reopened it. Fixed by passing a same-purpose
+  `on_dismiss` callback to all three dialogs. While reconciling Update Data's Save handler to
+  match Connect New System's (same button layout/gating/spinner/field-mapping table, per the
+  "add vs. modify should behave consistently" ask), found and fixed a real gap: Update Data
+  never refreshed `records`/`norm_pct` even after a genuine new upload — fixed with an
+  `n_records = None` sentinel so a bare connection-method flip (no new upload) can no longer
+  clobber a connector's real record count with a computed 0. Also replaced the old
+  `norm_done` page banner and Update Data's rerun-swallowed `st.success(...)` (which never
+  actually rendered, since `st.success` doesn't survive a rerun) with a single page-agnostic
+  `pending_toast` session-state flag consumed via `st.toast()`. _Why: user reported Anthropic
+  was unreachable and both modals behaved inconsistently with each other and with basic modal
+  UX expectations (unwanted reopening); fixing the literal reports required first
+  distinguishing "connectable" from "connected," which didn't exist as a concept in the code
+  before this change._
+
 ## 2026-07-16
 
 - **Connect New System is now a real modal; connectors persist for the session; detail
