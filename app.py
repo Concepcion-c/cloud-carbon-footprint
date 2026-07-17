@@ -1228,9 +1228,10 @@ def recompute_anthropic_upload(region):
 
     unmapped = []
     if combined is not None and "model_name" in combined.columns:
-        unmapped = sorted(set(
-            combined.loc[~combined["model_name"].isin(coeffs_named["model_name"]), "model_name"]
-        ))
+        # Drop NaN model_name (e.g. a wrongly-shaped row with no model at all)
+        # before comparing — sorted(set(...)) crashes mixing str and float NaN.
+        model_names = combined["model_name"].dropna()
+        unmapped = sorted(set(model_names[~model_names.isin(coeffs_named["model_name"])]))
 
     return {
         "n_total": len(combined) if combined is not None else 0,
@@ -1997,7 +1998,58 @@ def _render_connection_method_fields(system_name, category, method):
                 st.session_state.uploaded_file_name = uploaded.name
                 st.success(f"**File validated.** {len(df_upload):,} records found.")
 
-        elif system_name == "Anthropic" or category == "AI Model Provider":
+        elif system_name == "Anthropic":
+            # Real pipeline (unlike the generic AI-Model-Provider branch below):
+            # tolerant of Anthropic's actual export shapes — real Console Cost
+            # reports (token_type column), real Token-usage reports
+            # (model_version column), or RECPT's own simplified schema — via
+            # the same functions the Anthropic detail page's own uploader
+            # uses, so results land in anthropic_upload_df/anthropic_upload_calc
+            # exactly like that page's uploads do.
+            st.markdown(f"**System:** {system_name}")
+            st.markdown(
+                '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">'
+                'Drop any number of Anthropic usage files at once — RECPT\'s own '
+                'simplified sample schema, and/or any mix of real Console export '
+                'monthly <b>Cost reports</b> (identified by a <code>token_type</code> '
+                'column) and <b>Token-usage reports</b> (identified by a '
+                '<code>model_version</code> column), covering any date range. '
+                'Each file is classified by its columns and combined automatically.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            sample_path = DATA_DIR / "anthropic_console_export_sample.csv"
+            if sample_path.exists():
+                with open(sample_path, "rb") as f_sample:
+                    st.download_button(
+                        "Download sample file",
+                        data=f_sample,
+                        file_name="anthropic_console_export_sample.csv",
+                        mime="text/csv",
+                        help="Download a sample Anthropic Console/Admin-API-shaped export to see the expected column format",
+                        key=f"sample_dl_{system_name}_anthropic",
+                    )
+            region_choice = anthropic_region_selectbox(key=f"region_select_{system_name}")
+            uploaded_files = st.file_uploader(
+                "Upload Anthropic usage CSV(s)",
+                type=["csv"], accept_multiple_files=True, key=f"upload_{system_name}_anthropic",
+            )
+            if uploaded_files:
+                _sig = tuple((f.name, f.size) for f in uploaded_files)
+                if _sig != st.session_state.get("anthropic_connect_last_sig"):
+                    st.session_state.anthropic_connect_last_sig = _sig
+                    unrecognized = ingest_anthropic_files(uploaded_files)
+                else:
+                    unrecognized = []
+
+                st.session_state.anthropic_region_choice = region_choice
+                stats = recompute_anthropic_upload(region_choice)
+                st.session_state.upload_validated   = stats["n_total"] > 0
+                st.session_state.uploaded_file_name = f"{len(uploaded_files)} file(s) uploaded"
+
+                render_anthropic_upload_summary(stats, unrecognized)
+
+        elif category == "AI Model Provider":
             st.markdown(f"**System:** {system_name}")
             _offer_basic_template_download()
             uploaded = st.file_uploader(
