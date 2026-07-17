@@ -89,6 +89,35 @@ def _nav_icon_js() -> str:
     icons_json = "[" + ",".join(f'"{u}"' for u in icons) + "]"
     return f"""(function(){{
   var icons={icons_json};
+  // Secondary buttons — purple border + transparent bg (beats emotion !important via
+  // inline). Self-contained (own window.parent lookup) so it's callable both from
+  // applyIcons()'s fixed-delay passes and reactively from the MutationObserver below —
+  // dialog content (e.g. Connect New System's catalog rows) can appear well after
+  // applyIcons()'s own 600ms window, on a rerun the observer catches but a one-shot
+  // setTimeout chain would miss.
+  function styleSecondaryButtons(){{
+    var p=window.parent;if(!p)return;
+    p.document.querySelectorAll('button[data-testid="stBaseButton-secondary"]').forEach(function(btn){{
+      if(btn.closest('[class*="_back_link"]'))return;
+      if(btn.disabled){{
+        btn.style.setProperty('border','1px solid #d1d5db','important');
+        btn.style.setProperty('color','#9ca3af','important');
+        btn.style.setProperty('background','transparent','important');
+      }}else if(btn.closest('[class*="st-key-conn_row_"]')||btn.closest('[class*="st-key-cnw_row_"]')||btn.closest('[class*="st-key-del_cancel_btn"]')||btn.closest('[class*="st-key-cnw_dl_sample"]')||btn.closest('[data-testid="stFileUploaderDropzone"]')){{
+        // Connector table active buttons (e.g. Anthropic's), every small enabled
+        // button inside Connect New System (catalog rows, download-sample,
+        // browse-files) and Delete Source's Cancel — outline, not solid-filled,
+        // so they read as secondary rather than as strong as the modal's one main action.
+        btn.style.setProperty('border','1px solid #6A5DD4','important');
+        btn.style.setProperty('color','#6A5DD4','important');
+        btn.style.setProperty('background','transparent','important');
+      }}else{{
+        btn.style.setProperty('border','1px solid #6A5DD4','important');
+        btn.style.setProperty('color','#ffffff','important');
+        btn.style.setProperty('background','#6A5DD4','important');
+      }}
+    }});
+  }}
   function applyIcons(){{
     var p=window.parent;if(!p)return;
     var ls=p.document.querySelectorAll(
@@ -124,24 +153,7 @@ def _nav_icon_js() -> str:
     // Secondary buttons — purple border + transparent bg (beats emotion !important via inline)
     // Skip buttons explicitly styled as plain links (e.g. the Anthropic detail nav) —
     // those opt out via a `.st-key-*_link` ancestor container.
-    p.document.querySelectorAll('button[data-testid="stBaseButton-secondary"]').forEach(function(btn){{
-      if(btn.closest('[class*="_back_link"]'))return;
-      if(btn.disabled){{
-        btn.style.setProperty('border','1px solid #d1d5db','important');
-        btn.style.setProperty('color','#9ca3af','important');
-        btn.style.setProperty('background','transparent','important');
-      }}else if(btn.closest('[class*="st-key-conn_row_"]')){{
-        // Connector table active buttons (e.g. Anthropic's) — outline, not solid-filled,
-        // so they read as secondary and match the other rows' disabled buttons visually.
-        btn.style.setProperty('border','1px solid #6A5DD4','important');
-        btn.style.setProperty('color','#6A5DD4','important');
-        btn.style.setProperty('background','transparent','important');
-      }}else{{
-        btn.style.setProperty('border','1px solid #6A5DD4','important');
-        btn.style.setProperty('color','#ffffff','important');
-        btn.style.setProperty('background','#6A5DD4','important');
-      }}
-    }});
+    styleSecondaryButtons();
     // Segmented control — stamp data-trace-seg on the App/Model/Region radio wrapper
     p.document.querySelectorAll('[role="radiogroup"]').forEach(function(rg){{
       var texts=Array.from(rg.querySelectorAll('label')).map(function(l){{return l.textContent.trim();}});
@@ -186,6 +198,15 @@ def _nav_icon_js() -> str:
     }});
   }}
   applyIcons();setTimeout(applyIcons,150);setTimeout(applyIcons,600);
+  // Fresh each rerun (this whole script re-executes via the caller's changing
+  // timestamp) and self-cleans when this component's iframe is torn down/replaced —
+  // no dedup guard needed. Catches dialog content added well after applyIcons()'s
+  // fixed-delay window (e.g. a system list that only renders once an owner is picked).
+  var p2=window.parent;
+  if(p2&&p2.document&&p2.document.body){{
+    new MutationObserver(function(){{styleSecondaryButtons();}})
+      .observe(p2.document.body,{{childList:true,subtree:true}});
+  }}
 }})();"""
 
 
@@ -1972,13 +1993,14 @@ def _offer_basic_template_download():
     sample_path = DATA_DIR / "basic_template_sample.csv"
     if sample_path.exists():
         with open(sample_path, "rb") as f_sample:
-            st.download_button(
-                "Download Basic Template",
-                data=f_sample,
-                file_name="basic_template_sample.csv",
-                mime="text/csv",
-                help="Download the baseline CSV template covering both AI-usage and cloud-usage shapes",
-            )
+            with st.container(key="cnw_dl_sample"):
+                st.download_button(
+                    "Download Basic Template",
+                    data=f_sample,
+                    file_name="basic_template_sample.csv",
+                    mime="text/csv",
+                    help="Download the baseline CSV template covering both AI-usage and cloud-usage shapes",
+                )
 
 
 def _render_connection_method_fields(system_name, category, method):
@@ -1986,6 +2008,32 @@ def _render_connection_method_fields(system_name, category, method):
     factored out so both the Connect New System modal and the Update Data
     modal can share one implementation instead of duplicating the
     Langfuse/generic-API/generic-upload field blocks."""
+    # Small like the catalog's Select/Change buttons. Color (outline/subtle,
+    # not solid) comes from _nav_icon_js()'s button-color pass, matched on
+    # the same "cnw_dl_sample" container key / stFileUploaderDropzone
+    # test-id — only sizing belongs in CSS.
+    st.markdown(
+        """
+        <style>
+        div[class*="st-key-cnw_dl_sample"] div.stDownloadButton button[data-testid="stBaseButton-secondary"],
+        [data-testid="stFileUploaderDropzone"] button[data-testid="stBaseButton-secondary"] {
+            padding: 4px 10px !important;
+            min-height: 0 !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            white-space: nowrap !important;
+        }
+        div[class*="st-key-cnw_dl_sample"] div.stDownloadButton button[data-testid="stBaseButton-secondary"] p,
+        div[class*="st-key-cnw_dl_sample"] div.stDownloadButton button[data-testid="stBaseButton-secondary"] div {
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            white-space: nowrap !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     if method == "File upload":
         if system_name == "Cloudability Export" or category == "FinOps":
             st.markdown("**System:** Cloudability Export")
@@ -1999,14 +2047,15 @@ def _render_connection_method_fields(system_name, category, method):
             sample_path = DATA_DIR / "finops_cloud_export.csv"
             if sample_path.exists():
                 with open(sample_path, "rb") as f_sample:
-                    st.download_button(
-                        "Download sample file",
-                        data=f_sample,
-                        file_name="finops_cloud_export_sample.csv",
-                        mime="text/csv",
-                        help="Download a sample Cloudability export to see the expected column format",
-                        key=f"sample_dl_{system_name}_finops",
-                    )
+                    with st.container(key="cnw_dl_sample"):
+                        st.download_button(
+                            "Download sample file",
+                            data=f_sample,
+                            file_name="finops_cloud_export_sample.csv",
+                            mime="text/csv",
+                            help="Download a sample Cloudability export to see the expected column format",
+                            key=f"sample_dl_{system_name}_finops",
+                        )
             uploaded = st.file_uploader("Upload CSV export", type=["csv"], key=f"upload_{system_name}_finops")
             if uploaded is not None:
                 df_upload = pd.read_csv(uploaded)
@@ -2037,14 +2086,15 @@ def _render_connection_method_fields(system_name, category, method):
             sample_path = DATA_DIR / "anthropic_console_export_sample.csv"
             if sample_path.exists():
                 with open(sample_path, "rb") as f_sample:
-                    st.download_button(
-                        "Download sample file",
-                        data=f_sample,
-                        file_name="anthropic_console_export_sample.csv",
-                        mime="text/csv",
-                        help="Download a sample Anthropic Console/Admin-API-shaped export to see the expected column format",
-                        key=f"sample_dl_{system_name}_anthropic",
-                    )
+                    with st.container(key="cnw_dl_sample"):
+                        st.download_button(
+                            "Download sample file",
+                            data=f_sample,
+                            file_name="anthropic_console_export_sample.csv",
+                            mime="text/csv",
+                            help="Download a sample Anthropic Console/Admin-API-shaped export to see the expected column format",
+                            key=f"sample_dl_{system_name}_anthropic",
+                        )
             region_choice = anthropic_region_selectbox(key=f"region_select_{system_name}")
             uploaded_files = st.file_uploader(
                 "Upload Anthropic usage CSV(s)",
@@ -2259,11 +2309,16 @@ def delete_source_dialog():
         f"count and summary tiles on the Connect page, and from the Evidence Pack source "
         f"list on the Prove page. This cannot be undone from within the app."
     )
+    # Cancel and "Yes, delete" are both "main" either/or actions, so Cancel
+    # keeps the same regular size — only its color reads as subtle/outline
+    # (via the "st-key-del_cancel_btn" match in _nav_icon_js()'s button-color
+    # pass) so "Yes, delete" (solid primary) stays the stronger-looking action.
     c1, c2 = st.columns(2)
     with c1:
-        if st.button("Cancel", use_container_width=True):
-            st.session_state.show_delete_modal = False
-            st.rerun()
+        with st.container(key="del_cancel_btn"):
+            if st.button("Cancel", use_container_width=True):
+                st.session_state.show_delete_modal = False
+                st.rerun()
     with c2:
         if st.button("Yes, delete", type="primary", use_container_width=True):
             st.session_state.deleted_connector_systems.add(system_name)
@@ -2294,51 +2349,102 @@ def connect_new_system_dialog():
     system_name, category = None, None
     if owner_name:
         st.markdown("**System Name**")
+        # Every non-Save button in this list (Select / Change) is small —
+        # Save is the one regular-size, solid-primary action in this modal.
+        # The outline/subtle color comes from the app's existing nav-icon JS
+        # (_nav_icon_js(), matched on the same "st-key-cnw_row_" prefix as
+        # conn_row_), since that JS sets colors via inline !important styles
+        # that any CSS rule here would lose to — only sizing belongs in CSS.
+        st.markdown(
+            """
+            <style>
+            div[class*="st-key-cnw_row_"] div.stButton > button[data-testid="stBaseButton-secondary"] {
+                padding: 4px 10px !important;
+                min-height: 0 !important;
+                border-radius: 6px !important;
+                white-space: nowrap !important;
+            }
+            div[class*="st-key-cnw_row_"] div.stButton > button[data-testid="stBaseButton-secondary"] p,
+            div[class*="st-key-cnw_row_"] div.stButton > button[data-testid="stBaseButton-secondary"] div {
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                white-space: nowrap !important;
+            }
+            div[class*="st-key-cnw_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+                text-align: right;
+            }
+            div[class*="st-key-cnw_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stVerticalBlock"] {
+                align-items: flex-end !important;
+                justify-content: flex-end !important;
+            }
+            div[class*="st-key-cnw_row_"] [data-testid="stHorizontalBlock"] {
+                flex-wrap: nowrap !important;
+            }
+            div[class*="st-key-cnw_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                width: auto !important;
+            }
+            div[class*="st-key-cnw_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                min-width: fit-content !important;
+            }
+            div[class*="st-key-cnw_row_"] {
+                margin-bottom: 16px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
         if st.session_state.cnw_selected_system is None:
             # Specific systems first — each either shows a green "Connected"
             # badge (already connected, not selectable) or a Select button.
-            for entry in SYSTEM_CATALOG:
+            # "Other system" is the last row of this same list, not a
+            # separate section.
+            for i, entry in enumerate(SYSTEM_CATALOG):
                 sys_name, cat = entry["system"], entry["category"]
-                row_l, row_r = st.columns([3, 1], vertical_alignment="center")
-                with row_l:
-                    st.markdown(
-                        f'<div style="font-weight:600;color:#111827;font-size:13px;">{sys_name}'
-                        f'<br><span style="color:#6b7280;font-size:11px;">{cat}</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                with row_r:
-                    if sys_name in connected_systems:
+                with st.container(key=f"cnw_row_{i}"):
+                    row_l, row_r = st.columns([3, 1], vertical_alignment="top")
+                    with row_l:
                         st.markdown(
-                            f'<div style="padding:4px 0;">{status_badge("Connected")}</div>',
+                            f'<div style="font-weight:600;color:#111827;font-size:13px;">{sys_name}'
+                            f'<br><span style="color:#6b7280;font-size:11px;">{cat}</span></div>',
                             unsafe_allow_html=True,
                         )
-                    elif st.button("Select", key=f"catalog_select_{sys_name}"):
-                        st.session_state.cnw_selected_system   = sys_name
-                        st.session_state.cnw_selected_category = cat
-                        st.rerun()
+                    with row_r:
+                        if sys_name in connected_systems:
+                            st.markdown(
+                                f'<div style="padding:4px 0;">{status_badge("Connected")}</div>',
+                                unsafe_allow_html=True,
+                            )
+                        elif st.button("Select", key=f"catalog_select_{sys_name}"):
+                            st.session_state.cnw_selected_system   = sys_name
+                            st.session_state.cnw_selected_category = cat
+                            st.rerun()
 
-            st.markdown("---")
-            # Generic fallback — kept visually separate from the specific catalog above.
-            other_l, other_r = st.columns([3, 1], vertical_alignment="center")
-            with other_l:
-                st.markdown(
-                    '<div style="font-weight:600;color:#111827;font-size:13px;">Other system'
-                    '<br><span style="color:#6b7280;font-size:11px;">Not listed above — add it manually</span></div>',
-                    unsafe_allow_html=True,
-                )
-            with other_r:
-                if st.button("Select", key="catalog_select_other"):
-                    st.session_state.cnw_selected_system   = OTHER_SYSTEM
-                    st.session_state.cnw_selected_category = None
-                    st.rerun()
+            with st.container(key="cnw_row_other"):
+                other_l, other_r = st.columns([3, 1], vertical_alignment="top")
+                with other_l:
+                    st.markdown(
+                        '<div style="font-weight:600;color:#111827;font-size:13px;">Other system'
+                        '<br><span style="color:#6b7280;font-size:11px;">Not listed above — add it manually</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                with other_r:
+                    if st.button("Select", key="catalog_select_other"):
+                        st.session_state.cnw_selected_system   = OTHER_SYSTEM
+                        st.session_state.cnw_selected_category = None
+                        st.rerun()
         else:
             picked = st.session_state.cnw_selected_system
-            change_l, change_r = st.columns([3, 1], vertical_alignment="center")
-            with change_r:
-                if st.button("Change", key="cnw_change_system", use_container_width=True):
-                    st.session_state.cnw_selected_system   = None
-                    st.session_state.cnw_selected_category = None
-                    st.rerun()
+            with st.container(key="cnw_row_change"):
+                change_l, change_r = st.columns([3, 1], vertical_alignment="top")
+                with change_r:
+                    if st.button("Change", key="cnw_change_system"):
+                        st.session_state.cnw_selected_system   = None
+                        st.session_state.cnw_selected_category = None
+                        st.rerun()
             if picked == OTHER_SYSTEM:
                 with change_l:
                     st.caption("Other system")
@@ -2351,8 +2457,6 @@ def connect_new_system_dialog():
                 category = st.session_state.cnw_selected_category
 
     if category and system_name and owner_name:
-        st.markdown(f"**Source:** `{category}`")
-
         st.markdown("**Connection method:**")
         method = st.radio(
             "method", ["API connection", "File upload", "Webhook"],
@@ -2363,9 +2467,6 @@ def connect_new_system_dialog():
             st.caption("New system — no dedicated template exists yet, so here's the Basic Template.")
 
         _render_connection_method_fields(system_name, category, method)
-
-        if st.session_state.upload_validated:
-            _render_field_mapping_table()
 
         show_save = (method in ("API connection", "Webhook")) or st.session_state.upload_validated
         if show_save:

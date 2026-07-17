@@ -8,7 +8,7 @@ fileignoreconfig:
 - filename: docs/notebooklm-wiki/notebooklm-upload-index.md
   checksum: 78db4014ee673e446e7e77a5eeeea9178efcfe78ad3c625b968b26afb9e118c4
 - filename: app.py
-  checksum: 8bbf5706dd314f882ea3a47c41b174dd93b0044ba3113423b434304d608b3758
+  checksum: aa7e46e28bf57194d056733570555c95ba4262e4cbd93edd095b2d79a3d1c25a
 - filename: .changeset/big-experts-kick.md
   checksum: 74d451296b12b20492767a90f35ec464016a6eca3593c13a672b40d0fd8f8b06
 - filename: .changeset/breezy-singers-own.md

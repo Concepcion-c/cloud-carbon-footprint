@@ -7,6 +7,81 @@ After any notable decision (scope, architecture, tooling, naming), add an entry 
 
 ## 2026-07-17
 
+- **Removed the post-upload "Map source fields to RECPT schema" section (and its
+  divider) from Connect New System** — after a file validates, the modal no
+  longer shows the field-mapping table; "Files validated"/Save now follow
+  directly. The content isn't lost — "Data Log" (Settings popover, added a
+  few rounds ago) already shows the same table on demand via the shared
+  `_render_field_mapping_table()` helper, confirmed still intact after this
+  change; only the upload-flow call site was removed.
+
+- **Connect New System catalog: top-aligned rows, no column stacking at narrow
+  widths, doubled row spacing, all small buttons unified to outline style** —
+  from a real screenshot review: the badge/button column was vertical-centering
+  against the full two-line row (name + category caption) instead of the top
+  line, fixed via `vertical_alignment="top"` on the row's `st.columns(...)`.
+  Confirmed via direct viewport-resize testing (375px, sidebar collapsed) that
+  Streamlit's columns don't switch `flex-direction` on narrow screens — they
+  keep `flex-direction: row` but let `flex-wrap` drop the second column onto
+  its own line once both can't fit; fixed by forcing `flex-wrap: nowrap` and
+  giving the name/category column `flex:1 1 auto; min-width:0` (so its *text*
+  shrinks/wraps) while the badge/button column gets `flex:0 0 auto` (sized to
+  its own content, never squeezed) — verified side-by-side at 375px across all
+  10 rows. Re-added the `margin-bottom:16px` removed two rounds ago — that
+  removal correctly hit exactly 16px, but seeing it rendered, the user wanted
+  16px *more* on top of that (32px total), so the same rule now serves a
+  different, explicitly confirmed target. Also corrected an earlier "shrink but
+  keep the solid color" call for "Download sample file"/"Browse files" — the
+  user clarified *all* small enabled buttons in this modal should read as
+  outline/secondary, so extended `_nav_icon_js()`'s existing outline-branch
+  condition to cover them too, matching Select/Change/Cancel. _Why: this round
+  was driven by an actual screenshot plus direct viewport-resize investigation,
+  not assumptions about how Streamlit's responsive columns behave — the
+  flex-wrap (not flex-direction) mechanism was confirmed empirically before
+  writing the fix._
+
+- **Connect New System polish: right-aligned row actions, no redundant post-selection
+  "Source" line, small upload/download buttons, consistent 16px row spacing** —
+  right-aligned the catalog list's badge/button column by targeting the actual flex
+  container (`align-items`/`justify-content: flex-end` on the column's inner
+  `stVerticalBlock`, not just `text-align` on the outer column — Streamlit's column
+  layout is flex-based, so a button's own flex-item positioning ignores `text-align`
+  from an ancestor; only the plain-HTML "Connected" badge respected that alone).
+  Removed the `**Source:** category` line right after picking a system in Connect New
+  System specifically (redundant — the catalog list just showed that same category);
+  Update Data's own Source line is untouched, since there's no "just picked it" moment
+  there. Shrank "Download sample file"/"Download Basic Template" and the native file
+  uploader's "Browse files" to the same small size as the catalog's Select/Change
+  buttons, explicitly leaving color alone (both already render solid purple/white via
+  the existing button-color JS, unrelated to this change) — had to fix the download
+  button's selector from a direct-child (`>`) to a descendant match once DOM
+  inspection showed Streamlit wraps buttons with a `help=` tooltip in extra
+  layers, which a direct-child selector doesn't reach. Removed an added
+  `margin-bottom: 16px` between catalog rows once measurement showed Streamlit's own
+  default block spacing there is already exactly 16px, so it was doubling the gap
+  to 32px instead of hitting the requested 16px. _Why: user requested each of these
+  after using the modal; the flex-vs-text-align and tooltip-wrapper issues were found
+  by directly measuring/inspecting the live DOM, not assumed from the CSS alone._
+
+- **Connect New System's catalog buttons are now genuinely small/secondary, "Other
+  system" is a real list row (no divider), and Delete Source's Cancel reads as subtle
+  while staying full-size** — the prior round's fix only removed `use_container_width`,
+  which changes width, not the visual weight buttons actually needed; the real blocker
+  turned out to be a JS snippet (`_nav_icon_js()`, app.py) that force-applies inline
+  `!important` styles to every secondary button on a fixed 0/150/600ms delay after each
+  rerun — inline `!important` always beats stylesheet `!important` regardless of
+  selector specificity, so a plain CSS override could never win. Extended that JS's
+  existing outline-vs-solid branch (previously only for the Connect table's "See More"
+  buttons) to also cover Connect New System's catalog/Change buttons and Delete
+  Source's Cancel, and replaced the fixed-delay-only approach with a `MutationObserver`
+  that reactively restyles new buttons as they appear — needed because the System Name
+  list only renders after an Owner is picked, later than the JS's original 600ms
+  window, so the one-shot retries alone permanently missed it. Removed the "Other
+  system" divider so it reads as the last row of the same list, not a separate section.
+  _Why: user pointed out the buttons still looked full-weight and asked for "Other
+  system" to be merged into the list — investigating the "why doesn't my new CSS
+  apply" question surfaced the actual root cause above, not a guess._
+
 - **Follow-up polish on the catalog work above: deferred system picker, top-of-table
   ordering, a real Anthropic Last Sync bug fix, a new "Data Log" option, and Webhook as a
   third connection method** — after testing the catalog UI, tightened it per feedback: the
